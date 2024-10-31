@@ -1,0 +1,7 @@
+config: 'release'
+arch: 'x64'
+compiler: 'gcc'
+imageFS: 'ext4'
+bootloader: 'limine-uefi'
+outDir: 'bin'
+imageSize: '128M'
