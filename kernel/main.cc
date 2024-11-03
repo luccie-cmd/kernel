@@ -7,8 +7,7 @@ extern "C" void KernelMain(){
     if(!vfs::isInitialized()){
         vfs::initialize();
     }
-    vfs::mount(0, 0, "/boot");
     vfs::mount(0, 1, "/");
-    std::FILE* initFile = vfs::openFile(0, 0, "/boot/init.exe");
+    std::FILE* initFile = vfs::openFile("/usr/bin/init.exe");
     for(;;);
 }

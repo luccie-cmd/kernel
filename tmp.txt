@@ -1184,9 +1184,35 @@ namespace vfs{
     void mount(uint8_t disk, uint8_t partition, const char* mountLoc);
     void mount(const char* file, const char* mountLoc);
     void umount(const char* mountLocation);
-    std::FILE* openFile(uint8_t disk, uint8_t partition, const char* path);
+    std::FILE* openFile(const char* path);
 };
 # 2 "kernel/vfs/vfs.cc" 2
+# 1 "include/kernel/vfs/gpt.h" 1
+
+
+
+
+namespace vfs{
+    struct PartitionTableHeader{
+        char signature[8];
+        uint32_t revision;
+        uint32_t headerSize;
+        uint32_t CRC32;
+        uint32_t reserved0;
+        uint64_t currentLBA;
+        uint64_t reserveLBA;
+        uint64_t firstUseLBA;
+        uint64_t lastUseLBA;
+        char GUID[16];
+        uint64_t firstPartitionEntry;
+        uint32_t partitionCount;
+        uint32_t partitionSize;
+        uint32_t partitionCRC32;
+        char reserved1[420];
+    } __attribute__((packed));
+    static_assert(sizeof(PartitionTableHeader) == 512, "Imporperly aligned partition table header");
+};
+# 3 "kernel/vfs/vfs.cc" 2
 # 1 "include/common/dbg/dbg.h" 1
 
 
@@ -1198,7 +1224,7 @@ namespace dbg{
     void addTrace(const char* func);
     void popTrace();
 };
-# 3 "kernel/vfs/vfs.cc" 2
+# 4 "kernel/vfs/vfs.cc" 2
 # 1 "include/kernel/driver/driver.h" 1
 
 
@@ -1356,11 +1382,15 @@ namespace driver{
     enum struct deviceType : int {
         BLOCK,
     };
+    class Driver{
+        public:
+            deviceType getType(){ return deviceType::BLOCK; }
+    };
     void initialize();
     bool isInitialized();
     size_t getDevicesCount(deviceType type);
 };
-# 4 "kernel/vfs/vfs.cc" 2
+# 5 "kernel/vfs/vfs.cc" 2
 # 1 "/usr/include/c++/12/cstdlib" 1 3
 # 39 "/usr/include/c++/12/cstdlib" 3
        
@@ -2900,11 +2930,11 @@ namespace std
 
 
 }
-# 5 "kernel/vfs/vfs.cc" 2
+# 6 "kernel/vfs/vfs.cc" 2
 
 
 
-# 7 "kernel/vfs/vfs.cc"
+# 8 "kernel/vfs/vfs.cc"
 namespace vfs{
     bool inited = false;
     bool isInitialized(){
@@ -2928,13 +2958,13 @@ namespace vfs{
     }
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(disk+1 > driver::getDevicesCount(driver::deviceType::BLOCK)){
+        if(disk+1 > (int)driver::getDevicesCount(driver::deviceType::BLOCK)){
             dbg::printm("ERROR: Cannot access disk %d, out of range", "VFS");
             std::abort();
         }
         dbg::popTrace();
     }
-    std::FILE* openFile(uint8_t disk, uint8_t partition, const char* path){
+    std::FILE* openFile(const char* path){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm("TODO: Open file\n", "VFS");
         std::abort();

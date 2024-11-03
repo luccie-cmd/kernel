@@ -88,30 +88,31 @@ if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
 # Add some default values to the config
-CONFIG["CFLAGS"] = ['-c', '-ffreestanding', '-finline-functions', '-fmax-errors=1']
+CONFIG["CFLAGS"] = ['-c', '-Os', '-g']
+CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fmax-errors=1', '-fno-use-cxa-atexit', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fstack-protector-strong', '-fno-stack-protector']
+CONFIG["CFLAGS"] += ['-fno-builtin', '-fno-PIE', '-fno-omit-frame-pointer', '-fvar-tracking', '-fconserve-stack', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-mcmodel=kernel', '-mno-sse', '-mno-sse2', '-mno-80387', '-mno-avx', '-mno-avx512f']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wcast-align', '-Wcast-qual', '-Wpointer-arith', '-Wshadow']
 CONFIG["CXXFLAGS"] = ['-fno-rtti', '-fno-exceptions']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-nostdlib']
+CONFIG["LDFLAGS"] = ['-nostdlib', '-g']
 CONFIG["INCPATHS"] = ['-Iinclude']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
 
 if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O0"]
-    CONFIG["CFLAGS"] += ["-g"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
     CONFIG["CFLAGS"] += ["-O2"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
-    CONFIG["CFLAGS"] += ["-mcmodel=large"]
 elif "x86" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m32"]
 
 if "debug" in CONFIG.get("config"):
     CONFIG["LDFLAGS"] += ["-O0"]
-    CONFIG["LDFLAGS"] += ["-g"]
 else:
     CONFIG["LDFLAGS"] += ["-O2"]
 

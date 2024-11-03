@@ -6,6 +6,10 @@ namespace driver{
     enum struct deviceType : int {
         BLOCK,
     };
+    class Driver{
+        public:
+            deviceType getType(){ return deviceType::BLOCK; }
+    };
     void initialize();
     bool isInitialized();
     size_t getDevicesCount(deviceType type);
