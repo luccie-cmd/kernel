@@ -1,43 +1,21 @@
-rm -rf /tmp/Os
-rm -rf bin
 mkdir -p bin
 mkdir -p bin/kernel
 cp ./util/limine.conf bin/limine.conf
 cp ./limine/bin/BOOTX64.EFI bin/BOOTX64.EFI
 cpp  -Iinclude -Ilibcxx libcxx/stdlib/abort.cc -o ./tmp.txt
-mkdir -p bin/libcxx/stdlib
-mkdir -p /tmp/Os/cache/libcxx/stdlib
-cp ./tmp.txt /tmp/Os/cache/libcxx/stdlib/abort.cc
-g++ libcxx/stdlib/abort.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -fno-rtti -fno-exceptions -std=c++23 -o bin/libcxx/stdlib/abort.cc.o
 ar rcs bin/libcxx.a bin/libcxx/stdlib/abort.cc.o
 ar rcs bin/drivers.a 
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon common/io/io.cc -o ./tmp.txt
-mkdir -p bin/common/io
-mkdir -p /tmp/Os/cache/common/io
-cp ./tmp.txt /tmp/Os/cache/common/io/io.cc
-g++ common/io/io.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -fno-rtti -fno-exceptions -std=c++23 -o bin/common/io/io.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon common/dbg/dbg.cc -o ./tmp.txt
-mkdir -p bin/common/dbg
-mkdir -p /tmp/Os/cache/common/dbg
-cp ./tmp.txt /tmp/Os/cache/common/dbg/dbg.cc
-g++ common/dbg/dbg.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -fno-rtti -fno-exceptions -std=c++23 -o bin/common/dbg/dbg.cc.o
 ar rcs bin/common.a bin/common/io/io.cc.o bin/common/dbg/dbg.cc.o
+cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/driver/driver.cc -o ./tmp.txt
+mkdir -p bin/kernel/driver
+mkdir -p /tmp/Os/cache/kernel/driver
+cp ./tmp.txt /tmp/Os/cache/kernel/driver/driver.cc
+g++ kernel/driver/driver.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/driver/driver.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/main.cc -o ./tmp.txt
-mkdir -p bin/kernel
-mkdir -p /tmp/Os/cache/kernel
-cp ./tmp.txt /tmp/Os/cache/kernel/main.cc
-g++ kernel/main.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/main.cc.o
-cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/vfs/init.cc -o ./tmp.txt
-mkdir -p bin/kernel/vfs
-mkdir -p /tmp/Os/cache/kernel/vfs
-cp ./tmp.txt /tmp/Os/cache/kernel/vfs/init.cc
-g++ kernel/vfs/init.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/vfs/init.cc.o
-cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/vfs/openFile.cc -o ./tmp.txt
-mkdir -p bin/kernel/vfs
-mkdir -p /tmp/Os/cache/kernel/vfs
-cp ./tmp.txt /tmp/Os/cache/kernel/vfs/openFile.cc
-g++ kernel/vfs/openFile.cc -c -ffreestanding -finline-functions -fmax-errors=1 -O2 -DNDEBUG -m64 -mcmodel=large -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/vfs/openFile.cc.o
-ld -nostdlib -O2 bin/kernel/vfs/openFile.cc.o bin/kernel/vfs/init.cc.o bin/kernel/main.cc.o -T util/linker.ld --no-whole-archive --whole-archive bin/libcxx.a bin/drivers.a bin/common.a -o bin/kernel.elf
+cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/vfs/vfs.cc -o ./tmp.txt
+ld -nostdlib -O2 bin/kernel/driver/driver.cc.o bin/kernel/vfs/vfs.cc.o bin/kernel/main.cc.o -T util/linker.ld --no-whole-archive --whole-archive bin/libcxx.a bin/drivers.a bin/common.a -o bin/kernel.elf
 strip -g -s -x -X bin/kernel.elf -o bin/kernel.elf
 rm -f bin/image.img
 dd if=/dev/zero of=bin/image.img bs=1M count=128
@@ -58,4 +36,3 @@ sudo umount mnt
 sudo losetup -d /dev/loop0
 rm -rf mnt
 ./script/run.sh bin
-chown -R programming:programming *

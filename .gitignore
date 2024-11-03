@@ -1,2 +1,5 @@
 bin
 limine
+.vscode
+commands.txt
+tmp.txt
