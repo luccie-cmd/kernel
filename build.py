@@ -1,11 +1,4 @@
 #!/bin/python3
-#
-# Copyright (c) - All Rights Reserved.
-#
-# See the LICENCE file for more information.
-#
-
-
 import os
 import glob
 import sys
@@ -22,10 +15,10 @@ def readConfig(path: str) -> dict[str, list[str]]:
             for line in lines:
                 line = line.strip()
                 if ':' in line:
-                    key, value = line.split(":", 1)  # Split at the first ':'
+                    key, value = line.split(":", 1)
                     key = key.strip()
-                    value = value.strip().strip("'")  # Strip leading/trailing whitespace and single quotes
-                    config[key] = [v.strip().strip("'") for v in value.split(",")]  # Split by ',' and strip quotes from each part
+                    value = value.strip().strip("'")
+                    config[key] = [v.strip().strip("'") for v in value.split(",")]
     except FileNotFoundError:
         print(f"Error: Configuration file '{path}' not found.")
         exit(1)
@@ -40,7 +33,6 @@ def writeConfig(config: dict[str, list[str]], path: str) -> None:
             for val in enumerate(values):
                 f.write(f"'{val[1]}'")
                 if val[0]+1 < len(values):
-                    # pass
                     f.write(", ")
             f.write('\n')
 
@@ -88,7 +80,6 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-# Add some default values to the config
 CONFIG["CFLAGS"] = ['-c', '-g']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fmax-errors=1', '-fno-use-cxa-atexit', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fstack-protector-strong', '-fno-stack-protector']
 CONFIG["CFLAGS"] += ['-fno-builtin', '-fno-PIE', '-fno-omit-frame-pointer', '-fvar-tracking', '-fconserve-stack', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic']
@@ -118,8 +109,6 @@ else:
 def callCmd(command, print_out=False):
     with open("commands.txt", "a") as f:
         f.write(command+'\n')
-    # Run the command and capture the output
-    # result = subprocess.run(command, capture_output=False, text=True, shell=True)
     result = subprocess.run(command, capture_output=not print_out, text=True, shell=True)
     if result.returncode != 0:
         print(result.stderr)
