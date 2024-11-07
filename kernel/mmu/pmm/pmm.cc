@@ -80,5 +80,6 @@ namespace mmu::pmm{
         }
         dbg::printm("Could not find a physical address\n", MODULE);
         std::abort();
+        dbg::popTrace();
     }
 }

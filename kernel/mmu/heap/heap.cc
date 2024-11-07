@@ -11,6 +11,7 @@
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX  GIGABYTE
+#define ALGIN_SIZE     16
 
 namespace mmu::heap{
     static bool initialized = false;
@@ -44,7 +45,32 @@ namespace mmu::heap{
         if(!isInitialized()){
             initialize(PMM_SIZE, VMM_MAX);
         }
-        dbg::printm("TODO: Allocate memory\n", MODULE);
+        size_t alignedLength = (size + ALGIN_SIZE - 1) & ~(ALGIN_SIZE - 1);
+        node* current = head;
+        while(current){
+            if(current->free && current->size >= alignedLength){
+                if(current->size > alignedLength){
+                    node* newNode = reinterpret_cast<node*>(current+sizeof(node)+alignedLength);
+                    newNode->size = current->size - alignedLength - sizeof(node);
+                    newNode->free = true;
+                    newNode->next = current->next;
+                    newNode->prev = current;
+
+                    if (current->next)
+                    {
+                        current->next->prev = newNode;
+                    }
+                    current->next = newNode;
+
+                    current->size = alignedLength;
+                }
+                current->free = false;
+                dbg::popTrace();
+                return reinterpret_cast<void*>(current+sizeof(node));
+            }
+            current = current->next;
+        }
+        dbg::printm("Could not find suitable block\n", MODULE);
         std::abort();
         dbg::popTrace();
     }
