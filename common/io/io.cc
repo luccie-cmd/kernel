@@ -3,7 +3,15 @@
 
 namespace io{
     void outb(uint16_t port, uint8_t value){
-        __asm__ volatile ( "outb %b0, %w1" : : "a"(value), "Nd"(port) : "memory" );
+        __asm__ volatile ( "outb %0, %1" : : "a"(value), "Nd"(port) : "memory" );
+    }
+    void outl(uint16_t port, uint32_t value){
+        __asm__ volatile ( "outl %0, %1" : : "a"(value), "Nd"(port) : "memory" );
+    }
+    uint32_t inl(uint16_t port){
+        uint32_t ret;
+        __asm__ volatile ( "inl %1, %0" : "=a"(ret) : "Nd"(port) : "memory" );
+        return ret;
     }
     void cli(){
         __asm__ volatile ( "cli" );

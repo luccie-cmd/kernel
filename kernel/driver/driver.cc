@@ -5,15 +5,30 @@
 #define MODULE "Driver Manager"
 
 namespace driver{
+    deviceType Driver::getDeviceType(){
+        return this->__device_type;
+    }
     static bool initialized = false;
     static std::vector<Driver*> drivers;
+    static Driver* loadDriver(pci::device* device){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        switch(device->classCode){
+            default: {
+                dbg::printm(MODULE, "Failed to load driver for device class %d\n", device->classCode);
+                std::abort();
+            } break;
+        }
+        dbg::popTrace();
+    }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("Initializing...\n", MODULE);
+        dbg::printm(MODULE, "Initializing...\n");
         drivers.clear();
-        dbg::printm("TODO: Scan PCI bus to load device drivers\n", MODULE);
-        std::abort();
-        dbg::printm("Initialized\n", MODULE);
+        std::vector<pci::device*> pciDevices = pci::getAllDevices();
+        for(pci::device* device : pciDevices){
+            drivers.push_back(loadDriver(device));
+        }
+        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -26,11 +41,25 @@ namespace driver{
         }
         size_t count = 0;
         for(Driver* driver : drivers){
-            if(driver->getType() == type){
+            if(driver->getDeviceType() == type){
                 count++;
             }
         }
         dbg::popTrace();
         return count;
+    }
+    std::vector<Driver*> getDrivers(deviceType type){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        if(!isInitialized()){
+            initialize();
+        }
+        std::vector<Driver*> retDrivers;
+        for(Driver* driver : drivers){
+            if(driver->getDeviceType() == type){
+                retDrivers.push_back(driver);
+            }
+        }
+        dbg::popTrace();
+        return retDrivers;
     }
 };

@@ -19,7 +19,7 @@ namespace mmu::heap{
     static uint64_t pmmSize, vmmMax;
     void initialize(uint64_t pmm_size, uint64_t vmm_max){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("Initializing...\n", MODULE);
+        dbg::printm(MODULE, "Initializing...\n");
         pmmSize = pmm_size;
         vmmMax = vmm_max;
         vmm::switchPML4(KERNEL_PID);
@@ -34,7 +34,7 @@ namespace mmu::heap{
         head->next = nullptr;
         head->prev = nullptr;
         initialized = true;
-        dbg::printm("Initialized\n", MODULE);
+        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -70,7 +70,8 @@ namespace mmu::heap{
             }
             current = current->next;
         }
-        dbg::printm("Could not find suitable block\n", MODULE);
+        dbg::printm(MODULE, "Could not find suitable block with size %ld\n", alignedLength);
+        dbg::printm(MODULE, "TODO: Extending of heap\n");
         std::abort();
         dbg::popTrace();
     }
@@ -79,9 +80,16 @@ namespace mmu::heap{
         if(!isInitialized()){
             initialize(PMM_SIZE, VMM_MAX);
         }
-        dbg::printm("TODO: Free memory\n", MODULE);
+        node* freeNode = reinterpret_cast<node*>((uint64_t)ptr-sizeof(node));
+        if(size == freeNode->size || size == 0){
+            freeNode->free = true;
+            dbg::popTrace();
+            return;
+        }
+        dbg::printm(MODULE, "TODO: arbitrary freeing of memory sizes\n");
         std::abort();
-        dbg::popTrace();}
+        dbg::popTrace();
+    }
     void free(void* ptr){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){

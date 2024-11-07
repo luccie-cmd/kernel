@@ -2,7 +2,8 @@
 #include <common/io/io.h>
 #include <cstddef>
 #include <cstdlib>
-#include <stl/vector>
+#include <cstdio>
+#include <cstdarg>
 
 namespace dbg{
     static void putchar(const char c){
@@ -17,10 +18,15 @@ namespace dbg{
     void print(const char* str){
         puts(str);
     }
-    void printm(const char* str, const char* module){
-        puts(module);
-        puts(": ");
-        puts(str);
+    void printm(const char* module, const char* fmt, ...){
+        print(module);
+        print(": ");
+        char str[4096];
+        std::va_list args;
+        va_start(args, fmt);
+        std::vsnprintf(str, sizeof(str), fmt, args);
+        print(str);
+        va_end(args);
     }
     static const char* stackTraces[4096];
     static uint16_t nstackTraces = 0;

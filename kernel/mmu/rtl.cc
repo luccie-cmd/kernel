@@ -5,15 +5,17 @@
  */
 
 #include <kernel/mmu/heap/heap.h>
+#include <common/dbg/dbg.h>
 
+void* operator new(size_t size){
+    return mmu::heap::allocate(size);
+}
 void* operator new[](size_t size){
     return mmu::heap::allocate(size);
 }
-
 void operator delete[](void* ptr, size_t size){
     mmu::heap::free(ptr, size);
 }
-
 void operator delete[](void* ptr){
     mmu::heap::free(ptr);
 }

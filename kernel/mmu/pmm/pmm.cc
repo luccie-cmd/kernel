@@ -20,9 +20,9 @@ namespace mmu::pmm{
     static node* head = nullptr;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("Initializing...\n", MODULE);
+        dbg::printm(MODULE, "Initializing...\n");
         if(memmap_request.response == nullptr){
-            dbg::printm("Bootloader failed to set memory map response\n", MODULE);
+            dbg::printm(MODULE, "Bootloader failed to set memory map response\n");
             std::abort();
         }
         uint64_t memmap_entries = memmap_request.response->entry_count;
@@ -39,7 +39,7 @@ namespace mmu::pmm{
                 }
             }
         }
-        dbg::printm("Initialized\n", MODULE);
+        dbg::printm(MODULE, "Initialized\n");
         initialized = true;
         dbg::popTrace();
     }
@@ -78,7 +78,7 @@ namespace mmu::pmm{
             prev = current;
             current = current->next;
         }
-        dbg::printm("Could not find a physical address\n", MODULE);
+        dbg::printm(MODULE, "Could not find a physical address\n");
         std::abort();
         dbg::popTrace();
     }

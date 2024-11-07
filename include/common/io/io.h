@@ -5,6 +5,8 @@
 
 namespace io{
     void outb(uint16_t port, uint8_t data);
+    void outl(uint16_t port, uint32_t data);
+    uint32_t inl(uint16_t port);
     void cli();
     void sti();
     void invalpg(void* addr);

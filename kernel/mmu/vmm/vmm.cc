@@ -25,14 +25,14 @@ namespace mmu::vmm{
     static PML4* currentPML4;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("Initializing...\n", MODULE);
+        dbg::printm(MODULE, "Initializing...\n");
         if(hhdm_request.response == nullptr){
-            dbg::printm("Bootloader failed to set HHDM response\n", MODULE);
+            dbg::printm(MODULE, "Bootloader failed to set HHDM response\n");
             std::abort();
         }
         HHDMoffset = hhdm_request.response->offset;
         initialized = true;
-        dbg::printm("Initialized\n", MODULE);
+        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -100,11 +100,11 @@ namespace mmu::vmm{
         bool presentMap = (map & MAP_PRESENT) != 0;
         bool globalMap = (map & MAP_GLOBAL) != 0;
         if(!presentMap){
-            dbg::printm("Cannot map a page that isn't present\n", MODULE);
+            dbg::printm(MODULE, "Cannot map a page that isn't present\n");
             std::abort();
         }
         if(!readWrite){
-            dbg::printm("Cannot map a page that isn't readable nor writeable\n", MODULE);
+            dbg::printm(MODULE, "Cannot map a page that isn't readable nor writeable\n");
             std::abort();
         }
         if(pml4[vma.pml4e].pdpe_ptr == 0){

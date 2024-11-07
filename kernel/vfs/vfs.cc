@@ -12,31 +12,33 @@ namespace vfs{
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("Initializing...\n", MODULE);
+        dbg::printm(MODULE, "Initializing...\n");
         readGPT();
-        dbg::printm("Initialized\n", MODULE);
+        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     void readGPT(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(driver::getDevicesCount(driver::deviceType::BLOCK) == 0){
-            dbg::printm("ERROR: No disks avaliable to read GPT\n", MODULE);
+            dbg::printm(MODULE, "No disks avaliable to read GPT\n");
             std::abort();
         }
-        // Driver* blockDrivers = driver::getDevices(driver::deviceType::BLOCK).at(0);
+        driver::Driver* blockDriver = driver::getDrivers(driver::deviceType::BLOCK).at(0);
+        dbg::printm(MODULE, "TODO: Read GPT\n");
+        std::abort();
         dbg::popTrace();
     }
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(disk+1 > (int)driver::getDevicesCount(driver::deviceType::BLOCK)){
-            dbg::printm("ERROR: Cannot access disk %d, out of range", MODULE);
+            dbg::printm(MODULE, "Cannot access disk %d, out of range", disk+1);
             std::abort();
         }
         dbg::popTrace();
     }
     std::FILE* openFile(const char* path){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm("TODO: Open file\n", MODULE);
+        dbg::printm(MODULE, "TODO: Open file\n");
         std::abort();
         dbg::popTrace();
     }

@@ -55,9 +55,9 @@ class vector{
         }
         void clear(){
             dbg::addTrace(__PRETTY_FUNCTION__);
+            delete[] _data;
             _size = 0;
             _capacity = 1;
-            delete[] _data;
             _data = new _T[_capacity];
             dbg::popTrace();
         }
@@ -66,6 +66,9 @@ class vector{
         }
         _T* end(){
             return &_data[_size];
+        }
+        _T at(size_t idx){
+            return _data[idx];
         }
 };
 };
