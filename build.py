@@ -371,6 +371,10 @@ def main():
         callCmd(f"rm -rf {CONFIG['outDir'][0]}")
     if force_rebuild:
         print("Rebuilding...")
+    if "build-bootloader" in sys.argv:
+        callCmd(f"rm -rf limine")
+        setupLimine()
+        return
     print("> Creating necesarry dirs")
     callCmd(f"mkdir -p {CONFIG['outDir'][0]}")
     callCmd(f"mkdir -p {CONFIG['outDir'][0]}/kernel")
