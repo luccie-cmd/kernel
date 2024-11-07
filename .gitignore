@@ -1,5 +1,6 @@
-bin
-limine
-.vscode
+bin/
+limine/
+.vscode/
+__pycache__/
 commands.txt
 tmp.txt

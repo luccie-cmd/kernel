@@ -10,6 +10,7 @@ import os
 import glob
 import sys
 import subprocess
+import threading
 from script.util import parseSize, compareFiles
 
 def readConfig(path: str) -> dict[str, list[str]]:
@@ -61,7 +62,7 @@ CONFIG = readConfig("./script/config.py")
 OLD_CONFIG = readConfig("./script/config.py.old")
 ALLOWED_CONFIG = [
     ["config", ["release", "debug"], True],
-    ["arch", ["x86", "x64"], True],
+    ["arch", ["x64"], True],
     ["compiler", ["gcc", "clang"], True],
     ["imageFS", ["fat32", 'ext2', 'ext3', "ext4"], True],
     ["bootloader", ["limine-uefi", "custom"], True],
@@ -88,7 +89,7 @@ if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
 # Add some default values to the config
-CONFIG["CFLAGS"] = ['-c', '-Os', '-g']
+CONFIG["CFLAGS"] = ['-c', '-g']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fmax-errors=1', '-fno-use-cxa-atexit', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fstack-protector-strong', '-fno-stack-protector']
 CONFIG["CFLAGS"] += ['-fno-builtin', '-fno-PIE', '-fno-omit-frame-pointer', '-fvar-tracking', '-fconserve-stack', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-mcmodel=kernel', '-mno-sse', '-mno-sse2', '-mno-80387', '-mno-avx', '-mno-avx512f']
@@ -108,8 +109,6 @@ else:
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
-elif "x86" in CONFIG.get("arch"):
-    CONFIG["CFLAGS"] += ["-m32"]
 
 if "debug" in CONFIG.get("config"):
     CONFIG["LDFLAGS"] += ["-O0"]
@@ -241,7 +240,8 @@ def linkKernel(kernel_dir, linker_file, static_lib_files=[]):
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"strip -g -s -x -X {CONFIG['outDir'][0]}/kernel.elf -o {CONFIG['outDir'][0]}/kernel.elf")
+    callCmd(f"strip --keep-section-symbols --strip-debug {CONFIG['outDir'][0]}/kernel.elf -o {CONFIG['outDir'][0]}/kernel.elf")
+    callCmd(f"objdump -C -d -Mintel {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])
@@ -406,7 +406,7 @@ def main():
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]}", True)
-    callCmd("chown -R programming:programming *")
+    callCmd("chown -R luccie:luccie *")
 
 if __name__ == '__main__':
     main()

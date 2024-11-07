@@ -6,6 +6,9 @@
 namespace io{
     void outb(uint16_t port, uint8_t data);
     void cli();
+    void sti();
+    void wcr3(uint64_t newCR3);
+    uint64_t rcr3();
 }
 
 #endif // _COMMON_IO_IO_H_

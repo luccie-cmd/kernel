@@ -3,13 +3,20 @@
 
 namespace io{
     void outb(uint16_t port, uint8_t value){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         __asm__ volatile ( "outb %b0, %w1" : : "a"(value), "Nd"(port) : "memory" );
-        dbg::popTrace();
     }
     void cli(){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         __asm__ volatile ( "cli" );
-        dbg::popTrace();
+    }
+    void sti(){
+        __asm__ volatile ( "sti" );
+    }
+    void wcr3(uint64_t newCR3){
+        __asm__ volatile ( "mov %0, %%cr3" : : "r" (newCR3) : "memory" );
+    }
+    uint64_t rcr3(){
+        uint64_t cr3;
+        __asm__ volatile ( "mov %%cr3, %0" : "=r"(cr3) );
+        return cr3;
     }
 };

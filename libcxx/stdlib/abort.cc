@@ -2,7 +2,7 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 
-void abort(){
+extern "C" void abort(){
     dbg::print("ABORTING KERNEL\n");
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();

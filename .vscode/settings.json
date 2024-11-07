@@ -13,6 +13,7 @@
         "limits": "cpp",
         "new": "cpp",
         "*.tcc": "cpp",
+        "*.h": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "vector": "cpp"

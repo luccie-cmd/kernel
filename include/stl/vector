@@ -1,0 +1,73 @@
+/*
+ * Copyright (c) - All Rights Reserved.
+ *
+ * See the LICENSE file for more information.
+ */
+
+#if !defined(_STL_VECTOR_)
+#define _STL_VECTOR_
+#include <cstddef>
+#include <common/dbg/dbg.h>
+
+namespace std{
+template<typename _T>
+class vector{
+    private:
+        _T*  _data;
+        size_t _size;
+        size_t _capacity;
+    public:
+        vector(){
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            _data = new _T[1];
+            _size = 0;
+            _capacity = 1;
+            dbg::popTrace();
+        }
+        vector(size_t size){
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            _data = new _T[_size];
+            _size = size;
+            _capacity = size;
+            dbg::popTrace();
+        }
+        ~vector(){
+            delete[] _data;
+        }
+        void push_back(_T value){
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            if(_size == _capacity){
+                _capacity*=2;
+                _T* temp = new _T[_capacity];
+                for(size_t i = 0; i < _size; i++){
+                    temp[i] = _data[i];
+                }
+                delete[] _data;
+                _data = temp;
+            }
+            _data[_size++] = value;
+            dbg::popTrace();
+        }
+        void pop_back(){
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            _size--;
+            dbg::popTrace();
+        }
+        void clear(){
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            _size = 0;
+            _capacity = 1;
+            delete[] _data;
+            _data = new _T[_capacity];
+            dbg::popTrace();
+        }
+        _T* begin(){
+            return &_data[0];
+        }
+        _T* end(){
+            return &_data[_size];
+        }
+};
+};
+
+#endif // _STL_VECTOR_

@@ -1,35 +1,29 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <cstddef>
+#include <cstdlib>
+#include <stl/vector>
 
 namespace dbg{
     static void putchar(const char c){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         io::outb(DBG_PORT, c);
-        dbg::popTrace();
     }
     static void puts(const char* str){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         while(*str){
             putchar(*str);
             str++;
         }
-        dbg::popTrace();
     }
     void print(const char* str){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         puts(str);
-        dbg::popTrace();
     }
     void printm(const char* str, const char* module){
-        dbg::addTrace(__PRETTY_FUNCTION__);
         puts(module);
         puts(": ");
         puts(str);
-        dbg::popTrace();
     }
-    const char* stackTraces[4096];
-    size_t nstackTraces = 0;
+    static const char* stackTraces[4096];
+    static uint16_t nstackTraces = 0;
     void addTrace(const char* func){
         stackTraces[nstackTraces++] = func;
     }
@@ -37,8 +31,12 @@ namespace dbg{
         nstackTraces--;
     }
     void printStackTrace(){
-        for(size_t i = 0; i < nstackTraces; ++i){
-            print(stackTraces[i]);
+        for(uint16_t i = 0; i < nstackTraces; ++i){
+            const char* trace = stackTraces[i];
+            if(trace == nullptr){
+                break;
+            }
+            print(trace);
             putchar('\n');
         }
     }

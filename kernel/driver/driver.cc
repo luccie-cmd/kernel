@@ -1,6 +1,7 @@
 #include <kernel/driver/driver.h>
 #include <common/dbg/dbg.h>
-#include <vector>
+#include <stl/vector>
+#include <cstdlib>
 #define MODULE "Driver Manager"
 
 namespace driver{
@@ -9,6 +10,9 @@ namespace driver{
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm("Initializing...\n", MODULE);
+        drivers.clear();
+        dbg::printm("TODO: Scan PCI bus to load device drivers\n", MODULE);
+        std::abort();
         dbg::printm("Initialized\n", MODULE);
         dbg::popTrace();
     }
@@ -16,12 +20,17 @@ namespace driver{
         return initialized;
     }
     size_t getDevicesCount(deviceType type){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        if(!isInitialized()){
+            initialize();
+        }
         size_t count = 0;
         for(Driver* driver : drivers){
             if(driver->getType() == type){
                 count++;
             }
         }
+        dbg::popTrace();
         return count;
     }
 };
