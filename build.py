@@ -360,6 +360,12 @@ def setupLimine():
     callCmd(f"cp ./util/limine.conf {CONFIG['outDir'][0]}/limine.conf")
     callCmd(f"cp ./limine/bin/BOOTX64.EFI {CONFIG['outDir'][0]}/BOOTX64.EFI")
 
+def getInfo():
+    callCmd("rm -f info.txt")
+    callCmd("touch info.txt")
+    callCmd(f"cloc . --exclude-dir=limine,bin >> info.txt")
+    callCmd(f"tree -I 'bin' -I 'limine' -I 'script' -I '.vscode' >> info.txt")
+
 def main():
     basename = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
     if "clean" in sys.argv:
@@ -393,6 +399,8 @@ def main():
     buildKernel("kernel")
     print("> Linking kernel")
     linkKernel(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
+    print("> Getting info")
+    getInfo()
     if "compile" in sys.argv:
         return
     buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
