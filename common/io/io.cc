@@ -11,6 +11,9 @@ namespace io{
     void sti(){
         __asm__ volatile ( "sti" );
     }
+    void invalpg(void* addr){
+        __asm__ volatile ( "invlpg (%0)" : : "r"(addr) : "memory" );
+    }
     void wcr3(uint64_t newCR3){
         __asm__ volatile ( "mov %0, %%cr3" : : "r" (newCR3) : "memory" );
     }

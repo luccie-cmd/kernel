@@ -57,7 +57,7 @@ namespace mmu::pmm{
             if(current->size >= PAGE_SIZE){
                 uint64_t addr = (uint64_t)current;
                 if(current->size > PAGE_SIZE){
-                    node* newNode = (node*)(current+PAGE_SIZE);
+                    node* newNode = (node*)(addr+PAGE_SIZE);
                     newNode->size = current->size-PAGE_SIZE;
                     newNode->next = current->next;
                     if(prev != nullptr){
