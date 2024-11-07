@@ -4,3 +4,4 @@ limine/
 __pycache__/
 commands.txt
 tmp.txt
+*.txt

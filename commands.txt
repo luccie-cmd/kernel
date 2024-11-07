@@ -1,28 +1,105 @@
+rm -rf limine
+rm -rf /tmp/kernel
+rm -rf bin
 mkdir -p bin
 mkdir -p bin/kernel
+git clone --depth=1 https://github.com/limine-bootloader/limine
+rm -rf ./limine/commands.txt
 cp ./util/limine.conf bin/limine.conf
 cp ./limine/bin/BOOTX64.EFI bin/BOOTX64.EFI
 cpp  -Iinclude -Ilibcxx libcxx/stdlib/abort.cc -o ./tmp.txt
+mkdir -p bin/libcxx/stdlib
+mkdir -p /tmp/kernel/cache/libcxx/stdlib
+cp ./tmp.txt /tmp/kernel/cache/libcxx/stdlib/abort.cc
+g++ libcxx/stdlib/abort.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -fno-rtti -fno-exceptions -std=c++23 -o bin/libcxx/stdlib/abort.cc.o
 cpp  -Iinclude -Ilibcxx libcxx/string/memset.cc -o ./tmp.txt
+mkdir -p bin/libcxx/string
+mkdir -p /tmp/kernel/cache/libcxx/string
+cp ./tmp.txt /tmp/kernel/cache/libcxx/string/memset.cc
+g++ libcxx/string/memset.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -fno-rtti -fno-exceptions -std=c++23 -o bin/libcxx/string/memset.cc.o
 ar rcs bin/libcxx.a bin/libcxx/stdlib/abort.cc.o bin/libcxx/string/memset.cc.o
 ar rcs bin/drivers.a 
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon common/dbg/dbg.cc -o ./tmp.txt
+mkdir -p bin/common/dbg
+mkdir -p /tmp/kernel/cache/common/dbg
+cp ./tmp.txt /tmp/kernel/cache/common/dbg/dbg.cc
+g++ common/dbg/dbg.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -fno-rtti -fno-exceptions -std=c++23 -o bin/common/dbg/dbg.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon common/io/io.cc -o ./tmp.txt
+mkdir -p bin/common/io
+mkdir -p /tmp/kernel/cache/common/io
+cp ./tmp.txt /tmp/kernel/cache/common/io/io.cc
+g++ common/io/io.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -fno-rtti -fno-exceptions -std=c++23 -o bin/common/io/io.cc.o
 ar rcs bin/common.a bin/common/dbg/dbg.cc.o bin/common/io/io.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/main.cc -o ./tmp.txt
+mkdir -p bin/kernel
+mkdir -p /tmp/kernel/cache/kernel
+cp ./tmp.txt /tmp/kernel/cache/kernel/main.cc
+g++ kernel/main.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/main.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/driver/driver.cc -o ./tmp.txt
+mkdir -p bin/kernel/driver
+mkdir -p /tmp/kernel/cache/kernel/driver
+cp ./tmp.txt /tmp/kernel/cache/kernel/driver/driver.cc
+g++ kernel/driver/driver.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/driver/driver.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/mmu/pmm/pmm.cc -o ./tmp.txt
+mkdir -p bin/kernel/mmu/pmm
+mkdir -p /tmp/kernel/cache/kernel/mmu/pmm
+cp ./tmp.txt /tmp/kernel/cache/kernel/mmu/pmm/pmm.cc
+g++ kernel/mmu/pmm/pmm.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/mmu/pmm/pmm.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/mmu/vmm/vmm.cc -o ./tmp.txt
+mkdir -p bin/kernel/mmu/vmm
+mkdir -p /tmp/kernel/cache/kernel/mmu/vmm
+cp ./tmp.txt /tmp/kernel/cache/kernel/mmu/vmm/vmm.cc
+g++ kernel/mmu/vmm/vmm.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/mmu/vmm/vmm.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/mmu/heap/heap.cc -o ./tmp.txt
+mkdir -p bin/kernel/mmu/heap
+mkdir -p /tmp/kernel/cache/kernel/mmu/heap
+cp ./tmp.txt /tmp/kernel/cache/kernel/mmu/heap/heap.cc
+g++ kernel/mmu/heap/heap.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/mmu/heap/heap.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/mmu/rtl.cc -o ./tmp.txt
+mkdir -p bin/kernel/mmu
+mkdir -p /tmp/kernel/cache/kernel/mmu
+cp ./tmp.txt /tmp/kernel/cache/kernel/mmu/rtl.cc
+g++ kernel/mmu/rtl.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/mmu/rtl.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/vfs/vfs.cc -o ./tmp.txt
+mkdir -p bin/kernel/vfs
+mkdir -p /tmp/kernel/cache/kernel/vfs
+cp ./tmp.txt /tmp/kernel/cache/kernel/vfs/vfs.cc
+g++ kernel/vfs/vfs.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/vfs/vfs.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/init.cc -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch
+mkdir -p /tmp/kernel/cache/kernel/hal/arch
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/init.cc
+g++ kernel/hal/arch/init.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/hal/arch/init.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/gdt/gdt.cc -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/gdt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/gdt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/gdt/gdt.cc
+g++ kernel/hal/arch/x64/gdt/gdt.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/hal/arch/x64/gdt/gdt.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/gdt/gdt.asm -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/gdt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/gdt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/gdt/gdt.asm
+nasm kernel/hal/arch/x64/gdt/gdt.asm -felf64 -o bin/kernel/hal/arch/x64/gdt/gdt.asm.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/idt/isr.asm -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/idt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/idt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/idt/isr.asm
+nasm kernel/hal/arch/x64/idt/isr.asm -felf64 -o bin/kernel/hal/arch/x64/idt/isr.asm.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/idt/idt.asm -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/idt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/idt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/idt/idt.asm
+nasm kernel/hal/arch/x64/idt/idt.asm -felf64 -o bin/kernel/hal/arch/x64/idt/idt.asm.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/idt/isr.cc -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/idt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/idt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/idt/isr.cc
+g++ kernel/hal/arch/x64/idt/isr.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/hal/arch/x64/idt/isr.cc.o
 cpp  -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -D_GLIBCXX_HOSTED=1 kernel/hal/arch/x64/idt/idt.cc -o ./tmp.txt
+mkdir -p bin/kernel/hal/arch/x64/idt
+mkdir -p /tmp/kernel/cache/kernel/hal/arch/x64/idt
+cp ./tmp.txt /tmp/kernel/cache/kernel/hal/arch/x64/idt/idt.cc
+g++ kernel/hal/arch/x64/idt/idt.cc -c -g -ffreestanding -finline-functions -fmax-errors=1 -fno-use-cxa-atexit -fno-strict-aliasing -fno-common -fno-asynchronous-unwind-tables -fno-delete-null-pointer-checks -fstack-protector-strong -fno-stack-protector -fno-builtin -fno-PIE -fno-omit-frame-pointer -fvar-tracking -fconserve-stack -fno-PIE -fno-pie -fno-PIC -fno-pic -mno-red-zone -mcmodel=kernel -mno-sse -mno-sse2 -mno-80387 -mno-avx -mno-avx512f -Werror -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wcast-align -Wcast-qual -Wpointer-arith -Wshadow -O2 -DNDEBUG -m64 -Iinclude -Ilibcxx -Idrivers -Icommon -Ikernel -fno-rtti -fno-exceptions -std=c++23 -o bin/kernel/hal/arch/x64/idt/idt.cc.o
 ld -nostdlib -g -O2 bin/kernel/driver/driver.cc.o bin/kernel/mmu/pmm/pmm.cc.o bin/kernel/mmu/rtl.cc.o bin/kernel/mmu/vmm/vmm.cc.o bin/kernel/mmu/heap/heap.cc.o bin/kernel/vfs/vfs.cc.o bin/kernel/main.cc.o bin/kernel/hal/arch/init.cc.o bin/kernel/hal/arch/x64/gdt/gdt.asm.o bin/kernel/hal/arch/x64/gdt/gdt.cc.o bin/kernel/hal/arch/x64/idt/idt.cc.o bin/kernel/hal/arch/x64/idt/isr.asm.o bin/kernel/hal/arch/x64/idt/idt.asm.o bin/kernel/hal/arch/x64/idt/isr.cc.o -T util/linker.ld --no-whole-archive --whole-archive bin/libcxx.a bin/drivers.a bin/common.a -o bin/kernel.elf
 strip --keep-section-symbols --strip-debug bin/kernel.elf -o bin/kernel.elf
 objdump -C -d -Mintel bin/kernel.elf > bin/kernel.asm
@@ -44,4 +121,4 @@ sudo cp bin/limine.conf mnt
 sudo umount mnt
 sudo losetup -d /dev/loop0
 rm -rf mnt
-./script/run.sh bin
+chown -R luccie:luccie *
