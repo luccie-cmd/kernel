@@ -13,12 +13,25 @@ namespace driver{
     static Driver* loadDriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
         switch(device->classCode){
+            case 0x1: {
+                switch(device->subclassCode){
+                    case 0x1: {} break;
+                    default: {
+                        dbg::printm(MODULE, "TODO: Load mass storage controller for subclass %x\n", device->subclassCode);
+                        std::abort();
+                    } break;
+                }
+            } break;
+            case 0x6: {
+                dbg::printm(MODULE, "Skipping bridges\n");
+            } break;
             default: {
-                dbg::printm(MODULE, "Failed to load driver for device class %d\n", device->classCode);
+                dbg::printm(MODULE, "TODO: Load driver for class %x\n", device->classCode);
                 std::abort();
             } break;
         }
         dbg::popTrace();
+        return nullptr;
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -26,6 +39,10 @@ namespace driver{
         drivers.clear();
         std::vector<pci::device*> pciDevices = pci::getAllDevices();
         for(pci::device* device : pciDevices){
+            Driver* driver = loadDriver(device);
+            if(driver == nullptr){
+                continue;
+            }
             drivers.push_back(loadDriver(device));
         }
         dbg::printm(MODULE, "Initialized\n");
