@@ -3,6 +3,7 @@
 #include <common/io/io.h>
 
 extern "C" void abort(){
+    dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::print("ABORTING KERNEL\n");
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();

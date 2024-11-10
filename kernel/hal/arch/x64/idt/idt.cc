@@ -8,6 +8,8 @@
 #include <kernel/hal/arch/x64/idt/isr.h>
 #include <common/io/regs.h>
 #include <common/dbg/dbg.h>
+#include <cstdlib>
+#define KERNEL_ADDRESS 0xffffffff80000000
 
 namespace hal::arch::x64::idt{
     static IDTEntry entries[256];
@@ -30,7 +32,11 @@ namespace hal::arch::x64::idt{
         entries[gate].present = 1;
     }
     extern "C" uint64_t handleInt(io::Registers* regs){
-        dbg::print("TODO: Handle interrupts\n");
-        for(;;);
+        if(regs->rip >= KERNEL_ADDRESS){
+            dbg::print("TODO: Handle kernel interrupts (exit probably)\n");
+            std::abort();
+        }
+        dbg::print("TODO: Handle userladn interrupts (send SIGSEGV)\n");
+        std::abort();
     }
 };
