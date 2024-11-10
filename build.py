@@ -83,7 +83,7 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-g']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fmax-errors=1', '-fno-use-cxa-atexit', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fstack-protector-strong', '-fno-stack-protector']
 CONFIG["CFLAGS"] += ['-fno-builtin', '-fno-PIE', '-fno-omit-frame-pointer', '-fvar-tracking', '-fconserve-stack', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-mcmodel=kernel', '-mno-sse2', '-mno-avx', '-mno-avx512f']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-mcmodel=kernel', '-mno-avx', '-mno-avx512f']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wcast-align', '-Wcast-qual', '-Wpointer-arith', '-Wshadow']
 CONFIG["CXXFLAGS"] = ['-fno-rtti', '-fno-exceptions', '-Wno-write-strings', '-Wno-cast-qual']
 CONFIG["ASFLAGS"] = ['-felf64']
