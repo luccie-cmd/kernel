@@ -1,5 +1,5 @@
 qemu-system-x86_64 \
-    -bios /usr/share/OVMF/OVMF_CODE.fd \
+    -bios /usr/share/OVMF/x64/OVMF.4m.fd \
     -drive file=$1/image.img,format=raw \
     -m 128 \
     -debugcon stdio \
