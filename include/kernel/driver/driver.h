@@ -5,25 +5,25 @@
 #include <kernel/hal/pci/pci.h>
 
 namespace driver{
-    enum struct deviceType : int {
+    enum struct driverType : int {
         BLOCK,
     };
     class Driver{
         public:
-            Driver(deviceType type, const char* name);
-            ~Driver();
-            const char* getDeviceName();
-            deviceType getDeviceType();
+            Driver(driverType type);
+            virtual ~Driver();
             virtual void init(pci::device* dev) = 0;
             virtual void deinit() = 0;
+            void setDriverName(const char* name);
+            driverType getDeviceType();
         private:
-            deviceType __device_type;
-            const char* __device_name;
+            driverType __driver_type;
+            const char* __driver_name;
     };
     void initialize();
     bool isInitialized();
-    size_t getDevicesCount(deviceType type);
-    std::vector<Driver*> getDrivers(deviceType type);
+    size_t getDevicesCount(driverType type);
+    std::vector<Driver*> getDrivers(driverType type);
 };
 
 

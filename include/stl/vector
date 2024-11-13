@@ -48,6 +48,9 @@ class vector{
             _data[_size++] = value;
             dbg::popTrace();
         }
+        size_t count(){
+            return _size;
+        }
         void pop_back(){
             dbg::addTrace(__PRETTY_FUNCTION__);
             _size--;

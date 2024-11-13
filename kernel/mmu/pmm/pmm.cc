@@ -11,13 +11,15 @@
 #define MODULE "MMU PMM"
 
 namespace mmu::pmm{
-    static bool initialized = false;
+    static bool __initialized = false;
     limine_memmap_request memmap_request = {
         .id = LIMINE_MEMMAP_REQUEST,
         .revision = 0,
         .response = nullptr
     };
-    static node* head = nullptr;
+    static uint64_t __totalUseableMemory = 0;
+    static uint64_t __totalUsedMemory = 0;
+    static node* __head = nullptr;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
@@ -29,29 +31,30 @@ namespace mmu::pmm{
         for(uint64_t i = 0; i < memmap_entries; ++i){
             limine_memmap_entry* entry = memmap_request.response->entries[i];
             if(entry->type == LIMINE_MEMMAP_USABLE && entry->length >= PAGE_SIZE){
+                __totalUseableMemory += entry->length;
                 node* newNode = (node*)vmm::makeVirtual(entry->base);
                 newNode->size = entry->length;
-                if(head == nullptr){
-                    head = newNode;
+                if(__head == nullptr){
+                    __head = newNode;
                 } else{
-                    newNode->next = head;
-                    head = newNode;
+                    newNode->next = __head;
+                    __head = newNode;
                 }
             }
         }
-        dbg::printm(MODULE, "Initialized\n");
-        initialized = true;
+        dbg::printm(MODULE, "Initialized with 0x%llx pages\n", __totalUseableMemory/PAGE_SIZE);
+        __initialized = true;
         dbg::popTrace();
     }
     bool isInitialized(){
-        return initialized;
+        return __initialized;
     }
     uint64_t allocate(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
         }
-        node* current = head;
+        node* current = __head;
         node* prev = nullptr;
         while(current){
             if(current->size >= PAGE_SIZE){
@@ -63,13 +66,13 @@ namespace mmu::pmm{
                     if(prev != nullptr){
                         prev->next = newNode;
                     } else{
-                        head = newNode;
+                        __head = newNode;
                     }
                 } else{
                     if(prev != nullptr){
                         prev->next = current->next;
                     } else{
-                        head = current->next;
+                        __head = current->next;
                     }
                 }
                 dbg::popTrace();

@@ -19,3 +19,9 @@ void operator delete[](void* ptr, size_t size){
 void operator delete[](void* ptr){
     mmu::heap::free(ptr);
 }
+void operator delete(void* ptr, size_t size){
+    mmu::heap::free(ptr, size);
+}
+void operator delete(void* ptr){
+    mmu::heap::free(ptr);
+}

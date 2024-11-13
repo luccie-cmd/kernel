@@ -2,28 +2,31 @@
 #include <common/dbg/dbg.h>
 #include <stl/vector>
 #include <cstdlib>
-#define MODULE "Driver Manager"
+#include <kernel/driver/msc.h>
+#define MODULE "Driver manager"
 
 namespace driver{
-    deviceType Driver::getDeviceType(){
-        return this->__device_type;
+    driverType Driver::getDeviceType(){
+        return this->__driver_type;
     }
     static bool initialized = false;
     static std::vector<Driver*> drivers;
     static Driver* loadDriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "Loading driver for %x:%x class: %x:%x\n", device->vendorID, device->deviceID, device->classCode, device->subclassCode);
+        Driver* driver = nullptr;
         switch(device->classCode){
             case 0x1: {
-                switch(device->subclassCode){
-                    case 0x1: {} break;
-                    default: {
-                        dbg::printm(MODULE, "TODO: Load mass storage controller for subclass %x\n", device->subclassCode);
-                        std::abort();
-                    } break;
-                }
+                driver = loadMSCdriver(device);
+            } break;
+            case 0x2: {
+                dbg::printm(MODULE, "TODO: Setup networking\n");
+            } break;
+            case 0x3: {
+                dbg::printm(MODULE, "Not loading display drivers\n");
             } break;
             case 0x6: {
-                dbg::printm(MODULE, "Skipping bridges\n");
+                dbg::printm(MODULE, "Not loading bridge drivers\n");
             } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load driver for class %x\n", device->classCode);
@@ -31,7 +34,7 @@ namespace driver{
             } break;
         }
         dbg::popTrace();
-        return nullptr;
+        return driver;
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -43,15 +46,17 @@ namespace driver{
             if(driver == nullptr){
                 continue;
             }
-            drivers.push_back(loadDriver(device));
+            driver->init(device);
+            drivers.push_back(driver);
         }
-        dbg::printm(MODULE, "Initialized\n");
+        initialized = true;
+        dbg::printm(MODULE, "Initialized %llu drivers\n", drivers.count());
         dbg::popTrace();
     }
     bool isInitialized(){
         return initialized;
     }
-    size_t getDevicesCount(deviceType type){
+    size_t getDevicesCount(driverType type){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
@@ -65,7 +70,7 @@ namespace driver{
         dbg::popTrace();
         return count;
     }
-    std::vector<Driver*> getDrivers(deviceType type){
+    std::vector<Driver*> getDrivers(driverType type){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
@@ -78,5 +83,12 @@ namespace driver{
         }
         dbg::popTrace();
         return retDrivers;
+    }
+    Driver::Driver(driverType type) :__driver_type(type) {}
+    Driver::~Driver() {}
+    void Driver::setDriverName(const char* name){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        this->__driver_name = name;
+        dbg::popTrace();
     }
 };

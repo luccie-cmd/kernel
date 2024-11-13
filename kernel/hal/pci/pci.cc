@@ -13,7 +13,7 @@
 namespace pci{
     static std::vector<device*> devices;
     static bool initialized = false;
-    uint16_t readConfig(uint32_t bus, uint32_t slot, uint32_t function, uint32_t offset){
+    static uint16_t readConfig(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset){
         dbg::addTrace(__PRETTY_FUNCTION__);
         uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (function << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
         io::outl(0xCF8, address);
@@ -21,16 +21,38 @@ namespace pci{
         dbg::popTrace();
         return tmp;
     }
-    static uint16_t getVendor(uint32_t bus, uint32_t slot, uint32_t func){
+    static void writeConfig(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset, uint32_t data){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (function << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
+        io::outl(0xCF8, address);
+        io::outl(0xCFC, data);
+        dbg::popTrace();
+    }
+    void writeConfig(device* dev, uint8_t offset, uint32_t data){
+        writeConfig(dev->bus, dev->slot, dev->function, offset, data);
+    }
+    uint16_t readConfig(device* dev, uint8_t offset){
+        return readConfig(dev->bus, dev->slot, dev->function, offset);
+    }
+    void enableBusmaster(device* dev){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        uint16_t cmd = readConfig(dev, 0x04);
+        uint16_t status = readConfig(dev, 0x06);
+        cmd |= (1 << 2);
+        writeConfig(dev, 0x04, (uint32_t)status << 16 | (uint32_t) cmd);
+        dbg::printm(MODULE, "busmastering enabled for [0x%x:0x%x]\n", dev->vendorID,
+                dev->deviceID);
+        dbg::popTrace();
+    }
+    static uint16_t getVendor(uint8_t bus, uint8_t slot, uint8_t func){
         return readConfig(bus, slot, func, 0);
     }
-    static uint16_t getDevice(uint32_t bus, uint32_t slot, uint32_t func){
+    static uint16_t getDevice(uint8_t bus, uint8_t slot, uint8_t func){
         return readConfig(bus, slot, func, 2);
     }
-    static uint8_t getClassCode(uint32_t bus, uint32_t slot, uint32_t function){
+    static uint8_t getClassCode(uint8_t bus, uint8_t slot, uint8_t function){
         return (uint8_t)((readConfig(bus, slot, function, 0xA) & ~0x00FF) >> 8);
     }
-
     static uint8_t getSubClassCode(uint32_t bus, uint32_t slot, uint32_t function){
         return (uint8_t)((readConfig(bus, slot, function, 0xA) & ~0xFF00));
     }
@@ -62,6 +84,7 @@ namespace pci{
             }
         }
         initialized = true;
+        dbg::printm(MODULE, "Found %llu devices\n", devices.count());
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }

@@ -364,7 +364,7 @@ def getInfo():
     callCmd("rm -f info.txt")
     callCmd("touch info.txt")
     callCmd(f"cloc . --exclude-dir=limine,bin >> info.txt")
-    callCmd(f"tree -I 'bin' -I 'limine' -I 'script' -I '.vscode' >> info.txt")
+    callCmd(f"tree -I 'bin' -I 'limine' -I 'script' -I '.vscode' -I 'tmp.txt' -I 'commands.txt' -I 'info.txt' >> info.txt")
 
 def main():
     basename = os.path.basename(os.path.dirname(os.path.realpath(__file__)))

@@ -19,21 +19,22 @@ namespace vfs{
     }
     void readGPT(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(driver::getDevicesCount(driver::deviceType::BLOCK) == 0){
+        if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
             dbg::printm(MODULE, "No disks avaliable to read GPT\n");
             std::abort();
         }
-        driver::Driver* blockDriver = driver::getDrivers(driver::deviceType::BLOCK).at(0);
+        driver::Driver* blockDriver = driver::getDrivers(driver::driverType::BLOCK).at(0);
         dbg::printm(MODULE, "TODO: Read GPT\n");
         std::abort();
         dbg::popTrace();
     }
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(disk+1 > (int)driver::getDevicesCount(driver::deviceType::BLOCK)){
+        if(disk+1 > (int)driver::getDevicesCount(driver::driverType::BLOCK)){
             dbg::printm(MODULE, "Cannot access disk %d, out of range", disk+1);
             std::abort();
         }
+        dbg::printm(MODULE, "TODO: Mount filesystem\n");
         dbg::popTrace();
     }
     std::FILE* openFile(const char* path){

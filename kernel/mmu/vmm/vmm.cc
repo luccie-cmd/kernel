@@ -14,15 +14,15 @@
 #define MODULE "MMU VMM"
 
 namespace mmu::vmm{
-    static uint64_t HHDMoffset;
-    static bool initialized;
+    static uint64_t __HHDMoffset;
+    static bool __initialized;
     limine_hhdm_request hhdm_request = {
         .id = LIMINE_HHDM_REQUEST,
         .revision = 0,
         .response = nullptr,
     };
-    static uint64_t CR3LookupTable[MAX_PIDS];
-    static PML4* currentPML4;
+    static uint64_t __CR3LookupTable[MAX_PIDS];
+    static PML4* __currentPML4;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
@@ -30,13 +30,15 @@ namespace mmu::vmm{
             dbg::printm(MODULE, "Bootloader failed to set HHDM response\n");
             std::abort();
         }
-        HHDMoffset = hhdm_request.response->offset;
-        initialized = true;
-        dbg::printm(MODULE, "Initialized\n");
+        __HHDMoffset = hhdm_request.response->offset;
+        __initialized = true;
+        switchPML4(KERNEL_PID);
+        dbg::printm(MODULE, "Initialized with level 4 paging\n");
+        dbg::printm(MODULE, "Kernel PML4 address: 0x%llx\n", __CR3LookupTable[KERNEL_PID]);
         dbg::popTrace();
     }
     bool isInitialized(){
-        return initialized;
+        return __initialized;
     }
     void switchPML4(task::pid_t pid){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -47,18 +49,18 @@ namespace mmu::vmm{
             dbg::printm("Invalid PID\n", MODULE);
             std::abort();
         }
-        if(pid == KERNEL_PID && CR3LookupTable[pid] == 0){
-            CR3LookupTable[pid] = io::rcr3();
+        if(pid == KERNEL_PID && __CR3LookupTable[pid] == 0){
+            __CR3LookupTable[pid] = io::rcr3();
         }
-        if(CR3LookupTable[pid] == 0){
+        if(__CR3LookupTable[pid] == 0){
             uint64_t cr3 = pmm::allocate();
-            CR3LookupTable[pid] = cr3;
+            __CR3LookupTable[pid] = cr3;
         }
-        uint64_t cr3 = CR3LookupTable[pid];
+        uint64_t cr3 = __CR3LookupTable[pid];
         cr3 &= ~(0xfff);
-        cr3 += HHDMoffset;
-        currentPML4 = reinterpret_cast<PML4*>(cr3);
-        io::wcr3(CR3LookupTable[pid]);
+        cr3 += __HHDMoffset;
+        __currentPML4 = reinterpret_cast<PML4*>(cr3);
+        io::wcr3(__CR3LookupTable[pid]);
         dbg::popTrace();
     }
     uint64_t makeVirtual(uint64_t addr){
@@ -67,7 +69,7 @@ namespace mmu::vmm{
             initialize();
         }
         dbg::popTrace();
-        return addr+HHDMoffset;
+        return addr+__HHDMoffset;
     }
     uint64_t getHHDM(){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -75,7 +77,7 @@ namespace mmu::vmm{
             initialize();
         }
         dbg::popTrace();
-        return HHDMoffset;
+        return __HHDMoffset;
     }
     static vmm_address getVMMfromVA(uint64_t vaddr){
         vmm_address result;
@@ -92,7 +94,7 @@ namespace mmu::vmm{
         if(!isInitialized()){
             initialize();
         }
-        PML4* pml4 = currentPML4;
+        PML4* pml4 = __currentPML4;
         vmm_address vma = getVMMfromVA(virtualAddr);
         bool kernelPage = (prot & PROTECTION_KERNEL) != 0;
         bool readWrite = (prot & PROTECTION_RW) != 0;

@@ -8,37 +8,39 @@
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX  GIGABYTE
 #define ALGIN_SIZE     16
 
 namespace mmu::heap{
-    static bool initialized = false;
-    static node* head = nullptr;
-    static uint64_t pmmSize, vmmMax;
+    static bool __initialized = false;
+    static node* __head = nullptr;
+    static uint64_t __pmmSize, __vmmMax;
     void initialize(uint64_t pmm_size, uint64_t vmm_max){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
-        pmmSize = pmm_size;
-        vmmMax = vmm_max;
+        __pmmSize = pmm_size;
+        __vmmMax = vmm_max;
         vmm::switchPML4(KERNEL_PID);
         uint64_t base = pmm::allocate();
-        for(uint64_t pageOffset = 0; pageOffset < pmmSize; pageOffset += PAGE_SIZE){
+        for(uint64_t pageOffset = 0; pageOffset < __pmmSize; pageOffset += PAGE_SIZE){
             uint64_t page = pmm::allocate();
             vmm::mapPage(page, base+page, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
         }
-        head = (node*)base;
-        head->free = true;
-        head->size = pmm_size;
-        head->next = nullptr;
-        head->prev = nullptr;
-        initialized = true;
-        dbg::printm(MODULE, "Initialized\n");
+        __head = (node*)base;
+        __head->free = true;
+        __head->size = pmm_size;
+        __head->next = nullptr;
+        __head->prev = nullptr;
+        __initialized = true;
+        dbg::printm(MODULE, "Initialized with 1MB initial memory and 1GB maximum memory\n");
         dbg::popTrace();
     }
     bool isInitialized(){
-        return initialized;
+        return __initialized;
     }
     void* allocate(size_t size){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -46,7 +48,7 @@ namespace mmu::heap{
             initialize(PMM_SIZE, VMM_MAX);
         }
         size_t alignedLength = (size + ALGIN_SIZE - 1) & ~(ALGIN_SIZE - 1);
-        node* current = head;
+        node* current = __head;
         while(current){
             if(current->free && current->size >= alignedLength){
                 if(current->size > alignedLength){
@@ -56,8 +58,7 @@ namespace mmu::heap{
                     newNode->next = current->next;
                     newNode->prev = current;
 
-                    if (current->next)
-                    {
+                    if (current->next){
                         current->next->prev = newNode;
                     }
                     current->next = newNode;
