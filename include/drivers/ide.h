@@ -41,6 +41,7 @@ namespace drivers{
             uint8_t readReg(uint8_t channel, uint8_t reg);
             void writeReg(uint8_t channel, uint8_t reg, uint8_t data);
             void readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t quads);
+            int poll(uint8_t channel, bool advanced);
     };
     IDEDriver* loadIDEController(pci::device* device);
 };

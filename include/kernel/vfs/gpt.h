@@ -21,6 +21,15 @@ namespace vfs{
         char reserved1[420];
     } __attribute__((packed));
     static_assert(sizeof(PartitionTableHeader) == 512, "Imporperly aligned partition table header");
+    struct PartitionEntry{
+        char GUID[16];
+        char UGUID[16];
+        uint64_t startLBA;
+        uint64_t endLBA;
+        uint64_t attr;
+        char16_t name[36];
+    } __attribute__((packed));
+    static_assert(sizeof(PartitionEntry) == 128, "Imporperly aligned partition entry");
 };
 
 #endif // _KERNEL_VFS_GPT_H_

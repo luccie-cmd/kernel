@@ -6,7 +6,7 @@
 namespace vfs{
     bool isInitialized();
     void initialize();
-    void readGPT();
+    void readGPT(uint8_t disk);
     void mount(uint8_t disk, uint8_t partition, const char* mountLoc);
     void mount(const char* file, const char* mountLoc);
     void umount(const char* mountLocation);

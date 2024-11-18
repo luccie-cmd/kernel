@@ -229,7 +229,6 @@ def linkKernel(kernel_dir, linker_file, static_lib_files=[]):
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"strip --keep-section-symbols --strip-debug {CONFIG['outDir'][0]}/kernel.elf -o {CONFIG['outDir'][0]}/kernel.elf")
     callCmd(f"objdump -C -d -Mintel {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
@@ -406,7 +405,7 @@ def main():
     buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     if "run" in sys.argv:
         print("> Running QEMU")
-        callCmd(f"./script/run.sh {CONFIG['outDir'][0]}", True)
+        callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)
     callCmd("chown -R luccie:luccie *")
 
 if __name__ == '__main__':

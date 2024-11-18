@@ -58,7 +58,9 @@ class vector{
         }
         void clear(){
             dbg::addTrace(__PRETTY_FUNCTION__);
-            delete[] _data;
+            if(_data){
+                delete[] _data;
+            }
             _size = 0;
             _capacity = 1;
             _data = new _T[_capacity];

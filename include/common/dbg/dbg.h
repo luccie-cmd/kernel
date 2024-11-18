@@ -3,6 +3,7 @@
 
 namespace dbg{
     void printm(const char* module, const char* fmt, ...);
+    void printf(const char* str, ...);
     void print(const char* str);
     void printStackTrace();
     void addTrace(const char* func);
