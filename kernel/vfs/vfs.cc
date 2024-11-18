@@ -70,6 +70,10 @@ namespace vfs{
         if(partitionEntries.count() < disk && partitionEntries.at(disk).count() < partition){
             readGPT(disk);
         }
+        if(partitionEntries.at(disk).count() < partition){
+            dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
+            std::abort();
+        }
         dbg::printm(MODULE, "TODO: Mount filesystem\n");
         dbg::popTrace();
     }
