@@ -18,6 +18,7 @@ namespace pmm{
     void initialize();
     bool isInitialized();
     uint64_t allocate();
+    uint64_t allocVirtual();
     void free(void* ptr);
 };
 };

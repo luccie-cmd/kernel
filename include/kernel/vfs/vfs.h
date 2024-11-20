@@ -2,8 +2,14 @@
 #define _KERNEL_VFS_VFS_H_
 #include <cstdio>
 #include <cstdint>
+#include <drivers/fs.h>
+#include <kernel/hal/pci/pci.h>
 
 namespace vfs{
+    struct MountPoint{
+        const char* mountPath;
+        drivers::FSDriver* fileSystemDriver;
+    };
     bool isInitialized();
     void initialize();
     void readGPT(uint8_t disk);

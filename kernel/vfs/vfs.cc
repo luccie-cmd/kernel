@@ -10,16 +10,18 @@
 namespace vfs{
     bool inited = false;
     std::vector<std::vector<PartitionEntry*>> partitionEntries;
+    std::vector<MountPoint*> mountPoints;
     bool isInitialized(){
         return inited;
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
-        for(std::vector<PartitionEntry*> entries : partitionEntries){
-            entries.clear();
-        }
         partitionEntries.clear();
+        for(uint64_t i = 0; i < driver::getDevicesCount(driver::driverType::BLOCK); ++i){
+            readGPT((uint8_t)i);
+        }
+        inited = true;
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
@@ -48,11 +50,12 @@ namespace vfs{
             std::abort();
         }
         std::vector<PartitionEntry*> entries;
-        for(uint32_t i = 0; i < 15872; i+=sizeof(PartitionEntry)){
-            PartitionEntry* entry = (PartitionEntry*)(&buffer[i]);
+        for(uint32_t i = 0; i < PTH->partitionCount; i++){
+            PartitionEntry* entry = (PartitionEntry*)(buffer+(i*sizeof(PartitionEntry)));
             if(entry->startLBA == 0 && entry->endLBA == 0){
                 break;
             }
+            dbg::printm(MODULE, "Entry %d = %llx\n", i, entry);
             entries.push_back(entry);
         }
         partitionEntries.push_back(entries);
@@ -67,14 +70,12 @@ namespace vfs{
         if(!isInitialized()){
             initialize();
         }
-        if(partitionEntries.count() < disk && partitionEntries.at(disk).count() < partition){
-            readGPT(disk);
-        }
         if(partitionEntries.at(disk).count() < partition){
             dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
+            dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).count());
             std::abort();
         }
-        dbg::printm(MODULE, "TODO: Mount filesystem\n");
+        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition));
         dbg::popTrace();
     }
     std::FILE* openFile(const char* path){

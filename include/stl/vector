@@ -13,7 +13,7 @@ namespace std{
 template<typename _T>
 class vector{
     private:
-        _T*  _data;
+        _T* _data;
         size_t _size;
         size_t _capacity;
     public:
@@ -26,8 +26,8 @@ class vector{
         }
         vector(size_t size){
             dbg::addTrace(__PRETTY_FUNCTION__);
-            _data = new _T[_size];
             _size = size;
+            _data = new _T[size];
             _capacity = size;
             dbg::popTrace();
         }
@@ -36,7 +36,7 @@ class vector{
         }
         void push_back(_T value){
             dbg::addTrace(__PRETTY_FUNCTION__);
-            if(_size == _capacity){
+            if(_size >= _capacity){
                 _capacity*=2;
                 _T* temp = new _T[_capacity];
                 for(size_t i = 0; i < _size; i++){
@@ -63,7 +63,7 @@ class vector{
             }
             _size = 0;
             _capacity = 1;
-            _data = new _T[_capacity];
+            _data = new _T[1];
             dbg::popTrace();
         }
         _T* begin(){

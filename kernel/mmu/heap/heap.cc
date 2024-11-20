@@ -10,10 +10,12 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <stl/vector>
+#include <utility>
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX  GIGABYTE
-#define ALGIN_SIZE     16
+#define ALGIN_SIZE     32
 
 namespace mmu::heap{
     static bool __initialized = false;
@@ -25,10 +27,10 @@ namespace mmu::heap{
         __pmmSize = pmm_size;
         __vmmMax = vmm_max;
         vmm::switchPML4(KERNEL_PID);
-        uint64_t base = pmm::allocate();
+        uint64_t base = pmm::allocate(); 
         for(uint64_t pageOffset = 0; pageOffset < __pmmSize; pageOffset += PAGE_SIZE){
             uint64_t page = pmm::allocate();
-            vmm::mapPage(page, base+page, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
+            vmm::mapPage(page, base+pageOffset, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
         }
         __head = (node*)base;
         __head->free = true;
@@ -51,23 +53,25 @@ namespace mmu::heap{
         node* current = __head;
         while(current){
             if(current->free && current->size >= alignedLength){
-                if(current->size > alignedLength){
-                    node* newNode = reinterpret_cast<node*>(current+sizeof(node)+alignedLength);
+                if(current->size > alignedLength + sizeof(node)){
+                    node* newNode = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current)+sizeof(node)+alignedLength);
+                    if (reinterpret_cast<uint64_t>(newNode) % ALGIN_SIZE != 0) {
+                        dbg::printm(MODULE, "New node alignment error at 0x%llx\n", newNode);
+                        std::abort();
+                    }
                     newNode->size = current->size - alignedLength - sizeof(node);
                     newNode->free = true;
                     newNode->next = current->next;
                     newNode->prev = current;
-
                     if (current->next){
                         current->next->prev = newNode;
                     }
                     current->next = newNode;
-
                     current->size = alignedLength;
                 }
                 current->free = false;
                 dbg::popTrace();
-                return reinterpret_cast<void*>(current+sizeof(node));
+                return reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current)+sizeof(node));
             }
             current = current->next;
         }
@@ -81,13 +85,31 @@ namespace mmu::heap{
         if(!isInitialized()){
             initialize(PMM_SIZE, VMM_MAX);
         }
-        node* freeNode = reinterpret_cast<node*>((uint64_t)ptr-sizeof(node));
+        bool found = false;
+        node* current = __head;
+        node* freeNode = reinterpret_cast<node*>((uintptr_t)ptr-sizeof(node));
+        while(current){
+            found = current == freeNode;
+            if(found){
+                break;
+            }
+            current = current->next;
+        }
+        if (!found) {
+            dbg::printm(MODULE, "Invalid pointer passed to free: 0x%llx, attempted node to free: %llx\n", ptr, freeNode);
+            current = __head;
+            while(current){
+                dbg::printm(MODULE, "Addr: %llx Size: %llu %s\n", current, current->size, current->free ? "free" : "in use");
+                current = current->next;
+            }
+            std::abort();
+        }
         if(size == freeNode->size || size == 0){
             freeNode->free = true;
             dbg::popTrace();
             return;
         }
-        dbg::printm(MODULE, "TODO: arbitrary freeing of memory sizes\n");
+        dbg::printm(MODULE, "TODO: arbitrary freeing of memory sizes with size %llu of node size %llu from pointer 0x%llx and freenode 0x%llx\n", size, freeNode->size, ptr, freeNode);
         std::abort();
         dbg::popTrace();
     }
