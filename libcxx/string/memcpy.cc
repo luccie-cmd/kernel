@@ -1,15 +1,10 @@
 #include <cstring>
 #include <cstdint>
 
-int memcmp(const void* s1, const void* s2, size_t size){
-    const uint8_t*p1 = (const uint8_t*) s1;
-    const uint8_t*p2 = (const uint8_t*) s2;
-    while (size--){
-        if (*p1 != *p2){
-            return *p1 - *p2;
-        }
-        ++p1;
-        ++p2;
-    }
-    return 0;
+void* memcpy(void* dst, const void* src, std::size_t num){
+    char* u8Dst = (char *)dst;
+    const char* u8Src = (const char *)src;
+    for (std::size_t i = 0; i < num; i++)
+        u8Dst[i] = u8Src[i];
+    return dst;
 }

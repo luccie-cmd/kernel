@@ -23,8 +23,8 @@ namespace vfs{
     static_assert(sizeof(PartitionTableHeader) == 512, "Imporperly aligned partition table header");
     #define VFS_PARTITION_ATTR_FSTYPE 0xFF00
     struct PartitionEntry{
-        char GUID[16];
-        char UGUID[16];
+        uint8_t GUID[16];
+        uint8_t UGUID[16];
         uint64_t startLBA;
         uint64_t endLBA;
         uint64_t attr;

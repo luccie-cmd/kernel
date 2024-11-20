@@ -10,6 +10,7 @@ namespace vfs{
         const char* mountPath;
         drivers::FSDriver* fileSystemDriver;
     };
+    uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();
     void initialize();
     void readGPT(uint8_t disk);

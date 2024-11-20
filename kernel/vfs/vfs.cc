@@ -25,6 +25,25 @@ namespace vfs{
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
+    uint8_t* parseGUID(uint8_t* GUID){
+        uint8_t* newGUID = new uint8_t[16];
+        newGUID[0] = GUID[3];
+        newGUID[1] = GUID[2];
+        newGUID[2] = GUID[1];
+        newGUID[3] = GUID[0];
+        newGUID[4] = GUID[5];
+        newGUID[5] = GUID[4];
+        newGUID[6] = GUID[7];
+        newGUID[7] = GUID[6];
+        newGUID[8] = GUID[8];
+        newGUID[9] = GUID[9];
+        newGUID[10] = GUID[10];
+        newGUID[12] = GUID[12];
+        newGUID[13] = GUID[13];
+        newGUID[14] = GUID[14];
+        newGUID[15] = GUID[15];
+        return newGUID;
+    }
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
@@ -55,6 +74,8 @@ namespace vfs{
             if(entry->startLBA == 0 && entry->endLBA == 0){
                 break;
             }
+            uint8_t* newGUID = parseGUID(entry->GUID);
+            std::memcpy(entry->GUID, newGUID, sizeof(entry->GUID));
             dbg::printm(MODULE, "Entry %d = %llx\n", i, entry);
             entries.push_back(entry);
         }

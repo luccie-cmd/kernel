@@ -31,6 +31,31 @@ class vector{
             _capacity = size;
             dbg::popTrace();
         }
+        vector(const vector& other) {
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            _size = other._size;
+            _capacity = other._capacity;
+            _data = new _T[_capacity];
+            for (size_t i = 0; i < _size; i++) {
+                _data[i] = other._data[i];
+            }
+            dbg::popTrace();
+        }
+
+        vector& operator=(const vector& other) {
+            dbg::addTrace(__PRETTY_FUNCTION__);
+            if (this != &other) {
+                delete[] _data;  // Release the current memory
+                _size = other._size;
+                _capacity = other._capacity;
+                _data = new _T[_capacity];
+                for (size_t i = 0; i < _size; i++) {
+                    _data[i] = other._data[i];
+                }
+            }
+            dbg::popTrace();
+            return *this;
+        }
         ~vector(){
             delete[] _data;
         }
