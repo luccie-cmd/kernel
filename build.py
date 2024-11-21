@@ -275,6 +275,7 @@ def mountFs(device, boot, kernel):
     callCmd(f"sudo mkdir -p mnt/EFI/BOOT")
     callCmd(f"sudo cp {boot} mnt/EFI/BOOT")
     callCmd(f"sudo cp {kernel} mnt")
+    callCmd(f"sudo touch mnt/test.txt")
     if "limine-uefi" in CONFIG["bootloader"]:
         callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine.conf mnt")
     callCmd(f"sudo umount mnt")

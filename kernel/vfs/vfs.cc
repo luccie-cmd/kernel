@@ -23,6 +23,7 @@ namespace vfs{
             readGPT((uint8_t)i);
         }
         inited = true;
+        mountPoints.clear();
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
@@ -52,9 +53,9 @@ namespace vfs{
             std::abort();
         }
         driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
-        uint8_t *legacyMBR = new uint8_t[512];
+        uint8_t *legacyMBR = new uint8_t[SECTOR_SIZE];
         PartitionTableHeader *PTH = new PartitionTableHeader;
-        std::memset(legacyMBR, 0, 512);
+        std::memset(legacyMBR, 0, SECTOR_SIZE);
         if(!blockDriver->read(0, 0, 1, legacyMBR)){
             dbg::printm(MODULE, "ERROR: Failed to read legacy MBR\n");
             std::abort();
@@ -98,17 +99,27 @@ namespace vfs{
             std::abort();
         }
         drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk)));
+        MountPoint* mp = new MountPoint;
+        mp->fileSystemDriver = fileSystemdriver;
+        mp->mountPath = mountLocation;
+        mountPoints.push_back(mp);
+        dbg::printm(MODULE, "Mounted %d:%d to %s\n", disk, partition, mountLocation);
         dbg::popTrace();
     }
     int openFile(const char* path, int flags){
         dbg::addTrace(__PRETTY_FUNCTION__);
         int handle = 0;
         for(MountPoint* mp : mountPoints){
-            if(std::memcmp(path, mp->mountPath, strlen(mp->mountPath)) == 0){
+            if(mp == nullptr || mp->fileSystemDriver == nullptr){
+                continue;
+            }
+            if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
+                path+=std::strlen(mp->mountPath);
                 handle = mp->fileSystemDriver->open(task::getCurrentPID(), path, flags);
+                dbg::printm(MODULE, "Opened file on %s with handle %d\n", mp->mountPath, handle);
                 break;
             }
-        }
+        }   
         if(handle == 0){
             dbg::printm(MODULE, "Unable to find file %s\n", path);
             std::abort();

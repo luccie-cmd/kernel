@@ -250,6 +250,7 @@ namespace drivers{
         if (lba_mode == 1 && dma == 0) cmd = ATA_CMD_READ_PIO;   
         if (lba_mode == 2 && dma == 0) cmd = ATA_CMD_READ_PIO_EXT;
         this->writeReg(channel, ATA_REG_COMMAND, cmd);               // Send the Command.
+        dbg::printm(MODULE, "Reading %lld sectors from LBA %lld\n", sectors, lba);
         for (i = 0; i < sectors; i++) {
             if(this->poll(channel, true)){
                 dbg::popTrace();

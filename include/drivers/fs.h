@@ -6,6 +6,7 @@
 #include <kernel/driver/msc.h>
 
 #define FS_FLAGS_READ (1 << 0)
+#define SECTOR_SIZE 512
 
 namespace drivers{
     enum struct FSType{
@@ -16,12 +17,13 @@ namespace drivers{
         public:
             FSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice);
             virtual ~FSDriver() = 0;
-            virtual void init(pci::device* device) = 0;
+            virtual void init(pci::device* dev) = 0;
             virtual void deinit() = 0;
             virtual int open(task::pid_t PID, const char* path, int flags) = 0;
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void close(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
+            driver::MSCDriver* getDiskDevice();
         private:
             vfs::PartitionEntry* __partition_entry;
             driver::MSCDriver* __diskDevice;
