@@ -22,7 +22,6 @@ namespace mmu::vmm{
         .response = nullptr,
     };
     static uint64_t __CR3LookupTable[MAX_PIDS];
-    static PML4* __currentPML4;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
@@ -32,7 +31,6 @@ namespace mmu::vmm{
         }
         __HHDMoffset = hhdm_request.response->offset;
         __initialized = true;
-        switchPML4(KERNEL_PID);
         dbg::printm(MODULE, "Initialized with level 4 paging\n");
         dbg::printm(MODULE, "Kernel PML4 address: 0x%llx\n", __CR3LookupTable[KERNEL_PID]);
         dbg::popTrace();
@@ -40,7 +38,7 @@ namespace mmu::vmm{
     bool isInitialized(){
         return __initialized;
     }
-    void switchPML4(task::pid_t pid){
+    PML4* getPML4(task::pid_t pid){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
@@ -59,9 +57,8 @@ namespace mmu::vmm{
         uint64_t cr3 = __CR3LookupTable[pid];
         cr3 &= ~(0xfff);
         cr3 += __HHDMoffset;
-        __currentPML4 = reinterpret_cast<PML4*>(cr3);
-        io::wcr3(__CR3LookupTable[pid]);
         dbg::popTrace();
+        return reinterpret_cast<PML4*>(cr3);
     }
     uint64_t makeVirtual(uint64_t addr){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -89,12 +86,11 @@ namespace mmu::vmm{
         result.offset = vaddr & 0xFFF;
         return result;
     }
-    void mapPage(size_t physicalAddr, size_t virtualAddr, int prot, int map){
+    void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int map){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
         }
-        PML4* pml4 = __currentPML4;
         vmm_address vma = getVMMfromVA(virtualAddr);
         bool kernelPage = (prot & PROTECTION_KERNEL) != 0;
         bool readWrite = (prot & PROTECTION_RW) != 0;
@@ -181,5 +177,24 @@ namespace mmu::vmm{
 
         io::invalpg((void*)virtualAddr);
         dbg::popTrace();
+    }
+    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        vmm_address vma = getVMMfromVA(addr);
+        if(pml4[vma.pml4e].pdpe_ptr == 0){
+            return 0;
+        }
+        PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
+        if(pdpe[vma.pdpe].pde_ptr == 0){
+            return 0;
+        }
+        PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
+        if(pde[vma.pde].pte_ptr == 0){
+            return 0;
+        }
+        PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pte].pte_ptr << 12));
+        uint64_t retAddr = pte[vma.pte].papn_ppn << 12;
+        dbg::popTrace();
+        return retAddr; 
     }
 };

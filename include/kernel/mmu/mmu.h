@@ -8,6 +8,7 @@
 #define _KERNEL_MMU_MMU_H_
 #define GIGABYTE (1024 * 1024 * 1024ULL)
 #define MEGABYTE (1024 * 1024ULL)
+#define KILOBYTE (1024ULL)
 #define PAGE_SIZE 0x1000
 
 #include "heap/heap.h"

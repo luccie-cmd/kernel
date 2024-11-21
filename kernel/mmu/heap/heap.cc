@@ -12,6 +12,7 @@
 #include <cstring>
 #include <stl/vector>
 #include <utility>
+#include <kernel/task/task.h>
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX  GIGABYTE
@@ -26,11 +27,10 @@ namespace mmu::heap{
         dbg::printm(MODULE, "Initializing...\n");
         __pmmSize = pmm_size;
         __vmmMax = vmm_max;
-        vmm::switchPML4(KERNEL_PID);
         uint64_t base = pmm::allocate(); 
         for(uint64_t pageOffset = 0; pageOffset < __pmmSize; pageOffset += PAGE_SIZE){
             uint64_t page = pmm::allocate();
-            vmm::mapPage(page, base+pageOffset, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
+            vmm::mapPage(vmm::getPML4(KERNEL_PID), page, base+pageOffset, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
         }
         __head = (node*)base;
         __head->free = true;
@@ -70,13 +70,22 @@ namespace mmu::heap{
                     current->size = alignedLength;
                 }
                 current->free = false;
+                void* addr = reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current)+sizeof(node));
+                if(task::getCurrentPID() != KERNEL_PID){
+                    vmm::mapPage(vmm::getPML4(task::getCurrentPID()), vmm::getPhysicalAddr(vmm::getPML4(task::getCurrentPID()), (uint64_t)current), (size_t)current, PROTECTION_RW | (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0), MAP_GLOBAL | MAP_PRESENT);
+                }
                 dbg::popTrace();
-                return reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current)+sizeof(node));
+                return addr;
             }
             current = current->next;
         }
         dbg::printm(MODULE, "Could not find suitable block with size %ld\n", alignedLength);
         dbg::printm(MODULE, "TODO: Extending of heap\n");
+        current = __head;
+        while(current){
+            dbg::printm(MODULE, "Addr: %llx Size: %llu %s\n", current, current->size, current->free ? "free" : "in use");
+            current = current->next;
+        }
         std::abort();
         dbg::popTrace();
     }

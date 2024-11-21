@@ -3,6 +3,9 @@
 #include <kernel/driver/driver.h>
 #include <kernel/vfs/gpt.h>
 #include <kernel/task/types.h>
+#include <kernel/driver/msc.h>
+
+#define FS_FLAGS_READ (1 << 0)
 
 namespace drivers{
     enum struct FSType{
@@ -11,7 +14,7 @@ namespace drivers{
     };
     class FSDriver : public driver::Driver{
         public:
-            FSDriver(vfs::PartitionEntry* entry);
+            FSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice);
             virtual ~FSDriver() = 0;
             virtual void init(pci::device* device) = 0;
             virtual void deinit() = 0;
@@ -21,9 +24,10 @@ namespace drivers{
             vfs::PartitionEntry* getPartEntry();
         private:
             vfs::PartitionEntry* __partition_entry;
+            driver::MSCDriver* __diskDevice;
             FSType __fs_type;
     };
-    FSDriver* loadFSDriver(vfs::PartitionEntry* entry);
+    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice);
 };
 
 #endif // _DRIVERS_FS_H_

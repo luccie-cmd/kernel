@@ -11,6 +11,6 @@ extern "C" void KernelMain(){
     }
     vfs::mount(0, 1, "/");
     vfs::mount(0, 0, "/boot");
-    std::FILE* initFile = vfs::openFile("/usr/bin/init.exe");
+    int initFileHandle = vfs::openFile("/usr/bin/init.exe", FS_FLAGS_READ);
     for(;;);
 }

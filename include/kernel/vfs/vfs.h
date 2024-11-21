@@ -17,7 +17,8 @@ namespace vfs{
     void mount(uint8_t disk, uint8_t partition, const char* mountLoc);
     void mount(const char* file, const char* mountLoc);
     void umount(const char* mountLocation);
-    std::FILE* openFile(const char* path);
+    int openFile(const char* path, int flags);
+    void closeFile(int handle);
 };
 
 #endif // _KERNEL_VFS_VFS_H_

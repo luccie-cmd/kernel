@@ -5,6 +5,7 @@
 #include <kernel/driver/msc.h>
 #include <cstdlib>
 #include <cstring>
+#include <kernel/task/task.h>
 #define MODULE "VFS"
 
 namespace vfs{
@@ -50,7 +51,7 @@ namespace vfs{
             dbg::printm(MODULE, "No disks avaliable to read GPT\n");
             std::abort();
         }
-        driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(0));
+        driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
         uint8_t *legacyMBR = new uint8_t[512];
         PartitionTableHeader *PTH = new PartitionTableHeader;
         std::memset(legacyMBR, 0, 512);
@@ -96,13 +97,28 @@ namespace vfs{
             dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).count());
             std::abort();
         }
-        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition));
+        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk)));
         dbg::popTrace();
     }
-    std::FILE* openFile(const char* path){
+    int openFile(const char* path, int flags){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "TODO: Open file\n");
-        std::abort();
+        int handle = 0;
+        for(MountPoint* mp : mountPoints){
+            if(std::memcmp(path, mp->mountPath, strlen(mp->mountPath)) == 0){
+                handle = mp->fileSystemDriver->open(task::getCurrentPID(), path, flags);
+                break;
+            }
+        }
+        if(handle == 0){
+            dbg::printm(MODULE, "Unable to find file %s\n", path);
+            std::abort();
+        }
+        dbg::popTrace();
+        return handle;
+    }
+    void closeFile(int handle){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        
         dbg::popTrace();
     }
 };

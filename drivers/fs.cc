@@ -9,7 +9,7 @@
 
 namespace drivers {
     std::vector<std::pair<uint32_t, FSType>> GUIDEntries;
-    FSDriver* loadFSDriver(vfs::PartitionEntry* entry) {
+    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* storageDriver) {
         dbg::addTrace(__PRETTY_FUNCTION__);
         GUIDEntries.clear();
         GUIDEntries.push_back(std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4));

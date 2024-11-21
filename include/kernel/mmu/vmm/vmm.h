@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <kernel/task/types.h>
 #include <cstdint>
+#include "types.h"
 #define PROTECTION_RW     (1 << 0)
 #define PROTECTION_NOEXEC (1 << 1)
 #define PROTECTION_KERNEL (1 << 2)
@@ -33,8 +34,9 @@ namespace vmm{
     } __attribute__((packed));
     void initialize();
     bool isInitialized();
-    void switchPML4(task::pid_t pid);
-    void mapPage(size_t physicalAddr, size_t virtualAddr, int protFlags, int mapFlags);
+    PML4* getPML4(task::pid_t pid);
+    void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int protFlags, int mapFlags);
+    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr);
     uint64_t makeVirtual(uint64_t addr);
     uint64_t getHHDM();
 };
