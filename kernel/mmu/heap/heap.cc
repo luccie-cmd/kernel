@@ -87,7 +87,6 @@ namespace mmu::heap{
             current = current->next;
         }
         std::abort();
-        dbg::popTrace();
     }
     void free(void* ptr, size_t size){
         dbg::addTrace(__PRETTY_FUNCTION__);

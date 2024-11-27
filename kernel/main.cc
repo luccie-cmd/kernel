@@ -6,9 +6,6 @@
 extern "C" void KernelMain(){
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if(!vfs::isInitialized()){
-        vfs::initialize();
-    }
     vfs::mount(0, 1, "/");
     vfs::mount(0, 0, "/boot");
     int initFileHandle = vfs::openFile("/boot/test.txt", FS_FLAGS_READ);

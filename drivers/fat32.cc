@@ -10,13 +10,11 @@ namespace drivers{
     FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice) :FSDriver(entry, diskDevice){
         dbg::addTrace(__PRETTY_FUNCTION__);
         this->bootSector = new FAT_BootSector;
-        std::memset(this->bootSector, 0, SECTOR_SIZE);
         if(!diskDevice->read(0, entry->startLBA, 1, this->bootSector)){
             dbg::printm(MODULE, "Failed to read boot sector!!!\n");
             std::abort();
         }
-        uint8_t* correctBootJump = (uint8_t*)0xEB5890;
-        if(std::memcmp(this->bootSector->BootJumpInstruction, correctBootJump, 3) != 0 || (this->bootSector->reserved0[420] != 0x55 && this->bootSector->reserved0[421] != 0xaa)){
+        if((this->bootSector->reserved0[420] != 0x55 && this->bootSector->reserved0[421] != 0xaa)){
             dbg::printm(MODULE, "Failed to get correct bootsector %02x%02x%02x %02x%02x\n", this->bootSector->BootJumpInstruction[0], this->bootSector->BootJumpInstruction[1], this->bootSector->BootJumpInstruction[2], this->bootSector->reserved0[420], this->bootSector->reserved0[421]);
             std::abort();
         }
@@ -25,7 +23,7 @@ namespace drivers{
         this->maxSectors = this->bootSector->LargeSectorCount;
         this->sectorsPerFat = this->bootSector->EBR32.SectorsPerFat;
         this->dataSectionLBA = (this->bootSector->ReservedSectors + this->sectorsPerFat * this->bootSector->FatCount);
-        uint32_t rootDirLba = clusterToLBA(this->bootSector->EBR32.RootDirectoryCluster);
+        uint32_t rootDirLba = clusterToLBA((this->bootSector->EBR32.RootDirectoryCluster == 0 ? 2 : this->bootSector->EBR32.RootDirectoryCluster));
         this->rootDir = new FAT_FileData;
         this->rootDir->Public.Handle = FAT32_ROOT_DIRECTORY_HANDLE;
         this->rootDir->Public.IsDirectory = true;
@@ -36,8 +34,8 @@ namespace drivers{
         this->rootDir->FirstCluster = rootDirLba;
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
-        diskDevice->read(0, rootDirLba, 1, this->rootDir->Buffer);
-        dbg::printm(MODULE, "RootDir Buffer (LBA=%u): ", rootDirLba);
+        diskDevice->read(0, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
+        dbg::printm(MODULE, "RootDir Buffer: ");
         for (int i = 0; i < 32; i++) { // Print the first entry
             dbg::printf("%02X ", rootDir->Buffer[i]);
         }
@@ -119,7 +117,7 @@ namespace drivers{
         dbg::popTrace();
     }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
-        return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster) + this->getPartEntry()->startLBA;
+        return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster);
     }
     static void getShortName(char* name, char shortName[12]){
         memset(shortName, ' ', 12);
@@ -164,7 +162,7 @@ namespace drivers{
                         dbg::printm(MODULE, "End of cluster chain at cluster=%u\n", fd->CurrentCluster);
                         break;
                     }
-                    this->getDiskDevice()->read(0, this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster, 1, fd->Buffer);
+                    this->getDiskDevice()->read(0, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
                 }
             }
         }

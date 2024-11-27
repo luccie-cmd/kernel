@@ -75,6 +75,10 @@ namespace driver{
         if(!isInitialized()){
             initialize();
         }
+        if(getDevicesCount(type) == 0){
+            dbg::printm(MODULE, "ERROR: Unable to search for device type %d if there are no devices like that\n", (int)type);
+            std::abort();
+        }
         std::vector<Driver*> retDrivers;
         for(Driver* driver : drivers){
             if(driver->getDeviceType() == type){

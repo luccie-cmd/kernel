@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <kernel/task/task.h>
+#include <drivers/fat32.h>
 #define MODULE "VFS"
 
 namespace vfs{
@@ -48,8 +49,8 @@ namespace vfs{
     }
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
-            dbg::printm(MODULE, "No disks avaliable to read GPT\n");
+        if(driver::getDevicesCount(driver::driverType::BLOCK) < disk){
+            dbg::printm(MODULE, "Cannot read GPT off of disk %d, maximum possible devices: %llu\n", disk, driver::getDevicesCount(driver::driverType::BLOCK));
             std::abort();
         }
         driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
@@ -93,12 +94,19 @@ namespace vfs{
         if(!isInitialized()){
             initialize();
         }
+        dbg::printm(MODULE, "Mounting %d:%d to %s\n", disk, partition, mountLocation);
         if(partitionEntries.at(disk).count() < partition){
             dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
             dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).count());
             std::abort();
         }
-        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk)));
+        driver::MSCDriver* drv = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
+        // {
+        //     PartitionTableHeader test;
+        //     drv->read(0, 1, 1, &test);
+        //     dbg::printm(MODULE, "%lld\n", test.partitionCount);
+        // }
+        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), drv);
         MountPoint* mp = new MountPoint;
         mp->fileSystemDriver = fileSystemdriver;
         mp->mountPath = mountLocation;
