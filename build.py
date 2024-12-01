@@ -407,7 +407,7 @@ def main():
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)
-    callCmd("chown -R luccie:luccie *")
+    # callCmd("chown -R programming:programming *")
 
 if __name__ == '__main__':
     main()

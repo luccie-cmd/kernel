@@ -7,7 +7,7 @@
 #if !defined(_KERNEL_HAL_PCI_PCI_H_)
 #define _KERNEL_HAL_PCI_PCI_H_
 #include <cstdint>
-#include <stl/vector>
+#include <vector>
 
 namespace pci{
     struct device{

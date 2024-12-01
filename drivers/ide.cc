@@ -187,7 +187,7 @@ namespace drivers{
             dbg::printm(MODULE, "Cannot access drive %d\n", drive);
             std::abort();
         }
-        uint8_t lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, dma /* 0: No DMA, 1: DMA */, cmd;
+        uint8_t lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, cmd;
         uint8_t lba_io[6];
         uint32_t channel = this->devices[drive].Channel; // Read the Channel.
         uint32_t slavebit = this->devices[drive].Drive; // Read the Drive [Master/Slave]
@@ -230,7 +230,6 @@ namespace drivers{
             lba_io[5] = 0;
             head      = (lba + 1  - sect) % (16 * 63) / (63); // Head number is written to HDDEVSEL lower 4-bits.
         }
-        dma = 0;
         while(this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY){}
         if (lba_mode == 0)
            this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head); // Drive & CHS.
@@ -246,9 +245,9 @@ namespace drivers{
         this->writeReg(channel, ATA_REG_LBA0,   lba_io[0]);
         this->writeReg(channel, ATA_REG_LBA1,   lba_io[1]);
         this->writeReg(channel, ATA_REG_LBA2,   lba_io[2]);
-        if (lba_mode == 0 && dma == 0) cmd = ATA_CMD_READ_PIO;
-        if (lba_mode == 1 && dma == 0) cmd = ATA_CMD_READ_PIO;   
-        if (lba_mode == 2 && dma == 0) cmd = ATA_CMD_READ_PIO_EXT;
+        if (lba_mode == 0) cmd = ATA_CMD_READ_PIO;
+        if (lba_mode == 1) cmd = ATA_CMD_READ_PIO;   
+        if (lba_mode == 2) cmd = ATA_CMD_READ_PIO_EXT;
         this->writeReg(channel, ATA_REG_COMMAND, cmd);               // Send the Command.
         dbg::printm(MODULE, "Reading %lld sectors from LBA %lld to address 0x%llx\n", sectors, lba, buffer);
         for (i = 0; i < sectors; i++) {

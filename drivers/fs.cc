@@ -1,4 +1,4 @@
-#include <stl/vector>
+#include <vector>
 #include <cassert>
 #include <cstring>
 #include <cstdlib>

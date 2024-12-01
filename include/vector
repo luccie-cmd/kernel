@@ -4,7 +4,7 @@
  * See the LICENSE file for more information.
  */
 
-#if !defined(_STL_VECTOR_)
+#if !defined(_STL_VECTOR_) && !_GLIBCXX_HOSTED
 #define _STL_VECTOR_
 #include <cstddef>
 #include <common/dbg/dbg.h>
