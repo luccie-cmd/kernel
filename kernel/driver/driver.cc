@@ -1,6 +1,6 @@
 #include <kernel/driver/driver.h>
 #include <common/dbg/dbg.h>
-#include <vector>
+#include <stl/vector>
 #include <cstdlib>
 #include <kernel/driver/msc.h>
 #define MODULE "Driver manager"

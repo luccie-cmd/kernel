@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <vector>
+#include <stl/vector>
 #include <utility>
 #include <kernel/task/task.h>
 #define MODULE "MMU HEAP"

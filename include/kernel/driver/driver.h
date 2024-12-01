@@ -1,7 +1,7 @@
 #if !defined(_KERNEL_DRIVER_DRIVER_H_)
 #define _KERNEL_DRIVER_DRIVER_H_
 #include <cstddef>
-#include <vector>
+#include <stl/vector>
 #include <kernel/hal/pci/pci.h>
 
 namespace driver{
