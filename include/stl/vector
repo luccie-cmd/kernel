@@ -4,10 +4,11 @@
  * See the LICENSE file for more information.
  */
 
-#if !defined(_STL_VECTOR_) && !_GLIBCXX_HOSTED
+#if !defined(_STL_VECTOR_)
+#include <common/dbg/dbg.h>
+#if !_GLIBCXX_HOSTED
 #define _STL_VECTOR_
 #include <cstddef>
-#include <common/dbg/dbg.h>
 
 namespace std{
 template<typename _T>
@@ -103,4 +104,5 @@ class vector{
 };
 };
 
+#endif
 #endif // _STL_VECTOR_
