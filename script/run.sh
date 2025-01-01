@@ -6,8 +6,8 @@ qemu-system-x86_64 \
     -debugcon stdio \
     -global isa-debugcon.iobase=0xe9 \
     -d int,cpu_reset \
-    -M q35 \
     -no-reboot  \
+    -M q35 \
     -cpu host \
     -enable-kvm
 elif [ "$2" == "debug" ]; then
@@ -18,9 +18,9 @@ qemu-system-x86_64 \
     -global isa-debugcon.iobase=0xe9 \
     -d int,cpu_reset \
     -no-reboot \
-    -M q35 \
     -m 128 \
+    -M q35 \
+    -S -s
     -cpu host \
     -enable-kvm \
-    -S -s
 fi
