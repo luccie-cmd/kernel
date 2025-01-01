@@ -13,6 +13,7 @@ namespace mmu{
 namespace heap{
     struct node{
         size_t size;
+        size_t freedSize;
         bool free;
         node* prev;
         node* next;

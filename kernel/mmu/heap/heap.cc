@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <stl/vector>
+#include <vector>
 #include <utility>
 #include <kernel/task/task.h>
 #define MODULE "MMU HEAP"
@@ -34,6 +34,7 @@ namespace mmu::heap{
         }
         __head = (node*)base;
         __head->free = true;
+        __head->freedSize = 0;
         __head->size = pmm_size;
         __head->next = nullptr;
         __head->prev = nullptr;
@@ -55,12 +56,9 @@ namespace mmu::heap{
             if(current->free && current->size >= alignedLength){
                 if(current->size > alignedLength + sizeof(node)){
                     node* newNode = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current)+sizeof(node)+alignedLength);
-                    if (reinterpret_cast<uint64_t>(newNode) % ALGIN_SIZE != 0) {
-                        dbg::printm(MODULE, "New node alignment error at 0x%llx\n", newNode);
-                        std::abort();
-                    }
                     newNode->size = current->size - alignedLength - sizeof(node);
                     newNode->free = true;
+                    newNode->freedSize = 0;
                     newNode->next = current->next;
                     newNode->prev = current;
                     if (current->next){
@@ -113,12 +111,13 @@ namespace mmu::heap{
             std::abort();
         }
         if(size == freeNode->size || size == 0){
-            freeNode->free = true;
-            dbg::popTrace();
-            return;
+            freeNode->freedSize = freeNode->size;
+        } else{
+            freeNode->freedSize += size;
         }
-        dbg::printm(MODULE, "TODO: arbitrary freeing of memory sizes with size %llu of node size %llu from pointer 0x%llx and freenode 0x%llx\n", size, freeNode->size, ptr, freeNode);
-        std::abort();
+        if(freeNode->freedSize == freeNode->size){
+            freeNode->free = true;
+        }
         dbg::popTrace();
     }
     void free(void* ptr){

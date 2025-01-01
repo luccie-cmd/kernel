@@ -4,6 +4,7 @@
 #include <cctype>
 #include <algorithm>
 #include <kernel/task/task.h>
+#include <common/dbg/dbg.h>
 #define MODULE "FAT32 Driver"
 
 namespace drivers{

@@ -56,10 +56,7 @@ namespace pci{
     static uint8_t getSubClassCode(uint32_t bus, uint32_t slot, uint32_t function){
         return (uint8_t)((readConfig(bus, slot, function, 0xA) & ~0xFF00));
     }
-    void initialize(){
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
-        devices.clear();
+    static void loopBus(uint8_t endBus){
         for(uint32_t bus = 0; bus < 256; bus++){
             for(uint32_t slot = 0; slot < 32; slot++){
                 for(uint32_t func = 0; func < 8; func++){
@@ -83,6 +80,12 @@ namespace pci{
                 }
             }
         }
+    }
+    void initialize(){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "Initializing...\n");
+        devices.clear();
+        loopBus(0xff);
         initialized = true;
         dbg::printm(MODULE, "Found %llu devices\n", devices.size());
         dbg::printm(MODULE, "Initialized\n");
