@@ -18,12 +18,15 @@ namespace dbg{
     void print(const char* str){
         puts(str);
     }
-    void printf(const char* fmt, ...){
+    void printv(const char* fmt, va_list args){
         char str[4096];
-        std::va_list args;
-        va_start(args, fmt);
         std::vsnprintf(str, sizeof(str), fmt, args);
         print(str);
+    }
+    void printf(const char* fmt, ...){
+        std::va_list args;
+        va_start(args, fmt);
+        printv(fmt, args);
         va_end(args);
     }
     void printm(const char* module, const char* fmt, ...){

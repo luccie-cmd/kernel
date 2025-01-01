@@ -20,6 +20,9 @@ namespace driver{
             case 0x1: {
                 mscDriver = drivers::loadIDEController(device);
             } break;
+            case 0x6: {
+                // mscDriver = drivers::loadSATAcontroller(device);
+            } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);
                 std::abort();

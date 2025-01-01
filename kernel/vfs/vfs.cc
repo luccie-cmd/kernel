@@ -7,6 +7,7 @@
 #include <cstring>
 #include <kernel/task/task.h>
 #include <drivers/fat32.h>
+#include <utility>
 #define MODULE "VFS"
 
 namespace vfs{
@@ -46,6 +47,13 @@ namespace vfs{
         newGUID[14] = GUID[14];
         newGUID[15] = GUID[15];
         return newGUID;
+    }
+    static std::pair<driver::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
+        if(disk+1 > (uint8_t)driver::getDevicesCount(driver::driverType::BLOCK)){
+            dbg::printm(MODULE, "Cannot access disk %d, out of range\n", disk+1);
+            std::abort();
+        }
+        asm volatile("int $3");
     }
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -88,16 +96,16 @@ namespace vfs{
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(disk+1 > (int)driver::getDevicesCount(driver::driverType::BLOCK)){
-            dbg::printm(MODULE, "Cannot access disk %d, out of range", disk+1);
+            dbg::printm(MODULE, "Cannot access disk %d, out of range\n", disk+1);
             std::abort();
         }
         if(!isInitialized()){
             initialize();
         }
         dbg::printm(MODULE, "Mounting %d:%d to %s\n", disk, partition, mountLocation);
-        if(partitionEntries.at(disk).count() < partition){
+        if(partitionEntries.at(disk).size() < partition){
             dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
-            dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).count());
+            dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).size());
             std::abort();
         }
         driver::MSCDriver* drv = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));

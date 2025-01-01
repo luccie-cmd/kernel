@@ -31,6 +31,7 @@ namespace mmu::vmm{
         }
         __HHDMoffset = hhdm_request.response->offset;
         __initialized = true;
+        (void)getPML4(KERNEL_PID);
         dbg::printm(MODULE, "Initialized with level 4 paging\n");
         dbg::printm(MODULE, "Kernel PML4 address: 0x%llx\n", __CR3LookupTable[KERNEL_PID]);
         dbg::popTrace();

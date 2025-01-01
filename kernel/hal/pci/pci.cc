@@ -84,7 +84,7 @@ namespace pci{
             }
         }
         initialized = true;
-        dbg::printm(MODULE, "Found %llu devices\n", devices.count());
+        dbg::printm(MODULE, "Found %llu devices\n", devices.size());
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }

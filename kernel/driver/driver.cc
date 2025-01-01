@@ -23,8 +23,9 @@ namespace driver{
                 dbg::printm(MODULE, "TODO: Setup networking\n");
             } break;
             case 0x3: {
-                dbg::printm(MODULE, "Not loading display drivers\n");
+                dbg::printm(MODULE, "TODO: display drivers\n");
             } break;
+            case 0xc:
             case 0x6: {
                 dbg::printm(MODULE, "Not loading bridge drivers\n");
             } break;
@@ -50,7 +51,7 @@ namespace driver{
             drivers.push_back(driver);
         }
         initialized = true;
-        dbg::printm(MODULE, "Initialized %llu drivers\n", drivers.count());
+        dbg::printm(MODULE, "Initialized %llu drivers\n", drivers.size());
         dbg::popTrace();
     }
     bool isInitialized(){

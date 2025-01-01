@@ -74,7 +74,7 @@ class vector{
             _data[_size++] = value;
             dbg::popTrace();
         }
-        size_t count(){
+        size_t size(){
             return _size;
         }
         void pop_back(){
@@ -104,5 +104,7 @@ class vector{
 };
 };
 
+#else
+#include <vector>
 #endif
 #endif // _STL_VECTOR_

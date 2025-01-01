@@ -127,6 +127,7 @@ def getExtension(file):
 
 def buildC(file):
     compiler = CONFIG["compiler"][0]
+    compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options.append("-std=c11")
     command = compiler + " " + file
@@ -141,6 +142,7 @@ def buildCXX(file):
     if compiler == "gcc":
         compiler = "g"
     compiler += "++"
+    compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
     options.append("-std=c++23")
@@ -350,7 +352,9 @@ def setupLimine():
         build_limine = True
     if build_limine:
         print("Building limine")
+        callCmd("rm -rf limine")
         callCmd("git clone --depth=1 https://github.com/limine-bootloader/limine", True)
+        callCmd("cp ./util/common.mk ./limine/common/common.mk")
         os.chdir("limine")
         callCmd("./bootstrap", True)
         callCmd("./configure --enable-uefi-x86-64", True)
@@ -404,10 +408,11 @@ def main():
     if "compile" in sys.argv:
         return
     buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+    currentUser = os.getlogin()
+    callCmd(f"chown -R {currentUser}:{currentUser} *")
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)
-    # callCmd("chown -R programming:programming *")
 
 if __name__ == '__main__':
     main()

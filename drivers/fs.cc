@@ -39,7 +39,7 @@ namespace drivers {
                     }
                     case FSType::FAT32: {
                         drv = new FAT32Driver(entry, storageDriver);
-                    }
+                    } break;
                 }
             }
         }
