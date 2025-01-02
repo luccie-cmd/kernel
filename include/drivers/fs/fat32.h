@@ -1,11 +1,11 @@
-#if !defined(_DRIVERS_FAT32_H_)
-#define _DRIVERS_FAT32_H_
-#include "fs.h"
+#if !defined(_DRIVERS_FS_FAT32_H_)
+#define _DRIVERS_FS_FAT32_H_
+#include <drivers/fs.h>
 #define FAT32_MAX_FILE_HANDLES       10
 #define FAT32_CACHE_SIZE              5
 #define FAT32_ROOT_DIRECTORY_HANDLE  -1
 
-namespace drivers{
+namespace drivers::fs{
     struct FAT_ExtendedBootRecord{
         uint8_t DriveNumber;
         uint8_t _Reserved;
@@ -110,4 +110,4 @@ namespace drivers{
     };
 };
 
-#endif // _DRIVERS_FAT32_H_
+#endif // _DRIVERS_FS_FAT32_H_

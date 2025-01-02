@@ -5,8 +5,8 @@
 #include <utility>
 #include <drivers/fs.h>
 #include <kernel/vfs/vfs.h>
-#include <drivers/fat32.h>
-#include <drivers/ext4.h>
+#include <drivers/fs/fat32.h>
+#include <drivers/fs/ext4.h>
 #include <common/dbg/dbg.h>
 #define MODULE "File System driver"
 
@@ -39,7 +39,7 @@ namespace drivers {
                         return nullptr;
                     }
                     case FSType::FAT32: {
-                        drv = new FAT32Driver(entry, drvDisk);
+                        drv = new fs::FAT32Driver(entry, drvDisk);
                     } break;
                 }
             }

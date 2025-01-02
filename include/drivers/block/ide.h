@@ -4,11 +4,11 @@
  * See the LICENSE file for more information.
  */
 
-#if !defined(_DRIVERS_IDE_H_)
-#define _DRIVERS_IDE_H_
+#if !defined(_DRIVERS_BLOCK_IDE_H_)
+#define _DRIVERS_BLOCK_IDE_H_
 #include <kernel/driver/msc.h>
 
-namespace drivers{
+namespace drivers::block{
     struct IDEDevice {
        uint8_t Reserved;    // 0 (Empty) or 1 (This Drive really exists).
        uint8_t Channel;     // 0 (Primary Channel) or 1 (Secondary Channel).
@@ -48,4 +48,4 @@ namespace drivers{
     IDEDriver* loadIDEController(pci::device* device);
 };
 
-#endif // _DRIVERS_IDE_H_
+#endif // _DRIVERS_BLOCK_IDE_H_

@@ -6,7 +6,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <kernel/task/task.h>
-#include <drivers/fat32.h>
 #include <utility>
 #include <cassert>
 #define MODULE "VFS"

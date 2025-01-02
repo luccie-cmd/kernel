@@ -1,4 +1,4 @@
-#include <drivers/fat32.h>
+#include <drivers/fs/fat32.h>
 #include <cstring>
 #include <cstdlib>
 #include <cctype>
@@ -7,7 +7,7 @@
 #include <common/dbg/dbg.h>
 #define MODULE "FAT32 Driver"
 
-namespace drivers{
+namespace drivers::fs{
     FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing... for disk 0x%lx %hd\n", drvDisk.first, drvDisk.second);

@@ -1,7 +1,7 @@
 #include <kernel/driver/msc.h>
 #include <common/dbg/dbg.h>
 #include <cstdlib>
-#include <drivers/ide.h>
+#include <drivers/block/ide.h>
 #define MODULE "MSC Driver manager"
 
 namespace driver{
@@ -18,10 +18,7 @@ namespace driver{
         }
         switch(device->subclassCode){
             case 0x1: {
-                mscDriver = drivers::loadIDEController(device);
-            } break;
-            case 0x6: {
-                // mscDriver = drivers::loadSATAcontroller(device);
+                mscDriver = drivers::block::loadIDEController(device);
             } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);
