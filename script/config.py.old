@@ -1,4 +1,4 @@
-config:'release'
+config:'debug'
 arch:'x64'
 compiler:'gcc'
 imageFS:'ext4'

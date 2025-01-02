@@ -178,6 +178,10 @@ namespace mmu::heap{
             if(current->freedSize == current->allocSize){
                 current->freedSize = current->size;
                 current->free = true;
+            } else{
+                if(current != __head){
+                    current->free = false;
+                }
             }
             dbg::printm(MODULE, "Addr: 0x%llx Size: 0x%llx Freed size: 0x%llx Allocated size: 0x%llx %s\n", current, current->size, current->freedSize, current->allocSize, current->free ? "free" : "in use");
             current = current->next;
