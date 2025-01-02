@@ -1,8 +1,9 @@
 bin/
 limine/
 .vscode/
-__pycache__/
+script/__pycache__/
 *.txt
 pci.ids
 *.log
+*.pyc
 *.old
