@@ -384,30 +384,28 @@ def main():
     if "build-bootloader" in sys.argv:
         callCmd(f"rm -rf limine")
         setupLimine()
-        return
     print("> Creating necesarry dirs")
     callCmd(f"mkdir -p {CONFIG['outDir'][0]}")
     callCmd(f"mkdir -p {CONFIG['outDir'][0]}/kernel")
-    if 'limine-uefi' in CONFIG["bootloader"]:
+    if 'limine-uefi' in CONFIG["bootloader"] and "build-bootloader" not in sys.argv:
         setupLimine()
     else:
         print("TODO: Other bootloaders")
         exit(1)
-    print("> Building Libcxx")
-    buildStaticLib("libcxx", f"{CONFIG['outDir'][0]}/libcxx.a")
-    print("> Building drivers")
-    buildStaticLib("drivers", f"{CONFIG['outDir'][0]}/drivers.a")
-    print("> Building common")
-    buildStaticLib("common", f"{CONFIG['outDir'][0]}/common.a")
-    print("> Building kernel")
-    buildKernel("kernel")
-    print("> Linking kernel")
-    linkKernel(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
-    print("> Getting info")
-    getInfo()
     if "compile" in sys.argv:
-        return
-    buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+        print("> Building Libcxx")
+        buildStaticLib("libcxx", f"{CONFIG['outDir'][0]}/libcxx.a")
+        print("> Building drivers")
+        buildStaticLib("drivers", f"{CONFIG['outDir'][0]}/drivers.a")
+        print("> Building common")
+        buildStaticLib("common", f"{CONFIG['outDir'][0]}/common.a")
+        print("> Building kernel")
+        buildKernel("kernel")
+        print("> Linking kernel")
+        linkKernel(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
+        print("> Getting info")
+        getInfo()
+        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     currentUser = os.getlogin()
     callCmd(f"chown -R {currentUser}:{currentUser} *")
     if "run" in sys.argv:

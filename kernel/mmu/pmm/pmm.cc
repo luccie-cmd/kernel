@@ -42,6 +42,7 @@ namespace mmu::pmm{
                 }
             }
         }
+        __totalUsedMemory = 0;
         dbg::printm(MODULE, "Initialized with 0x%llx pages\n", __totalUseableMemory/PAGE_SIZE);
         __initialized = true;
         dbg::popTrace();
@@ -49,7 +50,7 @@ namespace mmu::pmm{
     bool isInitialized(){
         return __initialized;
     }
-    uint64_t allocate(){
+    uint64_t allocVirtual(uint64_t size){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
             initialize();
@@ -57,11 +58,11 @@ namespace mmu::pmm{
         node* current = __head;
         node* prev = nullptr;
         while(current){
-            if(current->size >= PAGE_SIZE){
+            if(current->size >= size){
                 uint64_t addr = (uint64_t)current;
-                if(current->size > PAGE_SIZE){
-                    node* newNode = (node*)(addr+PAGE_SIZE);
-                    newNode->size = current->size-PAGE_SIZE;
+                if(current->size > size){
+                    node* newNode = (node*)(addr+size);
+                    newNode->size = current->size-size;
                     newNode->next = current->next;
                     if(prev != nullptr){
                         prev->next = newNode;
@@ -75,14 +76,30 @@ namespace mmu::pmm{
                         __head = current->next;
                     }
                 }
+                __totalUsedMemory += size;
                 dbg::popTrace();
                 return addr - vmm::getHHDM();
             }
             prev = current;
             current = current->next;
         }
-        dbg::printm(MODULE, "Could not find a physical address\n");
+        dbg::printm(MODULE, "Could not find a physical address for size 0x%llx\n", size);
         std::abort();
         dbg::popTrace();
+    }
+    uint64_t allocate(){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        uint64_t addr = allocVirtual(PAGE_SIZE);
+        dbg::popTrace();
+        return addr;
+    }
+    void printInfo(){
+        dbg::printm(MODULE, "INFORMATION\n");
+        dbg::printm(MODULE, "Allocated pages: %llu\n", __totalUsedMemory/PAGE_SIZE);
+        node* current = __head;
+        while(current){
+            dbg::printm(MODULE, "Size: %llu\n", current->size);
+            current = current->next;
+        }
     }
 }

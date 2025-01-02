@@ -11,19 +11,19 @@
 #define MODULE "File System driver"
 
 namespace drivers {
-    FSDriver::FSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice) :Driver(driver::driverType::FILESYSTEM){
-        this->__diskDevice = diskDevice;
+    FSDriver::FSDriver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk) :Driver(driver::driverType::FILESYSTEM){
+        this->__diskDevice = drvDisk;
         this->__partition_entry = entry;
     }
     FSDriver::~FSDriver(){}
-    driver::MSCDriver* FSDriver::getDiskDevice(){
+    std::pair<driver::MSCDriver*, uint8_t> FSDriver::getDiskDevice(){
         return this->__diskDevice;
     }
     vfs::PartitionEntry* FSDriver::getPartEntry(){
         return this->__partition_entry;
     }
     std::vector<std::pair<uint32_t, FSType>> GUIDEntries;
-    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* storageDriver) {
+    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk) {
         dbg::addTrace(__PRETTY_FUNCTION__);
         GUIDEntries.clear();
         GUIDEntries.push_back(std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4));
@@ -39,7 +39,7 @@ namespace drivers {
                         return nullptr;
                     }
                     case FSType::FAT32: {
-                        drv = new FAT32Driver(entry, storageDriver);
+                        drv = new FAT32Driver(entry, drvDisk);
                     } break;
                 }
             }

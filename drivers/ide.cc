@@ -79,6 +79,12 @@ namespace drivers{
         dbg::popTrace();
     }
     IDEDriver::~IDEDriver() {}
+    uint8_t IDEDriver::getConnectedDrives(){
+        return this->drives;
+    }
+    uint64_t IDEDriver::getDiskSize(uint8_t disk){
+        return (uint64_t)this->devices[disk].Size;
+    }
     void IDEDriver::init(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
         uint32_t BAR0 = pci::readConfig(device, 0x10);

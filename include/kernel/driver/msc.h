@@ -14,6 +14,8 @@ namespace driver{
             virtual bool write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) = 0;
             virtual void init(pci::device* device) = 0;
             virtual void deinit() = 0;
+            virtual uint8_t getConnectedDrives() = 0;
+            virtual uint64_t getDiskSize(uint8_t disk) = 0;
             void setVolumeName(const char* name);
         private:
             StorageType __storage_type;

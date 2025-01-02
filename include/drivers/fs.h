@@ -15,7 +15,7 @@ namespace drivers{
     };
     class FSDriver : public driver::Driver{
         public:
-            FSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice);
+            FSDriver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk);
             virtual ~FSDriver() = 0;
             virtual void init(pci::device* dev) = 0;
             virtual void deinit() = 0;
@@ -23,13 +23,13 @@ namespace drivers{
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void close(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
-            driver::MSCDriver* getDiskDevice();
+            std::pair<driver::MSCDriver*, uint8_t> getDiskDevice();
         private:
             vfs::PartitionEntry* __partition_entry;
-            driver::MSCDriver* __diskDevice;
+            std::pair<driver::MSCDriver*, uint8_t> __diskDevice;
             FSType __fs_type;
     };
-    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice);
+    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk);
 };
 
 #endif // _DRIVERS_FS_H_

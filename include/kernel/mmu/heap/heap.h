@@ -14,6 +14,7 @@ namespace heap{
     struct node{
         size_t size;
         size_t freedSize;
+        size_t allocSize;
         bool free;
         node* prev;
         node* next;
@@ -23,6 +24,7 @@ namespace heap{
     void* allocate(size_t size);
     void free(void* ptr, size_t size);
     void free(void* ptr);
+    void printInfo();
 };
 };
 

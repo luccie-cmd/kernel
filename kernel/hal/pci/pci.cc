@@ -102,4 +102,11 @@ namespace pci{
         dbg::popTrace();
         return devices;
     }
+    void printInfo(){
+        dbg::printm(MODULE, "INFORMATION\n");
+        dbg::printm(MODULE, "Number of devices found: %llu\n", devices.size());
+        for(device *dvc : devices){
+            dbg::printm(MODULE, "Device %x:%x class %x:%x\n", dvc->vendorID, dvc->deviceID, dvc->classCode, dvc->subclassCode);
+        }
+    }
 };

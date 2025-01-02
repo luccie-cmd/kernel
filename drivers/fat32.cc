@@ -8,10 +8,11 @@
 #define MODULE "FAT32 Driver"
 
 namespace drivers{
-    FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, driver::MSCDriver* diskDevice) :FSDriver(entry, diskDevice){
+    FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
         dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "Initializing... for disk 0x%lx %hd\n", drvDisk.first, drvDisk.second);
         this->bootSector = new FAT_BootSector;
-        if(!diskDevice->read(0, entry->startLBA, 1, this->bootSector)){
+        if(!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector)){
             dbg::printm(MODULE, "Failed to read boot sector!!!\n");
             std::abort();
         }
@@ -35,7 +36,7 @@ namespace drivers{
         this->rootDir->FirstCluster = rootDirLba;
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
-        diskDevice->read(0, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
+        drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
         dbg::printm(MODULE, "RootDir Buffer: ");
         for (int i = 0; i < 32; i++) { // Print the first entry
             dbg::printf("%02X ", rootDir->Buffer[i]);
@@ -47,6 +48,7 @@ namespace drivers{
             }
             this->openedFiles[i]->Opened = false;
         }
+        dbg::printm(MODULE, "Initialized for disk 0x%lx %hd\n", drvDisk.first, drvDisk.second);
         dbg::popTrace();
     }
     FAT32Driver::~FAT32Driver(){
@@ -152,7 +154,7 @@ namespace drivers{
             if (leftInBuffer == take){
                 if (fd->Public.Handle == FAT32_ROOT_DIRECTORY_HANDLE) {
                     fd->CurrentCluster++;
-                    this->getDiskDevice()->read(0, fd->CurrentCluster, 1, fd->Buffer);
+                    this->getDiskDevice().first->read(this->getDiskDevice().second, fd->CurrentCluster, 1, fd->Buffer);
                 } else {
                     if (++fd->CurrentSectorInCluster >= this->bootSector->SectorsPerCluster) {
                         fd->CurrentSectorInCluster = 0;
@@ -163,7 +165,7 @@ namespace drivers{
                         dbg::printm(MODULE, "End of cluster chain at cluster=%u\n", fd->CurrentCluster);
                         break;
                     }
-                    this->getDiskDevice()->read(0, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
+                    this->getDiskDevice().first->read(this->getDiskDevice().second, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
                 }
             }
         }
@@ -174,7 +176,7 @@ namespace drivers{
     void FAT32Driver::readFat(size_t lbaIdx){
         size_t fatOffset = this->bootSector->ReservedSectors + lbaIdx;
         dbg::printm(MODULE, "Reading FAT table at LBA=%u\n", fatOffset);
-        this->getDiskDevice()->read(0, fatOffset, FAT32_CACHE_SIZE, this->cache);
+        this->getDiskDevice().first->read(this->getDiskDevice().second, fatOffset, FAT32_CACHE_SIZE, this->cache);
     }
     uint32_t FAT32Driver::nextCluster(uint32_t currentCluster) {
         uint32_t fatIdx = currentCluster * 4;
@@ -238,7 +240,7 @@ namespace drivers{
         fd->FirstCluster = (entry->FirstClusterHigh << 16) | entry->FirstClusterLow;
         fd->CurrentCluster = fd->FirstCluster;
         fd->CurrentSectorInCluster = 0;
-        this->getDiskDevice()->read(0, this->clusterToLBA(fd->FirstCluster), 1, fd->Buffer);
+        this->getDiskDevice().first->read(this->getDiskDevice().second, this->clusterToLBA(fd->FirstCluster), 1, fd->Buffer);
         dbg::popTrace();
         return &fd->Public;
     }

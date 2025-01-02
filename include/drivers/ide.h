@@ -34,6 +34,8 @@ namespace drivers{
             bool write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
             void init(pci::device* device);
             void deinit();
+            uint8_t getConnectedDrives();
+            uint64_t getDiskSize(uint8_t disk);
         private:
             uint8_t drives;
             IDEDevice devices[4];

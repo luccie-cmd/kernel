@@ -8,6 +8,7 @@
 #include <kernel/task/task.h>
 #include <drivers/fat32.h>
 #include <utility>
+#include <cassert>
 #define MODULE "VFS"
 
 namespace vfs{
@@ -21,11 +22,9 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "Initializing...\n");
         partitionEntries.clear();
-        for(uint64_t i = 0; i < driver::getDevicesCount(driver::driverType::BLOCK); ++i){
-            readGPT((uint8_t)i);
-        }
-        inited = true;
         mountPoints.clear();
+        readGPT(0);
+        inited = true;
         dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
@@ -49,33 +48,38 @@ namespace vfs{
         return newGUID;
     }
     static std::pair<driver::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
-        if(disk+1 > (uint8_t)driver::getDevicesCount(driver::driverType::BLOCK)){
-            dbg::printm(MODULE, "Cannot access disk %d, out of range\n", disk+1);
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
+            dbg::printm(MODULE, "Cannot access disk %d, no disks\n", disk+1);
             std::abort();
         }
-        asm volatile("int $3");
+        uint8_t encounteredDisks = -1;
+        for(auto blockDrivers : driver::getDrivers(driver::driverType::BLOCK)){
+            assert(blockDrivers->getDeviceType() == driver::driverType::BLOCK);
+            driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(blockDrivers);
+            encounteredDisks += blockDriver->getConnectedDrives();
+            if(encounteredDisks >= disk){
+                std::pair<driver::MSCDriver*, uint8_t> ret;
+                ret.first = blockDriver;
+                ret.second = 0;
+                dbg::popTrace();
+                return ret;
+            }
+        }
+        abort();
     }
     void readGPT(uint8_t disk){
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        if(driver::getDevicesCount(driver::driverType::BLOCK) < disk){
-            dbg::printm(MODULE, "Cannot read GPT off of disk %d, maximum possible devices: %llu\n", disk, driver::getDevicesCount(driver::driverType::BLOCK));
-            std::abort();
-        }
-        driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
-        uint8_t *legacyMBR = new uint8_t[SECTOR_SIZE];
+        dbg::addTrace(__PRETTY_FUNCTION__); 
+        auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
+        driver::MSCDriver* blockDriver = drvDisk.first;
+        uint8_t newDisk = drvDisk.second;
         PartitionTableHeader *PTH = new PartitionTableHeader;
-        std::memset(legacyMBR, 0, SECTOR_SIZE);
-        if(!blockDriver->read(0, 0, 1, legacyMBR)){
-            dbg::printm(MODULE, "ERROR: Failed to read legacy MBR\n");
-            std::abort();
-        }
-        delete[] legacyMBR;
-        if(!blockDriver->read(0, 1, 1, PTH)){
+        if(!blockDriver->read(newDisk, 1, 1, PTH)){
             dbg::printm(MODULE, "ERROR: Failed to read partition table header\n");
             std::abort();
         }
         uint8_t* buffer = new uint8_t[15872];
-        if(!blockDriver->read(0, 2, 31, buffer)){
+        if(!blockDriver->read(newDisk, 2, 31, buffer)){
             dbg::printm(MODULE, "ERROR: Failed to read partition entries\n");
             std::abort();
         }
@@ -85,36 +89,54 @@ namespace vfs{
             if(entry->startLBA == 0 && entry->endLBA == 0){
                 break;
             }
+            if(entry->endLBA > blockDriver->getDiskSize(newDisk)){
+                dbg::printm(MODULE, "ERROR: GPT entry more then maximum disk size\n");
+                abort();
+            }
             uint8_t* newGUID = parseGUID(entry->GUID);
             std::memcpy(entry->GUID, newGUID, sizeof(entry->GUID));
-            dbg::printm(MODULE, "Entry %d = %llx\n", i, entry);
-            entries.push_back(entry);
+            PartitionEntry* acEntry = new PartitionEntry;
+            std::memcpy(acEntry, entry, sizeof(PartitionEntry));
+            dbg::printm(MODULE, "GPT Entry %d = %llx (%llu-%llu)\n", i, acEntry, acEntry->startLBA, acEntry->endLBA);
+            entries.push_back(acEntry);
         }
-        partitionEntries.push_back(entries);
+        dbg::printm(MODULE, "Read GPT from disk %hhu with %llu entries\n", disk, entries.size());
+        delete[] buffer;
+        delete PTH;
+        if(entries.size() == 0){
+            dbg::printm(MODULE, "ERROR: Unable to find any partitions on disk %hd\n", disk);
+            abort();
+        }
+        if((uint8_t)(disk+1) > partitionEntries.size()){
+            partitionEntries.resize(disk+1);
+        }
+        partitionEntries[disk] = entries;
         dbg::popTrace();
     }
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(disk+1 > (int)driver::getDevicesCount(driver::driverType::BLOCK)){
-            dbg::printm(MODULE, "Cannot access disk %d, out of range\n", disk+1);
-            std::abort();
-        }
         if(!isInitialized()){
             initialize();
         }
+        if(partitionEntries.size() == 0 || partitionEntries.at(disk).size() == 0){
+            readGPT(disk);
+        }
+        if(partitionEntries.size() == 0 || partitionEntries.at(disk).size() == 0){
+            dbg::printm(MODULE, "ERROR: Unable to read GPT from disk %hd\n", disk);
+            abort();
+        }
         dbg::printm(MODULE, "Mounting %d:%d to %s\n", disk, partition, mountLocation);
+        if(partitionEntries.size() < disk){
+            dbg::printm(MODULE, "ERROR: Unable to mount disk %hhd as it doesn't have a partition table\n");
+            std::abort();
+        }
         if(partitionEntries.at(disk).size() < partition){
             dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
             dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).size());
             std::abort();
         }
-        driver::MSCDriver* drv = reinterpret_cast<driver::MSCDriver*>(driver::getDrivers(driver::driverType::BLOCK).at(disk));
-        // {
-        //     PartitionTableHeader test;
-        //     drv->read(0, 1, 1, &test);
-        //     dbg::printm(MODULE, "%lld\n", test.partitionCount);
-        // }
-        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), drv);
+        auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
+        drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), drvDisk);
         MountPoint* mp = new MountPoint;
         mp->fileSystemDriver = fileSystemdriver;
         mp->mountPath = mountLocation;
@@ -145,7 +167,13 @@ namespace vfs{
     }
     void closeFile(int handle){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        
+        dbg::printm(MODULE, "TODO: Close files\n");
+        abort();
         dbg::popTrace();
+    }
+    void printInfo(){
+        dbg::printm(MODULE, "INFORMATION\n");
+        dbg::printm(MODULE, "Mounted file systems: %llu\n", mountPoints.size());
+        dbg::printm(MODULE, "Read partition tables: %llu\n", partitionEntries.size());
     }
 };

@@ -19,6 +19,7 @@ namespace vfs{
     void umount(const char* mountLocation);
     int openFile(const char* path, int flags);
     void closeFile(int handle);
+    void printInfo();
 };
 
 #endif // _KERNEL_VFS_VFS_H_

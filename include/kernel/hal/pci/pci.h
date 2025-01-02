@@ -24,6 +24,7 @@ namespace pci{
     uint16_t readConfig(device* dev, uint8_t offset);
     void enableBusmaster(device* dev);
     std::vector<device*> getAllDevices();
+    void printInfo();
 };
 
 #endif // _KERNEL_HAL_PCI_PCI_H_

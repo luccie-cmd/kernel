@@ -20,6 +20,7 @@ namespace std{
         va_start(args, fmt);
         dbg::printv(fmt, args);
         va_end(args);
+        dbg::print("\n");
         abort();
     }
 };
