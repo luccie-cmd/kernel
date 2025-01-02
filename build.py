@@ -51,7 +51,9 @@ def checkConfig(config: dict[str, list[str]], allowed_config: list[list[str, lis
     return True
 
 CONFIG = readConfig("./script/config.py")
-OLD_CONFIG = readConfig("./script/config.py.old")
+OLD_CONFIG = {}
+if os.path.exists("./script/config.py.old"):
+    OLD_CONFIG = readConfig("./script/config.py.old")
 ALLOWED_CONFIG = [
     ["config", ["release", "debug"], True],
     ["arch", ["x64"], True],

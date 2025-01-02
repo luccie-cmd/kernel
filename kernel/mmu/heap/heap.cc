@@ -93,7 +93,6 @@ namespace mmu::heap{
                 if(task::getCurrentPID() != KERNEL_PID){
                     vmm::mapPage(vmm::getPML4(task::getCurrentPID()), vmm::getPhysicalAddr(vmm::getPML4(task::getCurrentPID()), (uint64_t)current), (size_t)current, PROTECTION_RW | (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0), MAP_GLOBAL | MAP_PRESENT);
                 }
-                dbg::printm(MODULE, "Allocated node 0x%llx to addr 0x%llx with aligned size 0x%llx\n", current, (uint64_t)current+sizeof(node), alignedLength);
                 __allocatedMemory += size;
                 dbg::popTrace();
                 return addr;
@@ -134,7 +133,6 @@ namespace mmu::heap{
         size_t ALIGN_SIZE = getAlignSize(size);
         size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
         node* freeNode = reinterpret_cast<node*>((uintptr_t)ptr-sizeof(node));
-        dbg::printm(MODULE, "Freeing node 0x%llx\n", freeNode);
         if(freeNode->free){
             dbg::printm(MODULE, "ERROR: Called free on an already free node\n");
             abort();
