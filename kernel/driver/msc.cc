@@ -20,6 +20,12 @@ namespace driver{
             case 0x1: {
                 mscDriver = drivers::block::loadIDEController(device);
             } break;
+            case 0x6: {
+                dbg::printm(MODULE, "No, no SATA. F off\n");
+            } break;
+            case 0x8: {
+                dbg::printm(MODULE, "TODO: NVMe (No idea too stupid)\n");
+            } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);
                 std::abort();

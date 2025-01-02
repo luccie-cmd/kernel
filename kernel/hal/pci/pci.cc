@@ -13,13 +13,16 @@
 namespace pci{
     static std::vector<device*> devices;
     static bool initialized = false;
-    static uint16_t readConfig(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset){
+    static uint32_t readConfig(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset){
         dbg::addTrace(__PRETTY_FUNCTION__);
         uint32_t address = (uint32_t)((bus << 16) | (slot << 11) | (function << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
         io::outl(0xCF8, address);
-        uint16_t tmp = (uint16_t)((io::inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
+        uint32_t tmp = io::inl(0xCFC);
         dbg::popTrace();
         return tmp;
+    }
+    static uint16_t readConfigWord(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset){
+        return (uint16_t)((readConfig(bus, slot, function, offset) >> ((offset & 2) * 8)) & 0xFFFF);
     }
     static void writeConfig(uint8_t bus, uint8_t slot, uint8_t function, uint8_t offset, uint32_t data){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -31,8 +34,11 @@ namespace pci{
     void writeConfig(device* dev, uint8_t offset, uint32_t data){
         writeConfig(dev->bus, dev->slot, dev->function, offset, data);
     }
-    uint16_t readConfig(device* dev, uint8_t offset){
+    uint32_t readConfig(device* dev, uint8_t offset){
         return readConfig(dev->bus, dev->slot, dev->function, offset);
+    }
+    uint16_t readConfigWord(device* dev, uint8_t offset){
+        return readConfigWord(dev->bus, dev->slot, dev->function, offset);
     }
     void enableBusmaster(device* dev){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -45,16 +51,16 @@ namespace pci{
         dbg::popTrace();
     }
     static uint16_t getVendor(uint8_t bus, uint8_t slot, uint8_t func){
-        return readConfig(bus, slot, func, 0);
+        return readConfigWord(bus, slot, func, 0);
     }
     static uint16_t getDevice(uint8_t bus, uint8_t slot, uint8_t func){
-        return readConfig(bus, slot, func, 2);
+        return readConfigWord(bus, slot, func, 2);
     }
     static uint8_t getClassCode(uint8_t bus, uint8_t slot, uint8_t function){
-        return (uint8_t)((readConfig(bus, slot, function, 0xA) & ~0x00FF) >> 8);
+        return (uint8_t)((readConfigWord(bus, slot, function, 0xA) & ~0x00FF) >> 8);
     }
     static uint8_t getSubClassCode(uint32_t bus, uint32_t slot, uint32_t function){
-        return (uint8_t)((readConfig(bus, slot, function, 0xA) & ~0xFF00));
+        return (uint8_t)((readConfigWord(bus, slot, function, 0xA) & ~0xFF00));
     }
     static void loopBus(uint8_t endBus){
         for(uint32_t bus = 0; bus < 256; bus++){

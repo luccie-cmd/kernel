@@ -20,7 +20,7 @@ qemu-system-x86_64 \
     -d int,cpu_reset \
     -no-reboot \
     -m 128 \
-    -M pc \
+    -M q35 \
     -S -s \
     -cpu host \
     -enable-kvm &

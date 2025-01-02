@@ -21,7 +21,8 @@ namespace pci{
     };
     void initialize();
     bool isInitialized();
-    uint16_t readConfig(device* dev, uint8_t offset);
+    uint16_t readConfigWord(device* dev, uint8_t offset);
+    uint32_t readConfig(device* dev, uint8_t offset);
     void enableBusmaster(device* dev);
     std::vector<device*> getAllDevices();
     void printInfo();
