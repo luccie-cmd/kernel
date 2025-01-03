@@ -84,7 +84,7 @@ namespace drivers::fs{
     };
     class FAT32Driver : public FSDriver{
         public:
-            FAT32Driver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk);
+            FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
             ~FAT32Driver();
             void init(pci::device* dev);
             void deinit();

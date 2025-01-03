@@ -1,15 +1,15 @@
-#include <kernel/driver/msc.h>
+#include <drivers/msc.h>
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <drivers/block/ide.h>
 #include <drivers/block/nvme.h>
 #define MODULE "MSC Driver manager"
 
-namespace driver{
+namespace drivers{
     uint64_t getNewIdentIndex(){
         return 0;
     }
-    MSCDriver::MSCDriver(StorageType type) :Driver(driverType::BLOCK), __identifier_index(getNewIdentIndex()) {}
+    MSCDriver::MSCDriver(StorageType type) :Driver(driver::driverType::BLOCK), __identifier_index(getNewIdentIndex()) {}
     MSCDriver::~MSCDriver() {}
     MSCDriver* loadMSCdriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -25,8 +25,7 @@ namespace driver{
                 dbg::printm(MODULE, "No, no SATA. F off\n");
             } break;
             case 0x8: {
-                dbg::printm(MODULE, "TODO: NVMe (No idea too stupid)\n");
-                // mscDriver = drivers::block::loadNVMeDriver(device);
+                mscDriver = drivers::block::loadNVMeDriver(device);
             } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);

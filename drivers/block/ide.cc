@@ -73,7 +73,7 @@
 
 namespace drivers::block{
     uint8_t ide_buf[2048] = {0};
-    IDEDriver::IDEDriver() :MSCDriver(driver::StorageType::IDE) {
+    IDEDriver::IDEDriver() :MSCDriver(StorageType::IDE) {
         dbg::addTrace(__PRETTY_FUNCTION__);
         this->setDriverName("IDE Controller");
         dbg::popTrace();

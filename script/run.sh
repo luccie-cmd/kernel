@@ -1,26 +1,27 @@
 if [ "$2" == "release" ]; then
-    # -device nvme,drive=nvme1,serial=deadbeef \
 qemu-system-x86_64 \
     -bios /usr/share/OVMF/x64/OVMF.4m.fd \
-    -drive file="$1/image.img",if=ide,format=raw \
+    -drive file="$1/image.img",if=none,id=nvme1,format=raw \
+    -device nvme,drive=nvme1,serial=deadbeef \
     -m 128 \
     -debugcon file:debug.log \
     -global isa-debugcon.iobase=0xe9 \
     -d int,cpu_reset \
     -no-reboot \
-    -M pc \
+    -M q35 \
     -cpu host \
     -enable-kvm
 elif [ "$2" == "debug" ]; then
 qemu-system-x86_64 \
     -bios /usr/share/OVMF/x64/OVMF.4m.fd \
-    -drive file="$1/image.img",format=raw,cache=writeback,snapshot=off,if=ide,index=0 \
+    -drive file="$1/image.img",if=none,id=nvme1,format=raw \
+    -device nvme,drive=nvme1,serial=deadbeef \
     -debugcon file:debug.log \
     -global isa-debugcon.iobase=0xe9 \
     -d int,cpu_reset \
     -no-reboot \
     -m 128 \
-    -M pc \
+    -M q35 \
     -S -s \
     -cpu host \
     -enable-kvm &

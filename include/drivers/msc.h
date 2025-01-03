@@ -1,12 +1,12 @@
 #if !defined(_KERNEL_DRIVER_MSC_H_)
 #define _KERNEL_DRIVER_MSC_H_
-#include "driver.h"
+#include <kernel/driver/driver.h>
 
-namespace driver{
+namespace drivers{
     enum struct StorageType : int {
         IDE,
     };
-    class MSCDriver : public Driver {
+    class MSCDriver : public driver::Driver {
         public:
             MSCDriver(StorageType storage_type);
             virtual ~MSCDriver();

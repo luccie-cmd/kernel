@@ -6,7 +6,7 @@
 
 #if !defined(_DRIVERS_BLOCK_IDE_H_)
 #define _DRIVERS_BLOCK_IDE_H_
-#include <kernel/driver/msc.h>
+#include <drivers/msc.h>
 
 namespace drivers::block{
     struct IDEDevice {
@@ -26,7 +26,7 @@ namespace drivers::block{
        uint16_t bmide; // Bus Master IDE
        uint8_t nIEN;  // nIEN (No Interrupt);
     };
-    class IDEDriver : public driver::MSCDriver{
+    class IDEDriver : public MSCDriver{
         public:
             IDEDriver();
             ~IDEDriver();

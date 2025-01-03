@@ -2,7 +2,7 @@
 #include <common/dbg/dbg.h>
 #include <vector>
 #include <cstdlib>
-#include <kernel/driver/msc.h>
+#include <drivers/msc.h>
 #define MODULE "Driver manager"
 
 namespace driver{
@@ -16,7 +16,7 @@ namespace driver{
         Driver* driver = nullptr;
         switch(device->classCode){
             case 0x1: {
-                driver = loadMSCdriver(device);
+                driver = drivers::loadMSCdriver(device);
             } break;
             case 0x2: {
                 dbg::printm(MODULE, "TODO: Setup networking\n");

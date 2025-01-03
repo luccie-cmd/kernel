@@ -2,7 +2,7 @@
 #include <kernel/vfs/gpt.h>
 #include <common/dbg/dbg.h>
 #include <kernel/driver/driver.h>
-#include <kernel/driver/msc.h>
+#include <drivers/msc.h>
 #include <cstdlib>
 #include <cstring>
 #include <kernel/task/task.h>
@@ -62,7 +62,7 @@ namespace vfs{
         newGUID[15] = GUID[15];
         return newGUID;
     }
-    static std::pair<driver::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
+    static std::pair<drivers::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
             dbg::printm(MODULE, "Cannot access disk %u, no disks\n", disk+1);
@@ -71,10 +71,10 @@ namespace vfs{
         uint8_t encounteredDisks = -1;
         for(auto blockDrivers : driver::getDrivers(driver::driverType::BLOCK)){
             assert(blockDrivers->getDeviceType() == driver::driverType::BLOCK);
-            driver::MSCDriver* blockDriver = reinterpret_cast<driver::MSCDriver*>(blockDrivers);
+            drivers::MSCDriver* blockDriver = reinterpret_cast<drivers::MSCDriver*>(blockDrivers);
             encounteredDisks += blockDriver->getConnectedDrives();
             if(encounteredDisks >= disk){
-                std::pair<driver::MSCDriver*, uint8_t> ret;
+                std::pair<drivers::MSCDriver*, uint8_t> ret;
                 ret.first = blockDriver;
                 ret.second = 0;
                 dbg::popTrace();
@@ -86,7 +86,7 @@ namespace vfs{
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__); 
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
-        driver::MSCDriver* blockDriver = drvDisk.first;
+        drivers::MSCDriver* blockDriver = drvDisk.first;
         uint8_t newDisk = drvDisk.second;
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
