@@ -45,7 +45,6 @@ namespace driver{
             if(driver == nullptr){
                 continue;
             }
-            driver->init(device);
             drivers.push_back(driver);
         }
         initialized = true;
