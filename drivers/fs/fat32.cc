@@ -143,8 +143,12 @@ namespace drivers::fs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
         uint8_t* u8DataOut = (uint8_t*)dataOut;
+        uint32_t oldBytesCount = bytesCount;
         if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0)) {
             bytesCount = std::min(bytesCount, fd->Public.Size - fd->Public.Position);
+        }
+        if(bytesCount != oldBytesCount){
+            dbg::printm(MODULE, "WARNING: Attempted to read more bytes then the file has left, overriding from %llu to %llu\n", oldBytesCount, bytesCount);
         }
         while (bytesCount > 0) {
             uint32_t leftInBuffer = SECTOR_SIZE - (fd->Public.Position % SECTOR_SIZE);
