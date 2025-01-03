@@ -9,6 +9,13 @@ namespace vfs{
     struct MountPoint{
         const char* mountPath;
         drivers::FSDriver* fileSystemDriver;
+        bool mounted;
+    };
+    struct VFSFile{
+        int vfsHandle;
+        int mpIdx;
+        int fsHandle;
+        bool used;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();

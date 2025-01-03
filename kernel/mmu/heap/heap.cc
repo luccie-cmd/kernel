@@ -20,7 +20,7 @@
 namespace mmu::heap{
     static bool __initialized = false;
     static node* __head = nullptr;
-    static uint64_t __pmmSize, __vmmMax, __allocatedMemory;
+    static uint64_t __pmmSize, __vmmMax;
     void initialize(uint64_t pmm_size, uint64_t vmm_max){
         dbg::addTrace(__PRETTY_FUNCTION__);
         __pmmSize = pmm_size;
@@ -37,7 +37,6 @@ namespace mmu::heap{
         __head->size = pmm_size;
         __head->next = nullptr;
         __head->prev = nullptr;
-        __allocatedMemory = 0;
         __initialized = true;
         dbg::popTrace();
     }
@@ -88,10 +87,6 @@ namespace mmu::heap{
                 current->allocSize = alignedLength;
                 current->free = false;
                 void* addr = reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current)+sizeof(node));
-                if(task::getCurrentPID() != KERNEL_PID){
-                    vmm::mapPage(vmm::getPML4(task::getCurrentPID()), vmm::getPhysicalAddr(vmm::getPML4(task::getCurrentPID()), (uint64_t)current), (size_t)current, PROTECTION_RW | (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0), MAP_GLOBAL | MAP_PRESENT);
-                }
-                __allocatedMemory += size;
                 dbg::popTrace();
                 return addr;
             }
@@ -148,7 +143,6 @@ namespace mmu::heap{
             }
             current = current->next;
         }
-        __allocatedMemory -= freeNode->freedSize;
         dbg::popTrace();
     }
     void free(void* ptr){

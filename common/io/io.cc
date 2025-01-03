@@ -43,4 +43,9 @@ namespace io{
         __asm__ volatile ( "mov %%cr3, %0" : "=r"(cr3) );
         return cr3;
     }
+    uint64_t rcr2(){
+        uint64_t cr2;
+        __asm__ volatile ( "mov %%cr2, %0" : "=r"(cr2) );
+        return cr2;
+    }
 };

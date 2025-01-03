@@ -15,6 +15,7 @@ namespace io{
     void invalpg(void* addr);
     void wcr3(uint64_t newCR3);
     uint64_t rcr3();
+    uint64_t rcr2();
 }
 
 #endif // _COMMON_IO_IO_H_
