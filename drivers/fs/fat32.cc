@@ -10,7 +10,6 @@
 namespace drivers::fs{
     FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<driver::MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing... for disk 0x%lx %hd\n", drvDisk.first, drvDisk.second);
         this->bootSector = new FAT_BootSector;
         if(!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector)){
             dbg::printm(MODULE, "Failed to read boot sector!!!\n");
@@ -37,10 +36,6 @@ namespace drivers::fs{
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
         drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
-        dbg::printm(MODULE, "RootDir Buffer: ");
-        for (int i = 0; i < 32; i++) { // Print the first entry
-            dbg::printf("%02X ", rootDir->Buffer[i]);
-        }
         dbg::print("\n");
         for(uint64_t i = 1; i < FAT32_MAX_FILE_HANDLES; ++i){
             if(!this->openedFiles[i]){
@@ -48,7 +43,6 @@ namespace drivers::fs{
             }
             this->openedFiles[i]->Opened = false;
         }
-        dbg::printm(MODULE, "Initialized for disk 0x%lx %hd\n", drvDisk.first, drvDisk.second);
         dbg::popTrace();
     }
     FAT32Driver::~FAT32Driver(){
@@ -199,7 +193,6 @@ namespace drivers::fs{
         FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
         getShortName(name, shortName);
         while(this->readEntry(file, entry)){
-            dbg::printm(MODULE, "Entry: `%11s` shortName: `%11s`\n", entry->Name, shortName);
             if(entry->Name[0] == 0x00){
                 dbg::popTrace();
                 return false;
@@ -240,7 +233,7 @@ namespace drivers::fs{
         fd->FirstCluster = (entry->FirstClusterHigh << 16) | entry->FirstClusterLow;
         fd->CurrentCluster = fd->FirstCluster;
         fd->CurrentSectorInCluster = 0;
-        this->getDiskDevice().first->read(this->getDiskDevice().second, this->clusterToLBA(fd->FirstCluster), 1, fd->Buffer);
+        this->getDiskDevice().first->read(this->getDiskDevice().second, this->clusterToLBA(fd->FirstCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
         dbg::popTrace();
         return &fd->Public;
     }

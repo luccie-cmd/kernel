@@ -126,7 +126,7 @@ namespace drivers::block{
                     else if (cl == 0x69 && ch == 0x96)
                        type = IDE_TYPE_ATAPI;
                     else
-                       continue; // Unknown Type (may not be a device).
+                       continue;
 
                     this->writeReg(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY_PACKET);
                 }
@@ -147,7 +147,7 @@ namespace drivers::block{
                     this->devices[this->drives].Model[k] = ide_buf[ATA_IDENT_MODEL + k + 1];
                     this->devices[this->drives].Model[k + 1] = ide_buf[ATA_IDENT_MODEL + k];
                 }
-                this->devices[this->drives].Model[40] = 0; // Terminate String.
+                this->devices[this->drives].Model[40] = 0;
                 this->drives++;
             }
         }
@@ -193,39 +193,35 @@ namespace drivers::block{
             dbg::printm(MODULE, "Cannot access drive %d\n", drive);
             std::abort();
         }
-        uint8_t lba_mode /* 0: CHS, 1:LBA28, 2: LBA48 */, cmd;
+        uint8_t lba_mode, cmd;
         uint8_t lba_io[6];
-        uint32_t channel = this->devices[drive].Channel; // Read the Channel.
-        uint32_t slavebit = this->devices[drive].Drive; // Read the Drive [Master/Slave]
-        uint32_t bus = channels[channel].base; // Bus Base, like 0x1F0 which is also data port.
-        uint32_t words = 256; // Almost every ATA drive has a sector-size of 512-byte.
+        uint32_t channel = this->devices[drive].Channel;
+        uint32_t slavebit = this->devices[drive].Drive;
+        uint32_t bus = channels[channel].base;
+        uint32_t words = 256;
         uint16_t cyl, i;
         uint8_t head, sect;
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
-        if (lba >= 0x10000000) { // Sure Drive should support LBA in this case, or you are
-                            // giving a wrong LBA.
-           // LBA48:
+        if (lba >= 0x10000000) {
            lba_mode  = 2;
            lba_io[0] = (lba & 0x000000FF) >> 0;
            lba_io[1] = (lba & 0x0000FF00) >> 8;
            lba_io[2] = (lba & 0x00FF0000) >> 16;
            lba_io[3] = (lba & 0xFF000000) >> 24;
-           lba_io[4] = 0; // LBA28 is integer, so 32-bits are enough to access 2TB.
-           lba_io[5] = 0; // LBA28 is integer, so 32-bits are enough to access 2TB.
-           head      = 0; // Lower 4-bits of HDDEVSEL are not used here.
-        } else if (this->devices[drive].Capabilities & 0x200)  { // Drive supports LBA?
-            // LBA28:
+           lba_io[4] = 0;
+           lba_io[5] = 0;
+           head      = 0;
+        } else if (this->devices[drive].Capabilities & 0x200)  {
             lba_mode  = 1;
             lba_io[0] = (lba & 0x00000FF) >> 0;
             lba_io[1] = (lba & 0x000FF00) >> 8;
             lba_io[2] = (lba & 0x0FF0000) >> 16;
-            lba_io[3] = 0; // These Registers are not used here.
-            lba_io[4] = 0; // These Registers are not used here.
-            lba_io[5] = 0; // These Registers are not used here.
+            lba_io[3] = 0;
+            lba_io[4] = 0;
+            lba_io[5] = 0;
             head      = (lba & 0xF000000) >> 24;
         } else {
-            dbg::printm(MODULE, "Using CHS mode instead of LBA\n");
-            // CHS:
+            dbg::printm(MODULE, "Using CHS mode instead of LBA!!!\n");
             lba_mode  = 0;
             sect      = (lba % 63) + 1;
             cyl       = (lba + 1  - sect) / (16 * 63);
@@ -235,13 +231,13 @@ namespace drivers::block{
             lba_io[3] = 0;
             lba_io[4] = 0;
             lba_io[5] = 0;
-            head      = (lba + 1  - sect) % (16 * 63) / (63); // Head number is written to HDDEVSEL lower 4-bits.
+            head      = (lba + 1  - sect) % (16 * 63) / (63);
         }
         while(this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY){}
         if (lba_mode == 0)
-           this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head); // Drive & CHS.
+           this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head);
         else
-            this->writeReg(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head); // Drive & LBA
+            this->writeReg(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head);
         if (lba_mode == 2) {
            this->writeReg(channel, ATA_REG_SECCOUNT1,   0);
            this->writeReg(channel, ATA_REG_LBA3,   lba_io[3]);
@@ -255,28 +251,15 @@ namespace drivers::block{
         if (lba_mode == 0) cmd = ATA_CMD_READ_PIO;
         if (lba_mode == 1) cmd = ATA_CMD_READ_PIO;   
         if (lba_mode == 2) cmd = ATA_CMD_READ_PIO_EXT;
-        this->writeReg(channel, ATA_REG_COMMAND, cmd);               // Send the Command.
-        dbg::printm(MODULE, "Reading %lld sectors from LBA %lld to address 0x%llx\n", sectors, lba, buffer);
+        this->writeReg(channel, ATA_REG_COMMAND, cmd);
         for (i = 0; i < sectors; i++) {
             if(this->poll(channel, true)){
                 dbg::popTrace();
                 return false;
             }
-            if(this->poll(channel, true)){
-                dbg::popTrace();
-                return false;
-            }
-            // asm("pushw %es");
             asm("mov %%ax, %%es" : : "a"(0x10));
-            asm("rep insw" : : "c"(words), "d"(bus), "D"(buffer)); // Receive Data.
-            // asm("popw %es");
-            // __asm__ volatile (
-            //     "rep insw\n\t"  // Receive data
-            //     : "+D"(buffer), "+c"(words) // Output operands: buffer (RDI in 64-bit) and words are updated
-            //     : "d"(bus)             // Input operand: bus
-            //     : "memory"             // Clobbers
-            // );
-            buffer = (void*)((uint8_t*)buffer + (words * 2)); // Adjust the buffer pointer
+            asm("rep insw" : : "c"(words), "d"(bus), "D"(buffer));
+            buffer = (void*)((uint8_t*)buffer + (words * 2));
         }
         dbg::popTrace();
         return true;
