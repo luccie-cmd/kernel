@@ -24,16 +24,12 @@ namespace mmu::vmm{
     static uint64_t __CR3LookupTable[MAX_PIDS];
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         if(hhdm_request.response == nullptr){
             dbg::printm(MODULE, "Bootloader failed to set HHDM response\n");
             std::abort();
         }
         __HHDMoffset = hhdm_request.response->offset;
         __initialized = true;
-        (void)getPML4(KERNEL_PID);
-        dbg::printm(MODULE, "Initialized with level 4 paging\n");
-        dbg::printm(MODULE, "Kernel PML4 address: 0x%llx\n", __CR3LookupTable[KERNEL_PID]);
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -45,7 +41,7 @@ namespace mmu::vmm{
             initialize();
         }
         if(pid > MAX_PIDS){
-            dbg::printm("Invalid PID\n", MODULE);
+            dbg::printm(MODULE, "Invalid PID\n");
             std::abort();
         }
         if(pid == KERNEL_PID && __CR3LookupTable[pid] == 0){

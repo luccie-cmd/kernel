@@ -19,12 +19,10 @@ namespace vfs{
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         partitionEntries.clear();
         mountPoints.clear();
         readGPT(0);
         inited = true;
-        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     uint8_t* parseGUID(uint8_t* GUID){
@@ -71,7 +69,6 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__); 
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         driver::MSCDriver* blockDriver = drvDisk.first;
-        dbg::printm(MODULE, "Using disk 0x%llx\n", blockDriver);
         uint8_t newDisk = drvDisk.second;
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
@@ -97,10 +94,8 @@ namespace vfs{
             std::memcpy(entry->GUID, newGUID, sizeof(entry->GUID));
             PartitionEntry* acEntry = new PartitionEntry;
             std::memcpy(acEntry, entry, sizeof(PartitionEntry));
-            dbg::printm(MODULE, "GPT Entry %d = %llx (%llu-%llu)\n", i, acEntry, acEntry->startLBA, acEntry->endLBA);
             entries.push_back(acEntry);
         }
-        dbg::printm(MODULE, "Read GPT from disk %hhu with %llu entries\n", disk, entries.size());
         delete[] buffer;
         delete PTH;
         if(entries.size() == 0){
@@ -125,7 +120,6 @@ namespace vfs{
             dbg::printm(MODULE, "ERROR: Unable to read GPT from disk %hd\n", disk);
             abort();
         }
-        dbg::printm(MODULE, "Mounting %d:%d to %s\n", disk, partition, mountLocation);
         if(partitionEntries.size() < disk){
             dbg::printm(MODULE, "ERROR: Unable to mount disk %hhd as it doesn't have a partition table\n");
             std::abort();
@@ -141,7 +135,6 @@ namespace vfs{
         mp->fileSystemDriver = fileSystemdriver;
         mp->mountPath = mountLocation;
         mountPoints.push_back(mp);
-        dbg::printm(MODULE, "Mounted %d:%d to %s\n", disk, partition, mountLocation);
         dbg::popTrace();
     }
     int openFile(const char* path, int flags){
@@ -154,7 +147,6 @@ namespace vfs{
             if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
                 path+=std::strlen(mp->mountPath);
                 handle = mp->fileSystemDriver->open(task::getCurrentPID(), path, flags);
-                dbg::printm(MODULE, "Opened file on %s with handle %d\n", mp->mountPath, handle);
                 break;
             }
         }   
@@ -170,10 +162,5 @@ namespace vfs{
         dbg::printm(MODULE, "TODO: Close files\n");
         abort();
         dbg::popTrace();
-    }
-    void printInfo(){
-        dbg::printm(MODULE, "INFORMATION\n");
-        dbg::printm(MODULE, "Mounted file systems: %llu\n", mountPoints.size());
-        dbg::printm(MODULE, "Read partition tables: %llu\n", partitionEntries.size());
     }
 };

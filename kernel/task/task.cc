@@ -3,14 +3,12 @@
 #define MODULE "Task manager"
 
 namespace task{
-    pid_t currentPID;
+    pid_t currentPID = 0;
     bool initialized = false;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         initialized = true;
         currentPID = KERNEL_PID;
-        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     bool isInitialized(){

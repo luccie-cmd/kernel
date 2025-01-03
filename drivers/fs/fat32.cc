@@ -36,7 +36,6 @@ namespace drivers::fs{
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
         drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
-        dbg::print("\n");
         for(uint64_t i = 1; i < FAT32_MAX_FILE_HANDLES; ++i){
             if(!this->openedFiles[i]){
                 this->openedFiles[i] = new FAT_FileData;

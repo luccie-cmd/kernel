@@ -23,7 +23,6 @@ namespace mmu::heap{
     static uint64_t __pmmSize, __vmmMax, __allocatedMemory;
     void initialize(uint64_t pmm_size, uint64_t vmm_max){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         __pmmSize = pmm_size;
         __vmmMax = vmm_max;
         uint64_t base = pmm::allocVirtual(__pmmSize);
@@ -40,7 +39,6 @@ namespace mmu::heap{
         __head->prev = nullptr;
         __allocatedMemory = 0;
         __initialized = true;
-        dbg::printm(MODULE, "Initialized with 1MB initial memory and 1GB maximum memory at base 0x%llx\n", base);
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -101,11 +99,6 @@ namespace mmu::heap{
         }
         dbg::printm(MODULE, "Could not find suitable block with size %ld\n", alignedLength);
         dbg::printm(MODULE, "TODO: Extending of heap\n");
-        current = __head;
-        while(current){
-            dbg::printm(MODULE, "Addr: %llx Size: %llu %s\n", current, current->size, current->free ? "free" : "in use");
-            current = current->next;
-        }
         std::abort();
     }
     void free(void* ptr, size_t size){
@@ -166,23 +159,5 @@ namespace mmu::heap{
         }
         free(ptr, 0);
         dbg::popTrace();
-    }
-    void printInfo(){
-        dbg::printm(MODULE, "INFORMATION\n");
-        dbg::printm(MODULE, "Max memory: 0x%llx Current memory: 0x%llx\n", __vmmMax, __pmmSize);
-        dbg::printm(MODULE, "Allocated memory: %llu\n", __allocatedMemory);
-        node* current = __head;
-        while(current){
-            if(current->freedSize == current->allocSize){
-                current->freedSize = current->allocSize;
-                current->free = true;
-            } else{
-                if(current != __head){
-                    current->free = false;
-                }
-            }
-            dbg::printm(MODULE, "Addr: 0x%llx Size: 0x%llx Freed size: 0x%llx Allocated size: 0x%llx %s\n", current, current->size, current->freedSize, current->allocSize, current->free ? "free" : "in use");
-            current = current->next;
-        }
     }
 };

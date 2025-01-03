@@ -46,8 +46,6 @@ namespace pci{
         uint16_t status = readConfig(dev, 0x06);
         cmd |= (1 << 2);
         writeConfig(dev, 0x04, (uint32_t)status << 16 | (uint32_t) cmd);
-        dbg::printm(MODULE, "busmastering enabled for [0x%x:0x%x]\n", dev->vendorID,
-                dev->deviceID);
         dbg::popTrace();
     }
     static uint16_t getVendor(uint8_t bus, uint8_t slot, uint8_t func){
@@ -73,7 +71,6 @@ namespace pci{
                     uint16_t deviceID = getDevice(bus, slot, func);
                     uint8_t classCode = getClassCode(bus, slot, func);
                     uint8_t subClassCode = getSubClassCode(bus, slot, func);
-                    dbg::printm(MODULE, "Device %x:%x class %x:%x\n", vendorID, deviceID, classCode, subClassCode);
                     device* dev = new device;
                     dev->bus = bus;
                     dev->slot = slot;
@@ -89,12 +86,9 @@ namespace pci{
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         devices.clear();
         loopBus(0xff);
         initialized = true;
-        dbg::printm(MODULE, "Found %llu devices\n", devices.size());
-        dbg::printm(MODULE, "Initialized\n");
         dbg::popTrace();
     }
     bool isInitialized(){
@@ -107,12 +101,5 @@ namespace pci{
         }
         dbg::popTrace();
         return devices;
-    }
-    void printInfo(){
-        dbg::printm(MODULE, "INFORMATION\n");
-        dbg::printm(MODULE, "Number of devices found: %llu\n", devices.size());
-        for(device *dvc : devices){
-            dbg::printm(MODULE, "Device %x:%x class %x:%x\n", dvc->vendorID, dvc->deviceID, dvc->classCode, dvc->subclassCode);
-        }
     }
 };

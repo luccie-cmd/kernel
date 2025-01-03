@@ -13,7 +13,6 @@ namespace driver{
     static std::vector<Driver*> drivers;
     static Driver* loadDriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Loading driver for %x:%x class: %x:%x\n", device->vendorID, device->deviceID, device->classCode, device->subclassCode);
         Driver* driver = nullptr;
         switch(device->classCode){
             case 0x1: {
@@ -39,7 +38,6 @@ namespace driver{
     }
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "Initializing...\n");
         drivers.clear();
         std::vector<pci::device*> pciDevices = pci::getAllDevices();
         for(pci::device* device : pciDevices){
@@ -51,7 +49,6 @@ namespace driver{
             drivers.push_back(driver);
         }
         initialized = true;
-        dbg::printm(MODULE, "Initialized %llu drivers\n", drivers.size());
         dbg::popTrace();
     }
     bool isInitialized(){
