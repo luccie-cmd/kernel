@@ -180,7 +180,7 @@ def buildKernel(kernel_dir: str):
         for incPath in CONFIG["INCPATHS"]:
             str_paths += f" {incPath}"
 
-        code, _ = callCmd(f"cpp {str_paths} -D_GLIBCXX_HOSTED=1 {file} -o ./tmp.txt", True)
+        code, _ = callCmd(f"cpp-11 {str_paths} -D_GLIBCXX_HOSTED=1 {file} -o ./tmp.txt", True)
         if code != 0:
             print(f"CPP failed to pre process {file}")
             exit(code)
@@ -308,7 +308,10 @@ def buildStaticLib(directory, out_file):
         str_paths = ""
         for incPath in CONFIG["INCPATHS"]:
             str_paths += f" {incPath}"
-        callCmd(f"cpp {str_paths} {file} -o ./tmp.txt")
+        code, _ = callCmd(f"cpp-11 {str_paths} -D_GLIBCXX_HOSTED=1 {file} -o ./tmp.txt", True)
+        if code != 0:
+            print(f"CPP failed to pre process {file}")
+            exit(code)
         if not force_rebuild and compareFiles("./tmp.txt", os.path.abspath(f"/tmp/{basename}/cache/{file}")):
             continue
         callCmd(f"mkdir -p {CONFIG['outDir'][0]}/{os.path.dirname(file)}")
