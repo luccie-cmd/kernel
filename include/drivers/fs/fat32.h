@@ -1,9 +1,9 @@
 #if !defined(_DRIVERS_FS_FAT32_H_)
 #define _DRIVERS_FS_FAT32_H_
 #include <drivers/fs.h>
-#define FAT32_MAX_FILE_HANDLES       10
+// #define FAT32_MAX_FILE_HANDLES       10
 #define FAT32_CACHE_SIZE              5
-#define FAT32_ROOT_DIRECTORY_HANDLE  -1
+#define FAT32_ROOT_DIRECTORY_HANDLE   -1
 
 namespace drivers::fs{
     struct FAT_ExtendedBootRecord{
@@ -94,7 +94,8 @@ namespace drivers::fs{
         private:
             FAT_BootSector* bootSector;
             FAT_FileData* rootDir;
-            FAT_FileData* openedFiles[FAT32_MAX_FILE_HANDLES];
+            std::vector<FAT_FileData*> files;
+            // FAT_FileData* openedFiles[FAT32_MAX_FILE_HANDLES];
             uint8_t cache[FAT32_CACHE_SIZE*SECTOR_SIZE];
             uint32_t cachePos;
             uint32_t maxSectors;

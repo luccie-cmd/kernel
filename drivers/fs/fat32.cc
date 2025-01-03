@@ -35,19 +35,18 @@ namespace drivers::fs{
         this->rootDir->FirstCluster = rootDirLba;
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
-        drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer);
-        for(uint64_t i = 1; i < FAT32_MAX_FILE_HANDLES; ++i){
-            if(!this->openedFiles[i]){
-                this->openedFiles[i] = new FAT_FileData;
-            }
-            this->openedFiles[i]->Opened = false;
+        if(!drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer)){
+            dbg::printm(MODULE, "Failed to read root directory buffer!!!\n");
+            std::abort();
         }
+        this->files.clear();
+        this->files.resize(0);
         dbg::popTrace();
     }
     FAT32Driver::~FAT32Driver(){
         delete this->rootDir;
-        for(uint64_t i = 0; i < FAT32_MAX_FILE_HANDLES; ++i){
-            delete this->openedFiles[i];
+        for(FAT_FileData* data : this->files){
+            delete data;
         }
     }
     void FAT32Driver::init(pci::device* dev){
@@ -85,18 +84,19 @@ namespace drivers::fs{
             }
             FAT_DirectoryEntry entry;
             if(this->findFile(current, name, &entry)){
-                this->close(current->Handle);
                 if (!isLast && ((entry.Attributes & (uint8_t)FAT_Attributes::DIRECTORY) == 0)){
                     dbg::printm(MODULE, "%s not a directory\r\n", name);
+                    this->close(current->Handle);
                     dbg::popTrace();
-                    return 0;
+                    return -1;
                 }
+                this->close(current->Handle);
                 current = this->openEntry(&entry);
             } else{
-                this->close(current->Handle);
                 dbg::printm(MODULE, "%s couldn't be found\n", name);
+                this->close(current->Handle);
                 dbg::popTrace();
-                return 0;
+                return -1;
             }
         }
         dbg::popTrace();
@@ -109,7 +109,16 @@ namespace drivers::fs{
     }
     void FAT32Driver::close(int file){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        this->openedFiles[file]->Opened = false;
+        if(file > (int)this->files.size()){
+            dbg::printm(MODULE, "ERROR: Can't close file which was not opened by FAT (handle=%llu)\n", file);
+            std::abort();
+        }
+        if(file == FAT32_ROOT_DIRECTORY_HANDLE){
+            this->rootDir->Public.Position = 0;
+            this->rootDir->CurrentCluster = this->rootDir->FirstCluster;
+        } else{
+            this->files.at(file)->Opened = false;
+        }
         dbg::popTrace();
     }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
@@ -132,7 +141,7 @@ namespace drivers::fs{
     }
     uint32_t FAT32Driver::readBytes(FAT_File* file, uint32_t bytesCount, void* dataOut) {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->openedFiles[file->Handle]);
+        FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
         uint8_t* u8DataOut = (uint8_t*)dataOut;
         if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0)) {
             bytesCount = std::min(bytesCount, fd->Public.Size - fd->Public.Position);
@@ -212,17 +221,38 @@ namespace drivers::fs{
     FAT_File* FAT32Driver::openEntry(FAT_DirectoryEntry *entry) {
         dbg::addTrace(__PRETTY_FUNCTION__);
         int handle = -1;
-        for (uint64_t i = 1; i < FAT32_MAX_FILE_HANDLES; ++i) {
-            if (!this->openedFiles[i]->Opened) {
+        for (uint64_t i = 0; i < files.size(); ++i) {
+            if(this->files.at(i) == nullptr){
+                FAT_FileData* data = new FAT_FileData;
+                data->Opened = false;
+                this->files.assign(i, data);
+            }
+            if (this->files.at(i)->Opened == false) {
                 handle = i;
                 break;
             }
         }
         if (handle == -1) {
-            dbg::printm(MODULE, "No available file handles\n");
-            std::abort();
+            FAT_FileData* fd = new FAT_FileData;
+            fd->Opened = false;
+            files.push_back(fd);
+            for (uint64_t i = 0; i < files.size(); ++i) {
+                if(this->files.at(i) == nullptr){
+                    FAT_FileData* data = new FAT_FileData;
+                    data->Opened = false;
+                    this->files.assign(i, data);
+                }
+                if (this->files.at(i)->Opened == false) {
+                    handle = i;
+                    break;
+                }
+            }
+            if (handle == -1) {
+                dbg::printm(MODULE, "No available file handles\n");
+                std::abort();
+            }
         }
-        FAT_FileData* fd = this->openedFiles[handle];
+        FAT_FileData* fd = this->files.at(handle);
         fd->Public.Handle = handle;
         fd->Public.IsDirectory = (entry->Attributes & (uint8_t)FAT_Attributes::DIRECTORY) != 0;
         fd->Public.Size = entry->Size;

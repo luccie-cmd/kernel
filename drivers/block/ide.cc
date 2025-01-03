@@ -247,8 +247,12 @@ namespace drivers::block{
                 dbg::popTrace();
                 return false;
             }
+            asm("mov %es, %ax");
+            asm("pushw %ax");
             asm("mov %%ax, %%es" : : "a"(0x10));
             asm("rep insw" : : "c"(words), "d"(bus), "D"(buffer));
+            asm("popw %ax");
+            asm("mov %ax, %es");
             buffer = (void*)((uint8_t*)buffer + (words * 2));
         }
         dbg::popTrace();

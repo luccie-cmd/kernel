@@ -65,7 +65,7 @@ namespace vfs{
     static std::pair<driver::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
-            dbg::printm(MODULE, "Cannot access disk %d, no disks\n", disk+1);
+            dbg::printm(MODULE, "Cannot access disk %u, no disks\n", disk+1);
             std::abort();
         }
         uint8_t encounteredDisks = -1;
@@ -165,6 +165,11 @@ namespace vfs{
         }
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         drivers::FSDriver* fileSystemdriver = drivers::loadFSDriver(partitionEntries.at(disk).at(partition), drvDisk);
+        if(!fileSystemdriver){
+            dbg::printm(MODULE, "Failed to load file system driver!!!\n");
+            dbg::popTrace();
+            return;
+        }
         std::pair<MountPoint*, size_t> mp = findMountpoint();
         mp.first->fileSystemDriver = fileSystemdriver;
         mp.first->mountPath = mountLocation;
@@ -174,8 +179,8 @@ namespace vfs{
     }
     int openFile(const char* path, int flags){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        int handle = 0;
-        int mpIdx = 0;
+        int handle = -1;
+        int mpIdx = -1;
         for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
             MountPoint* mp = mountPoints[i];
             if(!mp){
@@ -191,7 +196,7 @@ namespace vfs{
                 break;
             }
         }   
-        if(handle == 0){
+        if(handle == -1 || mpIdx == -1){
             dbg::printm(MODULE, "Unable to find file %s\n", path);
             std::abort();
         }
@@ -216,6 +221,7 @@ namespace vfs{
         }
         MountPoint* mp = mountPoints[vfsFile->mpIdx];
         mp->fileSystemDriver->close(vfsFile->fsHandle);
+        vfsFile->used = false;
         dbg::popTrace();
     }
 };
