@@ -155,16 +155,6 @@ namespace drivers::block{
             dbg::printm(MODULE, "No drives could be found!!!\n");
             std::abort();
         }
-        for (int i = 0; i < this->drives; ++i)
-        if (this->devices[i].Reserved == 1) {
-            dbg::printm(MODULE, " Found %s - Size: %llx - Channel: %d Drive: %d Model - %s\n",
-                  (const char *[]){"ATA", "ATAPI"}[this->devices[i].Type],
-                  (this->devices[i].Size*512),
-                  this->devices[i].Channel,
-                  this->devices[i].Drive,
-                  this->devices[i].Model);
-        }
-        dbg::printm(MODULE, "Loaded IDE controller with %d disks\n", this->drives);
         dbg::popTrace();
     }
     void IDEDriver::deinit(){}
