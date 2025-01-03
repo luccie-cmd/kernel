@@ -2,6 +2,7 @@
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <drivers/block/ide.h>
+#include <drivers/block/nvme.h>
 #define MODULE "MSC Driver manager"
 
 namespace driver{
@@ -25,6 +26,7 @@ namespace driver{
             } break;
             case 0x8: {
                 dbg::printm(MODULE, "TODO: NVMe (No idea too stupid)\n");
+                // mscDriver = drivers::block::loadNVMeDriver(device);
             } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);

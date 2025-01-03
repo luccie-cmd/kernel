@@ -224,6 +224,7 @@ namespace drivers::block{
             lba_io[5] = 0; // These Registers are not used here.
             head      = (lba & 0xF000000) >> 24;
         } else {
+            dbg::printm(MODULE, "Using CHS mode instead of LBA\n");
             // CHS:
             lba_mode  = 0;
             sect      = (lba % 63) + 1;
@@ -261,12 +262,20 @@ namespace drivers::block{
                 dbg::popTrace();
                 return false;
             }
-            __asm__ volatile (
-                "rep insw\n\t"  // Receive data
-                : "+D"(buffer), "+c"(words) // Output operands: buffer (RDI in 64-bit) and words are updated
-                : "d"(bus)             // Input operand: bus
-                : "memory"             // Clobbers
-            );
+            if(this->poll(channel, true)){
+                dbg::popTrace();
+                return false;
+            }
+            // asm("pushw %es");
+            asm("mov %%ax, %%es" : : "a"(0x10));
+            asm("rep insw" : : "c"(words), "d"(bus), "D"(buffer)); // Receive Data.
+            // asm("popw %es");
+            // __asm__ volatile (
+            //     "rep insw\n\t"  // Receive data
+            //     : "+D"(buffer), "+c"(words) // Output operands: buffer (RDI in 64-bit) and words are updated
+            //     : "d"(bus)             // Input operand: bus
+            //     : "memory"             // Clobbers
+            // );
             buffer = (void*)((uint8_t*)buffer + (words * 2)); // Adjust the buffer pointer
         }
         dbg::popTrace();

@@ -71,6 +71,7 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__); 
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         driver::MSCDriver* blockDriver = drvDisk.first;
+        dbg::printm(MODULE, "Using disk 0x%llx\n", blockDriver);
         uint8_t newDisk = drvDisk.second;
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){

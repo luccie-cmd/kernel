@@ -118,7 +118,7 @@ namespace mmu::heap{
         node* current = __head;
         while(current){
             if(current->freedSize == current->allocSize){
-                current->freedSize = current->size;
+                current->freedSize = current->allocSize;
                 current->free = true;
             }
             if(current == (node*)((uint64_t)ptr-sizeof(node))){
@@ -150,7 +150,7 @@ namespace mmu::heap{
         current = __head;
         while(current){
             if(current->freedSize == current->allocSize){
-                current->freedSize = current->size;
+                current->freedSize = current->allocSize;
                 current->free = true;
             }
             current = current->next;
@@ -174,7 +174,7 @@ namespace mmu::heap{
         node* current = __head;
         while(current){
             if(current->freedSize == current->allocSize){
-                current->freedSize = current->size;
+                current->freedSize = current->allocSize;
                 current->free = true;
             } else{
                 if(current != __head){
