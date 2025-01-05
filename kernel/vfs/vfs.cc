@@ -88,6 +88,12 @@ namespace vfs{
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         drivers::MSCDriver* blockDriver = drvDisk.first;
         uint8_t newDisk = drvDisk.second;
+        uint8_t *MBR = new uint8_t[512];
+        if(!blockDriver->read(newDisk, 0, 1, MBR)){
+            dbg::printm(MODULE, "ERROR: Failed to read legacy MBR\n");
+            std::abort();
+        }
+        dbg::printm(MODULE, "%x%x\n", MBR[510], MBR[511]);
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
             dbg::printm(MODULE, "ERROR: Failed to read partition table header\n");
@@ -176,6 +182,21 @@ namespace vfs{
         mp.first->mounted = true;
         mountPoints[mp.second] = mp.first;
         dbg::popTrace();
+    }
+    void umount(const char* path){
+        for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
+            MountPoint* mp = mountPoints[i];
+            if(!mp){
+                continue;
+            }
+            if(mp->mounted == false || mp->fileSystemDriver == nullptr || mp->mountPath == nullptr){
+                continue;
+            }
+            if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
+                mp->mounted = false;
+                delete mp->fileSystemDriver;
+            }
+        }
     }
     int openFile(const char* path, int flags){
         dbg::addTrace(__PRETTY_FUNCTION__);

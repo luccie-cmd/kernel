@@ -12,6 +12,8 @@ extern "C" void KernelMain(){
     dbg::printf("Init file handle: %d\n", initFileHandle);
     vfs::closeFile(initFileHandle);
     dbg::printf("ERROR: Initialization program returned!!!\n");
+    vfs::umount("/boot");
+    vfs::umount("/");
     std::abort();
     for(;;);
 }

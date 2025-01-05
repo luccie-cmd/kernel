@@ -5,6 +5,7 @@
 namespace drivers{
     enum struct StorageType : int {
         IDE,
+        NVMe,
     };
     class MSCDriver : public driver::Driver {
         public:

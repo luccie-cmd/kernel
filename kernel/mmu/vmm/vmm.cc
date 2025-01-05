@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <common/io/io.h>
 #include <cstring>
+#include <kernel/task/task.h>
 #define MODULE "MMU VMM"
 
 namespace mmu::vmm{
@@ -174,6 +175,9 @@ namespace mmu::vmm{
 
         io::invalpg((void*)virtualAddr);
         dbg::popTrace();
+    }
+    void mapPage(size_t virtualAddr){
+        mapPage(getPML4(task::getCurrentPID()), virtualAddr, virtualAddr, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
     }
     uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr){
         dbg::addTrace(__PRETTY_FUNCTION__);

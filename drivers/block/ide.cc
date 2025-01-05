@@ -265,8 +265,10 @@ namespace drivers::block{
         dbg::popTrace();
     }
     IDEDriver* loadIDEController(pci::device* device){
+        dbg::addTrace(__PRETTY_FUNCTION__);
         IDEDriver* drv = new IDEDriver;
         drv->init(device);
+        dbg::popTrace();
         return drv;
     }
     uint8_t IDEDriver::readReg(uint8_t channel, uint8_t reg){
