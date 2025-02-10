@@ -8,6 +8,7 @@
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <../limine/limine.h>
+#include <common/io/io.h>
 #define MODULE "MMU PMM"
 
 namespace mmu::pmm{
@@ -27,7 +28,10 @@ namespace mmu::pmm{
         uint64_t memmap_entries = memmap_request.response->entry_count;
         for(uint64_t i = 0; i < memmap_entries; ++i){
             limine_memmap_entry* entry = memmap_request.response->entries[i];
-            if(entry->type == LIMINE_MEMMAP_USABLE && entry->length >= PAGE_SIZE){
+            if((entry->type == LIMINE_MEMMAP_USABLE || entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE) && entry->length >= PAGE_SIZE){
+                if(entry->base == io::rcr3()){
+                    continue;
+                }
                 node* newNode = (node*)vmm::makeVirtual(entry->base);
                 newNode->size = entry->length;
                 if(__head == nullptr){
@@ -49,6 +53,7 @@ namespace mmu::pmm{
         if(!isInitialized()){
             initialize();
         }
+        size = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
         node* current = __head;
         node* prev = nullptr;
         while(current){

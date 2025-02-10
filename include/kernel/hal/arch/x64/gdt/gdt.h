@@ -18,10 +18,6 @@ namespace hal::arch::x64::gdt{
         uint8_t flags : 4;
         uint8_t base_high : 8;
     } __attribute__((packed));
-    struct GDT{
-        uint16_t limit;
-        uint64_t base;
-    } __attribute__((packed));
     void init();
 };
 

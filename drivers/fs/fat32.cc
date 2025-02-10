@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <kernel/task/task.h>
 #include <common/dbg/dbg.h>
+#include <cassert>
 #define MODULE "FAT32 Driver"
 
 namespace drivers::fs{
@@ -121,10 +122,13 @@ namespace drivers::fs{
         }
         dbg::popTrace();
     }
+    void FAT32Driver::listFiles(){
+        
+    }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
         return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster);
     }
-    static void getShortName(char* name, char shortName[12]){
+    static void getShortName(char* name, char shortName[12]) {
         memset(shortName, ' ', 12);
         shortName[11] = '\0';
         const char* ext = std::strchr(name, '.');
@@ -143,6 +147,10 @@ namespace drivers::fs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
         uint8_t* u8DataOut = (uint8_t*)dataOut;
+        if(u8DataOut == nullptr){
+            dbg::printm(MODULE, "ERROR: Unable to write to nullptr\n");
+            std::abort();
+        }
         uint32_t oldBytesCount = bytesCount;
         if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0)) {
             bytesCount = std::min(bytesCount, fd->Public.Size - fd->Public.Position);
@@ -203,6 +211,7 @@ namespace drivers::fs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         char shortName[12];
         FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
+        assert(entry != nullptr);
         getShortName(name, shortName);
         while(this->readEntry(file, entry)){
             if(entry->Name[0] == 0x00){
@@ -227,9 +236,8 @@ namespace drivers::fs{
         int handle = -1;
         for (uint64_t i = 0; i < files.size(); ++i) {
             if(this->files.at(i) == nullptr){
-                FAT_FileData* data = new FAT_FileData;
-                data->Opened = false;
-                this->files.assign(i, data);
+                dbg::printm(MODULE, "ERROR: File at index %llu deallocated before module release\n", i);
+                std::abort();
             }
             if (this->files.at(i)->Opened == false) {
                 handle = i;
@@ -237,14 +245,22 @@ namespace drivers::fs{
             }
         }
         if (handle == -1) {
+            dbg::printm(MODULE, "WARNING: Ran out of fat file datas, adding new one\n");
             FAT_FileData* fd = new FAT_FileData;
+            if(fd == nullptr){
+                dbg::printm(MODULE, "ERROR: new FAT_FileData returned nullptr");
+                std::abort();
+            }
             fd->Opened = false;
-            files.push_back(fd);
-            for (uint64_t i = 0; i < files.size(); ++i) {
+            this->files.push_back(fd);
+            for (uint64_t i = 0; i < this->files.size(); ++i) {
+                if(this->files.data() == nullptr){
+                    dbg::printm(MODULE, "ERROR: FAT files data integrety comprimised\n");
+                    std::abort();
+                }
                 if(this->files.at(i) == nullptr){
-                    FAT_FileData* data = new FAT_FileData;
-                    data->Opened = false;
-                    this->files.assign(i, data);
+                    dbg::printm(MODULE, "ERROR: File at index %llu deallocated before module release\n", i);
+                    std::abort();
                 }
                 if (this->files.at(i)->Opened == false) {
                     handle = i;

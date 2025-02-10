@@ -25,6 +25,7 @@ namespace drivers{
                 dbg::printm(MODULE, "No, no SATA. F off\n");
             } break;
             case 0x8: {
+                dbg::printm(MODULE, "PROGIF: 0x%llx\n", pci::readConfigWord(device, 0x0a));
                 mscDriver = drivers::block::loadNVMeDriver(device);
             } break;
             default: {

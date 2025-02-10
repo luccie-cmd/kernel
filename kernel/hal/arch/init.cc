@@ -31,10 +31,10 @@ namespace hal::arch{
     }
     void earlyInit(){
         io::cli();
-        __zeroBSS();
-        __initSSE();
+        // __zeroBSS();
         x64::idt::init();
         x64::gdt::init();
+        __initSSE();
         io::sti();
     }
 };

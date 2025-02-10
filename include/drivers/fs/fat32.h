@@ -86,11 +86,12 @@ namespace drivers::fs{
         public:
             FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
             ~FAT32Driver();
-            void init(pci::device* dev);
+            void __attribute__((nonnull(1))) init(pci::device* dev);
             void deinit();
-            int open(task::pid_t PID, const char* path, int flags);
-            void read(int file, size_t length, void* buffer);
+            int __attribute__((nonnull(1))) open(task::pid_t PID, const char* path, int flags);
+            void __attribute__((nonnull(1))) read(int file, size_t length, void* buffer);
             void close(int file);
+            void listFiles();
         private:
             FAT_BootSector* bootSector;
             FAT_FileData* rootDir;
@@ -102,11 +103,11 @@ namespace drivers::fs{
             uint32_t sectorsPerFat;
             uint32_t dataSectionLBA;
             uint32_t clusterToLBA(uint32_t cluster);
-            bool findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
-            FAT_File* openEntry(FAT_DirectoryEntry *entry);
-            bool readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
+            bool __attribute__((nonnull(1, 2, 3))) findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
+            FAT_File* __attribute__((nonnull(1))) openEntry(FAT_DirectoryEntry *entry);
+            bool __attribute__((nonnull(1, 2))) readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
             uint32_t nextCluster(uint32_t currentCluster);
-            uint32_t readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
+            uint32_t __attribute__((nonnull(1, 2))) readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
             void readFat(size_t lbaIdx);
     };
 };

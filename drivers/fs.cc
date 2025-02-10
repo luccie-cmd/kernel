@@ -1,4 +1,3 @@
-#include <vector>
 #include <cassert>
 #include <cstring>
 #include <cstdlib>
@@ -8,6 +7,7 @@
 #include <drivers/fs/fat32.h>
 #include <drivers/fs/ext4.h>
 #include <common/dbg/dbg.h>
+#include <array>
 #define MODULE "File System driver"
 
 namespace drivers {
@@ -22,15 +22,14 @@ namespace drivers {
     vfs::PartitionEntry* FSDriver::getPartEntry(){
         return this->__partition_entry;
     }
-    std::vector<std::pair<uint32_t, FSType>> GUIDEntries;
+    static std::array<std::pair<uint32_t, FSType>, 2> GUIDEntries;
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        GUIDEntries.clear();
-        GUIDEntries.push_back(std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4));
-        GUIDEntries.push_back(std::pair<uint32_t, FSType>(0x28732ac1, FSType::FAT32));
+        GUIDEntries[0] = std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4);
+        GUIDEntries[1] =std::pair<uint32_t, FSType>(0x28732ac1, FSType::FAT32);
         assert(entry);
         FSDriver* drv = nullptr;
-        for (auto& guidEntry : GUIDEntries) {
+        for (auto guidEntry : GUIDEntries){
             if (std::memcmp((void*)(uintptr_t)(&guidEntry.first), entry->GUID, sizeof(uint32_t)) == 0) {
                 switch (guidEntry.second) {
                     case FSType::EXT4: {

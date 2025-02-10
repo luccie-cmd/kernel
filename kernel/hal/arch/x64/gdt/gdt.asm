@@ -1,8 +1,10 @@
 bits 64
-
-global loadGDTandReload
-loadGDTandReload:
-    lgdt [rdi]
+section .text
+global loadGDT
+loadGDT:
+    mov [GDT.limit], rsi
+    mov [GDT.base], rdi
+    lgdt [GDT]
     ; Reload segments to kernel cs and ds.
 .reloadSegments:
     push 0x08
@@ -17,3 +19,9 @@ loadGDTandReload:
     mov gs, ax
     mov ss, ax
     ret
+
+section .data
+global GDT
+GDT:
+    .limit: dw 0
+    .base: dq 0

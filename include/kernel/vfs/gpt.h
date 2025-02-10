@@ -21,7 +21,8 @@ namespace vfs{
         char reserved1[420];
     } __attribute__((packed));
     static_assert(sizeof(PartitionTableHeader) == 512, "Imporperly aligned partition table header");
-    #define VFS_PARTITION_ATTR_FSTYPE 0xFF00
+    #define VFS_PARTITION_ATTR_AUTOMOUNT 48 /* 1 bit  48 */
+    #define VFS_PARTITION_ATTR_FSTYPE    49 /* 2 bits 49-51 */
     struct PartitionEntry{
         uint8_t GUID[16];
         uint8_t UGUID[16];

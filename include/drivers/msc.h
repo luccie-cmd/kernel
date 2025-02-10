@@ -1,6 +1,7 @@
 #if !defined(_KERNEL_DRIVER_MSC_H_)
 #define _KERNEL_DRIVER_MSC_H_
 #include <kernel/driver/driver.h>
+#define SECTOR_SIZE 512
 
 namespace drivers{
     enum struct StorageType : int {

@@ -65,7 +65,7 @@ namespace vfs{
     static std::pair<drivers::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDisk(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(driver::getDevicesCount(driver::driverType::BLOCK) == 0){
-            dbg::printm(MODULE, "Cannot access disk %u, no disks\n", disk+1);
+            dbg::printm(MODULE, "Cannot access disk %u, no disks\n", disk);
             std::abort();
         }
         uint8_t encounteredDisks = -1;
@@ -81,7 +81,8 @@ namespace vfs{
                 return ret;
             }
         }
-        abort();
+        dbg::printf("Unable to find disk %u\n", disk);
+        std::abort();
     }
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__); 
@@ -89,11 +90,6 @@ namespace vfs{
         drivers::MSCDriver* blockDriver = drvDisk.first;
         uint8_t newDisk = drvDisk.second;
         uint8_t *MBR = new uint8_t[512];
-        if(!blockDriver->read(newDisk, 0, 1, MBR)){
-            dbg::printm(MODULE, "ERROR: Failed to read legacy MBR\n");
-            std::abort();
-        }
-        dbg::printm(MODULE, "%x%x\n", MBR[510], MBR[511]);
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
             dbg::printm(MODULE, "ERROR: Failed to read partition table header\n");
@@ -112,19 +108,20 @@ namespace vfs{
             }
             if(entry->endLBA > blockDriver->getDiskSize(newDisk)){
                 dbg::printm(MODULE, "ERROR: GPT entry more then maximum disk size\n");
-                abort();
+                std::abort();
             }
             uint8_t* newGUID = parseGUID(entry->GUID);
             std::memcpy(entry->GUID, newGUID, sizeof(entry->GUID));
             PartitionEntry* acEntry = new PartitionEntry;
             std::memcpy(acEntry, entry, sizeof(PartitionEntry));
             entries.push_back(acEntry);
+            dbg::printm(MODULE, "Loaded new partition: %llu-%llu\n", acEntry->startLBA, acEntry->endLBA);
         }
         delete[] buffer;
         delete PTH;
         if(entries.size() == 0){
             dbg::printm(MODULE, "ERROR: Unable to find any partitions on disk %hd\n", disk);
-            abort();
+            std::abort();
         }
         if((uint8_t)(disk+1) > partitionEntries.size()){
             partitionEntries.resize(disk+1);
@@ -160,11 +157,11 @@ namespace vfs{
             dbg::printm(MODULE, "ERROR: Unable to read GPT from disk %hd\n", disk);
             abort();
         }
-        if(partitionEntries.size() < disk){
+        if(partitionEntries.size() <= disk){
             dbg::printm(MODULE, "ERROR: Unable to mount disk %hhd as it doesn't have a partition table\n");
             std::abort();
         }
-        if(partitionEntries.at(disk).size() < partition){
+        if(partitionEntries.at(disk).size() <= partition){
             dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
             dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).size());
             std::abort();
@@ -218,7 +215,18 @@ namespace vfs{
             }
         }   
         if(handle == -1 || mpIdx == -1){
-            dbg::printm(MODULE, "Unable to find file %s\n", path);
+            dbg::printm(MODULE, "Unable to find file `%s`\n", path);
+            for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
+                MountPoint* mp = mountPoints[i];
+                if(!mp){
+                    continue;
+                }
+                if(mp->mounted == false || mp->fileSystemDriver == nullptr){
+                    continue;
+                }
+                dbg::printm(MODULE, "Files on mountpoint `%s`:\n", mp->mountPath);
+                mp->fileSystemDriver->listFiles();
+            }
             std::abort();
         }
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);

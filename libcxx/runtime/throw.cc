@@ -1,8 +1,10 @@
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <cstdarg>
+#include <new>
 
 namespace std{
+    const std::nothrow_t nothrow;
     void __throw_length_error(char const* str){
         dbg::printf("ERROR: %s:%s\n", __PRETTY_FUNCTION__, str);
         abort();

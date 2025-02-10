@@ -39,13 +39,12 @@ namespace hal::arch::x64::idt{
         (uint32_t)(((offset) >> 32) & 0xFFFFFFFF),     /* offset2 */        \
         0                                              /* reserved1 */      \
     }
-
-    struct IDT{
-        uint16_t limit;
-        uint64_t base;
-    } __attribute__((packed));
     void init();
     void enableGate(uint8_t gate);
+    void disablePageFaultProtection();
+    void enablePageFaultProtection();
+    void disableUDProtection();
+    void enableUDProtection();
     void registerHandler(uint8_t gate, void* function, uint8_t type);
 };
 

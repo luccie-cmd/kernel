@@ -15,6 +15,7 @@ extern handleInt
         jmp isrCommon
 %endmacro
 
+section .text
 ISR_NOERRORCODE 0
 ISR_NOERRORCODE 1
 ISR_NOERRORCODE 2
@@ -339,6 +340,7 @@ isrCommon:
     pop rdx
     pop rcx
     pop rbx
+    pop rax
 
-    add rsp, 24
+    add rsp, 16
     iretq

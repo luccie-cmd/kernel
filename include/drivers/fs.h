@@ -22,6 +22,7 @@ namespace drivers{
             virtual int open(task::pid_t PID, const char* path, int flags) = 0;
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void close(int file) = 0;
+            virtual void listFiles() = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
         private:

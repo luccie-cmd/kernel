@@ -26,10 +26,6 @@ namespace mmu::heap{
         __pmmSize = pmm_size;
         __vmmMax = vmm_max;
         uint64_t base = pmm::allocVirtual(__pmmSize);
-        for(uint64_t pageOffset = 0; pageOffset < __pmmSize; pageOffset += PAGE_SIZE){
-            uint64_t page = pmm::allocate();
-            vmm::mapPage(vmm::getPML4(KERNEL_PID), page, base+pageOffset, PROTECTION_RW | PROTECTION_NOEXEC | PROTECTION_KERNEL, MAP_GLOBAL | MAP_PRESENT);
-        }
         __head = (node*)base;
         __head->free = true;
         __head->freedSize = 0;

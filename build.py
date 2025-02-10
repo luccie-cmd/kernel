@@ -58,9 +58,10 @@ ALLOWED_CONFIG = [
     ["config", ["release", "debug"], True],
     ["arch", ["x64"], True],
     ["compiler", ["gcc", "clang"], True],
-    ["imageFS", ["fat32", 'ext2', 'ext3', "ext4"], True],
+    ["rootFS", ["fat32", 'ext2', 'ext3', "ext4"], True],
     ["bootloader", ["limine-uefi", "custom"], True],
     ["outDir", [], True],
+    ["analyzer", ["yes", "no"], True],
     ["imageSize", [], False],
 ]
 if not checkConfig(CONFIG, ALLOWED_CONFIG):
@@ -82,14 +83,15 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-g']
-CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fmax-errors=1', '-fno-use-cxa-atexit', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fstack-protector-strong', '-fno-stack-protector']
-CONFIG["CFLAGS"] += ['-fno-builtin', '-fno-PIE', '-fno-omit-frame-pointer', '-fvar-tracking', '-fconserve-stack', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-mcmodel=kernel', '-mno-avx', '-mno-avx512f']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wcast-align', '-Wcast-qual', '-Wpointer-arith', '-Wshadow']
-CONFIG["CXXFLAGS"] = ['-fno-rtti', '-fno-exceptions', '-Wno-write-strings', '-Wno-cast-qual']
+CONFIG["CFLAGS"] = ['-c', '-nodefaultlibs', '-nostdlib', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-finline-functions-called-once', '-finline-limit=1000', '-fmax-errors=1', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fno-stack-protector', '-ffast-math', '-funroll-loops', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays']
+CONFIG["CFLAGS"] += ['-fno-builtin', '-fomit-frame-pointer', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic', '-fno-lto', '-fno-unwind-tables']
+CONFIG["CFLAGS"] += ['-mno-sse2', '-mno-red-zone', '-mno-avx', '-march=native', '-mtune=native', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
+CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wcast-align', '-Wpointer-arith', '-Wshadow']
+CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti', '-Wno-write-strings', '-Wno-cast-qual']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-nostdlib', '-g']
+CONFIG["LDFLAGS"] = ['-nostdlib', '-nodefaultlibs', '-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -103,10 +105,15 @@ else:
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
 
+if "yes" in CONFIG.get("analyzer"):
+    CONFIG["CFLAGS"].append("-fanalyzer")
+
 if "debug" in CONFIG.get("config"):
     CONFIG["LDFLAGS"] += ["-O0"]
 else:
     CONFIG["LDFLAGS"] += ["-O2"]
+
+stopEvent = threading.Event()
 
 def callCmd(command, print_out=False):
     with open("commands.txt", "a") as f:
@@ -128,8 +135,7 @@ def getExtension(file):
     return file.split(".")[-1]
 
 def buildC(file):
-    compiler = CONFIG["compiler"][0]
-    compiler += "-11"
+    compiler = "gcc-11"
     options = CONFIG["CFLAGS"].copy()
     options.append("-std=c11")
     command = compiler + " " + file
@@ -140,11 +146,7 @@ def buildC(file):
     return callCmd(command, True)[0]
 
 def buildCXX(file):
-    compiler = CONFIG["compiler"][0]
-    if compiler == "gcc":
-        compiler = "g"
-    compiler += "++"
-    compiler += "-11"
+    compiler = "g++-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
     options.append("-std=c++23")
@@ -179,7 +181,6 @@ def buildKernel(kernel_dir: str):
         str_paths = ""
         for incPath in CONFIG["INCPATHS"]:
             str_paths += f" {incPath}"
-
         code, _ = callCmd(f"cpp-11 {str_paths} -D_GLIBCXX_HOSTED=1 {file} -o ./tmp.txt", True)
         if code != 0:
             print(f"CPP failed to pre process {file}")
@@ -210,7 +211,7 @@ def buildKernel(kernel_dir: str):
 
 def linkKernel(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
-    command = "ld"
+    command = "g++-11"
     options = CONFIG["LDFLAGS"]
     for option in options:
         command += " " + option
@@ -220,20 +221,20 @@ def linkKernel(kernel_dir, linker_file, static_lib_files=[]):
         if not checkExtension(file, ["o"]):
             continue
         command += " " + file
-    command += f" -T {linker_file}"
-    command += " --no-whole-archive"
-    command += " --whole-archive"
+    command += f" -Wl,-T {linker_file}"
+    command +=  " -Wl,--no-whole-archive"
+    command +=  " -Wl,--whole-archive"
     for static_lib in static_lib_files:
         command += f" {static_lib}"
     if "debug" in CONFIG.get("config"):
-        command += f" -Map={CONFIG['outDir'][0]}/kernel.map"
+        command += f" -Wl,-Map={CONFIG['outDir'][0]}/kernel.map"
     command += f" -o {CONFIG['outDir'][0]}/kernel.elf"
     file = f"{CONFIG['outDir'][0]}/kernel.elf"
     print(f"LD   {file}")
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"objdump -C -d -Mintel {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
+    callCmd(f"objdump -C -z -d -Mintel64 -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])
@@ -248,9 +249,6 @@ def makePartitionTable(out_file):
     callCmd(command)
     print("> Making EFI partition")
     command = f"parted {out_file} --script mkpart EFI FAT32 2048s 100MB"
-    callCmd(command)
-    print("> Making root partition")
-    command = f"parted {out_file} --script mkpart ROOT {CONFIG.get('imageFS')[0]} 100MB 100%"
     callCmd(command)
     print("> Setting EFI partition to be bootable")
     command = f"parted {out_file} --script set 1 boot on"
@@ -270,7 +268,6 @@ def setupLoopDevice(out_file):
 def makeFileSystem(loop_device):
     print("> Formatting file systems")
     callCmd(f"sudo mkfs.fat -F32 {loop_device}p1")
-    callCmd(f"sudo mkfs.ext4 {loop_device}p2")
 
 def mountFs(device, boot, kernel):
     callCmd(f"mkdir -p mnt")
@@ -412,7 +409,7 @@ def main():
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     currentUser = os.getlogin()
-    callCmd(f"chown -R {currentUser}:{currentUser} *")
+    callCmd(f"chown -R {currentUser}:{currentUser} ./")
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

@@ -89,6 +89,10 @@ namespace mmu::vmm{
         if(!isInitialized()){
             initialize();
         }
+        if(getPhysicalAddr(pml4, virtualAddr, true) == physicalAddr){
+            dbg::printm(MODULE, "Attempted to double map address 0x%llx to 0x%llx\n", virtualAddr, physicalAddr);
+            std::abort();
+        }
         vmm_address vma = getVMMfromVA(virtualAddr);
         bool kernelPage = (prot & PROTECTION_KERNEL) != 0;
         bool readWrite = (prot & PROTECTION_RW) != 0;
@@ -172,30 +176,54 @@ namespace mmu::vmm{
         pte[vma.pte].ats0 = 0;
         pte[vma.pte].ats1 = 0;
         pte[vma.pte].pkeys = 0;
-
         io::invalpg((void*)virtualAddr);
         dbg::popTrace();
     }
     void mapPage(size_t virtualAddr){
-        mapPage(getPML4(task::getCurrentPID()), virtualAddr, virtualAddr, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
-    }
-    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr){
         dbg::addTrace(__PRETTY_FUNCTION__);
+        mapPage(getPML4(task::getCurrentPID()), virtualAddr, virtualAddr, (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0) | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
+        dbg::popTrace();
+    }
+    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        uint64_t oldAddr = addr;
+        addr &= ~(PAGE_SIZE - 1); // Align addr to the start of the page
+
         vmm_address vma = getVMMfromVA(addr);
-        if(pml4[vma.pml4e].pdpe_ptr == 0){
+        if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
+            if (!silent) {
+                dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", addr);
+            }
+            dbg::popTrace();
             return 0;
         }
         PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
-        if(pdpe[vma.pdpe].pde_ptr == 0){
+        if (pdpe[vma.pdpe].pde_ptr == 0 || pdpe[vma.pdpe].present == 0) {
+            if (!silent) {
+                dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", addr);
+            }
+            dbg::popTrace();
             return 0;
         }
         PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
-        if(pde[vma.pde].pte_ptr == 0){
+        if (pde[vma.pde].pte_ptr == 0 || pde[vma.pde].present == 0) {
+            if (!silent) {
+                dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", addr);
+            }
+            dbg::popTrace();
             return 0;
         }
-        PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pte].pte_ptr << 12));
+        PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
+        if (pte[vma.pte].papn_ppn == 0 || pte[vma.pte].present == 0) {
+            if (!silent) {
+                dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", addr);
+            }
+            dbg::popTrace();
+            return 0;
+        }
         uint64_t retAddr = pte[vma.pte].papn_ppn << 12;
         dbg::popTrace();
-        return retAddr; 
+        return retAddr;
     }
+
 };

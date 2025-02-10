@@ -1,9 +1,3 @@
-/*
- * Copyright (c) - All Rights Reserved.
- *
- * See the LICENSE file for more information.
- */
-
 // stb_sprintf - v1.10 - public domain snprintf() implementation
 // originally by Jeff Roberts / RAD Game Tools, 2015/10/20
 // http://github.com/nothings/stb
@@ -334,7 +328,7 @@ static STBSP__ASAN stbsp__uint32 stbsp__strlen_limited(char const *s, stbsp__uin
    // (hence the STBSP__ASAN markup; the over-read here is intentional
    // and harmless)
    while (limit >= 4) {
-      stbsp__uint32 v = *(const stbsp__uint32 *)sn;
+      stbsp__uint32 v = *(stbsp__uint32 *)sn;
       // bit hack to find if there's a 0 byte in there
       if ((v - 0x01010101) & (~v) & 0x80808080UL)
          break;
@@ -412,7 +406,7 @@ STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback,
             // Using the 'hasless' trick:
             // https://graphics.stanford.edu/~seander/bithacks.html#HasLessInWord
             stbsp__uint32 v, c;
-            v = *(const stbsp__uint32 *)f;
+            v = *(stbsp__uint32 *)f;
             c = (~v) & 0x80808080;
             if (((v ^ 0x25252525) - 0x01010101) & c)
                goto schk1;
@@ -594,10 +588,10 @@ STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback,
          // get the string
          s = va_arg(va, char *);
          if (s == 0)
-            s = (const char *)"(null)";
+            s = (char *)"null";
          // get the length, limited to desired precision
          // always limit to ~0u chars since our counts are 32b
-         l = stbsp__strlen_limited(s, (pr >= 0) ? pr : ~0u);
+         l = stbsp__strlen_limited(s, (pr >= 0) ? (unsigned int)pr : ~0u);
          lead[0] = 0;
          tail[0] = 0;
          pr = 0;
@@ -764,7 +758,7 @@ STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback,
          tail[0] = 0;
          stbsp__lead_sign(fl, lead);
          if (dp == STBSP__SPECIAL) {
-            s = (char*)sn;
+            s = (char *)sn;
             cs = 0;
             pr = 0;
             goto scopy;
@@ -833,7 +827,7 @@ STBSP__PUBLICDEF int STB_SPRINTF_DECORATE(vsprintfcb)(STBSP_SPRINTFCB *callback,
          tail[0] = 0;
          stbsp__lead_sign(fl, lead);
          if (dp == STBSP__SPECIAL) {
-            s = (char*)sn;
+            s = (char *)sn;
             cs = 0;
             pr = 0;
             goto scopy;

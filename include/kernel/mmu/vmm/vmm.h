@@ -37,7 +37,7 @@ namespace vmm{
     PML4* getPML4(task::pid_t pid);
     void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int protFlags, int mapFlags);
     void mapPage(size_t virtualAddr);
-    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr);
+    uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent);
     uint64_t makeVirtual(uint64_t addr);
     uint64_t getHHDM();
 };

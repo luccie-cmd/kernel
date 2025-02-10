@@ -2,6 +2,7 @@
 #include <common/dbg/dbg.h>
 #include <cstdlib>
 #include <common/io/io.h>
+#include <cassert>
 #define MODULE "IDE Driver"
 #define ATA_REG_DATA       0x00
 #define ATA_REG_ERROR      0x01
@@ -152,9 +153,9 @@ namespace drivers::block{
             }
         }
         if(this->drives == 0){
-            dbg::printm(MODULE, "No drives could be found!!!\n");
-            std::abort();
+            dbg::printm(MODULE, "Warning: No drives could be found!!!\n");
         }
+        dbg::printm(MODULE, "Found %hd drives\n", this->drives);
         dbg::popTrace();
     }
     void IDEDriver::deinit(){}
@@ -180,15 +181,15 @@ namespace drivers::block{
     bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(drive+1 > this->drives){
-            dbg::printm(MODULE, "Cannot access drive %d\n", drive);
-            std::abort();
+            dbg::printm(MODULE, "Warning: Cannot access drive %d\n", drive);
+            return false;
         }
         uint8_t lba_mode, cmd;
         uint8_t lba_io[6];
         uint32_t channel = this->devices[drive].Channel;
         uint32_t slavebit = this->devices[drive].Drive;
         uint32_t bus = channels[channel].base;
-        uint32_t words = 256;
+        uint32_t words = SECTOR_SIZE/2;
         uint16_t cyl, i;
         uint8_t head, sect;
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
@@ -266,7 +267,8 @@ namespace drivers::block{
     }
     IDEDriver* loadIDEController(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        IDEDriver* drv = new IDEDriver;
+        IDEDriver* drv = new (std::nothrow) IDEDriver;
+        assert(drv);
         drv->init(device);
         dbg::popTrace();
         return drv;
