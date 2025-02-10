@@ -1,6 +1,7 @@
 #if !defined(_COMMON_DBG_DBG_H_)
 #define _COMMON_DBG_DBG_H_
 #include <cstdarg>
+#include <vector>
 
 namespace dbg{
     void printm(const char* module, const char* fmt, ...);
@@ -10,6 +11,7 @@ namespace dbg{
     void printStackTrace();
     void addTrace(const char* func);
     void popTrace();
+    std::vector<const char*> getMessages();
 };
 
 #endif // _COMMON_DBG_DBG_H_

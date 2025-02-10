@@ -101,14 +101,18 @@ namespace drivers::block{
         dbg::popTrace();
     }
     bool NVMeDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer){
-        (void)drive;
+        if(drive != this->nsid){
+            dbg::printm(MODULE, "Warning drive doesn't correspond to NSID\n");
+        }
         dbg::addTrace(__PRETTY_FUNCTION__);
         bool result = this->sendCmdIO(0x02, buffer, lba, sectors);
         dbg::popTrace();
         return result;
     }
     bool NVMeDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer){
-        (void)drive;
+        if(drive != this->nsid){
+            dbg::printm(MODULE, "Warning drive doesn't correspond to NSID\n");
+        }
         dbg::addTrace(__PRETTY_FUNCTION__);
         bool result = this->sendCmdIO(0x01, buffer, lba, sectors);
         dbg::popTrace();
@@ -147,6 +151,10 @@ namespace drivers::block{
         dbg::printm(MODULE, "w base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
         *reg = value;
         __asm__ volatile("mfence" ::: "memory");
+        if(this->readReg(offset) != value){
+            dbg::printm(MODULE, "Failed to update value at 0x%llx\n", (uint64_t)reg);
+            std::exit(1);
+        }
         dbg::popTrace();
     }
     void NVMeDriver::writeReg64(uint32_t offset, uint64_t value){
@@ -158,6 +166,10 @@ namespace drivers::block{
         dbg::printm(MODULE, "w64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
         *reg = value;
         __asm__ volatile("mfence" ::: "memory");
+        if(this->readReg64(offset) != value){
+            dbg::printm(MODULE, "Failed to update value at 0x%llx\n", (uint64_t)reg);
+            std::exit(1);
+        }
         dbg::popTrace();
     }
     uint8_t NVMeDriver::getConnectedDrives(){

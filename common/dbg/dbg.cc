@@ -6,6 +6,7 @@
 #include <cstdarg>
 
 namespace dbg{
+    std::vector<const char*> messages;
     static void putchar(const char c){
         io::outb(DBG_PORT, c);
     }
@@ -17,6 +18,7 @@ namespace dbg{
     }
     void print(const char* str){
         puts(str);
+        messages.push_back(str);
     }
     void printv(const char* fmt, va_list args){
         char str[4096];
@@ -30,13 +32,14 @@ namespace dbg{
         va_end(args);
     }
     void printm(const char* module, const char* fmt, ...){
-        print(module);
-        print(": ");
+        const char* fmtString = "%s: %s";
         char str[4096];
-        std::va_list args;
+        char outStr[4096];
+        snprintf(str, sizeof(str), fmtString, module, fmt);
+        va_list args;
         va_start(args, fmt);
-        std::vsnprintf(str, sizeof(str), fmt, args);
-        print(str);
+        vsnprintf(outStr, sizeof(outStr), str, args);
+        print(outStr);
         va_end(args);
     }
     static const char* stackTraces[4096];
@@ -56,5 +59,8 @@ namespace dbg{
             print(trace);
             putchar('\n');
         }
+    }
+    std::vector<const char*> getMessages(){
+        return messages;
     }
 }
