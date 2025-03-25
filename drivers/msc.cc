@@ -19,14 +19,10 @@ namespace drivers{
         }
         switch(device->subclassCode){
             case 0x1: {
-                mscDriver = drivers::block::loadIDEController(device);
-            } break;
-            case 0x6: {
-                dbg::printm(MODULE, "No, no SATA. F off\n");
+                mscDriver = block::loadIDEController(device);
             } break;
             case 0x8: {
-                dbg::printm(MODULE, "PROGIF: 0x%llx\n", pci::readConfigWord(device, 0x0a));
-                mscDriver = drivers::block::loadNVMeDriver(device);
+                mscDriver = block::loadNVMeDriver(device);
             } break;
             default: {
                 dbg::printm(MODULE, "TODO: Load MSC subclass %x\n", device->subclassCode);

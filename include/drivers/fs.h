@@ -23,12 +23,13 @@ namespace drivers{
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void close(int file) = 0;
             virtual void listFiles() = 0;
+            virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-            FSType __fs_type;
+            // FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };

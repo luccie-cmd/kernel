@@ -8,6 +8,7 @@ namespace driver{
     enum struct driverType : int {
         BLOCK,
         FILESYSTEM,
+        DISPLAY,
     };
     class Driver{
         public:

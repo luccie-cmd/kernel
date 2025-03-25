@@ -93,12 +93,19 @@ namespace mmu::vmm{
             dbg::printm(MODULE, "Attempted to double map address 0x%llx to 0x%llx\n", virtualAddr, physicalAddr);
             std::abort();
         }
+        if(virtualAddr % 0x1000 != 0 || physicalAddr % 0x1000 != 0){
+            dbg::printm(MODULE, "Attempted to map page with unaligned addresses (virtual: 0x%llx, physical: 0x%llx)\n", virtualAddr, physicalAddr);
+            std::abort();
+        }
         vmm_address vma = getVMMfromVA(virtualAddr);
         bool kernelPage = (prot & PROTECTION_KERNEL) != 0;
         bool readWrite = (prot & PROTECTION_RW) != 0;
         bool execute = (prot & PROTECTION_NOEXEC) == 0;
         bool presentMap = (map & MAP_PRESENT) != 0;
         bool globalMap = (map & MAP_GLOBAL) != 0;
+        bool uncachable = (map & MAP_UC) != 0;
+        bool writeTrough = (map & MAP_WT) != 0;
+        dbg::printm(MODULE, "(Virtual 0x%llx) Kernel: %s rw: %s nx: %s present: %s global: %s UC: %s WT: %s\n", virtualAddr, kernelPage ? "true" : "false", readWrite ? "true" : "false", !execute ? "true" : "false", presentMap ? "true" : "false", globalMap ? "true" : "false", uncachable ? "true" : "false", writeTrough ? "true" : "false");
         if(!presentMap){
             dbg::printm(MODULE, "Cannot map a page that isn't present\n");
             std::abort();
@@ -130,8 +137,8 @@ namespace mmu::vmm{
         pml4[vma.pml4e].no_execute = !execute;
         pml4[vma.pml4e].rw = readWrite;
         pml4[vma.pml4e].user = !kernelPage;
-        pml4[vma.pml4e].pwt = 0;
-        pml4[vma.pml4e].pcd = 0;
+        pml4[vma.pml4e].pwt = writeTrough;
+        pml4[vma.pml4e].pcd = uncachable;
         pml4[vma.pml4e].accesed = 0;
         pml4[vma.pml4e].ignored = 0;
         pml4[vma.pml4e].mbz = 0;
@@ -142,8 +149,8 @@ namespace mmu::vmm{
         pdpe[vma.pdpe].no_execute = !execute;
         pdpe[vma.pdpe].rw = readWrite;
         pdpe[vma.pdpe].user = !kernelPage;
-        pdpe[vma.pdpe].pwt = 0;
-        pdpe[vma.pdpe].pcd = 0;
+        pdpe[vma.pdpe].pwt = writeTrough;
+        pdpe[vma.pdpe].pcd = uncachable;
         pdpe[vma.pdpe].accesed = 0;
         pdpe[vma.pdpe].ignored = 0;
         pdpe[vma.pdpe].mbz = 0;
@@ -154,8 +161,8 @@ namespace mmu::vmm{
         pde[vma.pde].no_execute = !execute;
         pde[vma.pde].rw = readWrite;
         pde[vma.pde].user = !kernelPage;
-        pde[vma.pde].pwt = 0;
-        pde[vma.pde].pcd = 0;
+        pde[vma.pde].pwt = writeTrough;
+        pde[vma.pde].pcd = uncachable;
         pde[vma.pde].accesed = 0;
         pde[vma.pde].ignored = 0;
         pde[vma.pde].mbz = 0;
@@ -168,8 +175,8 @@ namespace mmu::vmm{
         pte[vma.pte].user = !kernelPage;
         pte[vma.pte].global = globalMap;
         pte[vma.pte].papn_ppn = physicalAddr >> 12;
-        pte[vma.pte].pwt = 0;
-        pte[vma.pte].pcd = 0;
+        pte[vma.pte].pwt = writeTrough;
+        pte[vma.pte].pcd = uncachable;
         pte[vma.pte].accesed = 0;
         pte[vma.pte].dirty = 0;
         pte[vma.pte].pat = 0;
@@ -181,7 +188,7 @@ namespace mmu::vmm{
     }
     void mapPage(size_t virtualAddr){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        mapPage(getPML4(task::getCurrentPID()), virtualAddr, virtualAddr, (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0) | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
+        mapPage(getPML4(task::getCurrentPID()), virtualAddr, virtualAddr, (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0) | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT | MAP_UC);
         dbg::popTrace();
     }
     uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {

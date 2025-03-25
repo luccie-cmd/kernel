@@ -13,7 +13,6 @@ namespace drivers::block{
     NVMeDriver::NVMeDriver() :MSCDriver(StorageType::NVMe) {
         dbg::addTrace(__PRETTY_FUNCTION__);
         this->nsid = 1;
-        this->cap_stride = 0;
         this->base_addr = 0;
         this->diskSize = 0;
         dbg::popTrace();
@@ -31,7 +30,6 @@ namespace drivers::block{
         uint32_t BAR0 = pci::readConfig(device, 0x10);
         uint32_t BAR1 = pci::readConfig(device, 0x14);
         this->base_addr = (uint64_t)(((uint64_t)BAR1 << 32) | (BAR0 & 0xFFFFFFF0));
-        this->cap_stride = ((uint64_t)this->base_addr >> 12) & 0xF;
         uint64_t cap = this->readReg64(0x00);
         *(uint64_t*)&this->capabilities = cap;
         if(pow(2, 12+this->capabilities.MinPagesize) != PAGE_SIZE){
@@ -121,38 +119,29 @@ namespace drivers::block{
     uint32_t NVMeDriver::readReg(uint32_t offset){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint32_t *reg = (volatile uint32_t *)(this->base_addr + offset);
-        if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)(reg), true) == 0){
-            mmu::vmm::mapPage((uint64_t)(reg));
-        }
-        dbg::printm(MODULE, "r base addr: 0x%llx offset: 0x%llx reg: 0x%llx\n", this->base_addr, offset, reg);
         __asm__ volatile("mfence" ::: "memory");
         uint32_t ret = *reg;
+        dbg::printm(MODULE, "r base addr: 0x%llx offset: 0x%llx reg: 0x%llx ret: 0x%llx\n", this->base_addr, offset, reg, ret);
         dbg::popTrace();
         return ret;
     }
     uint64_t NVMeDriver::readReg64(uint32_t offset){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint64_t *reg = (volatile uint64_t *)(this->base_addr + offset);
-        if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)(reg), true) == 0){
-            mmu::vmm::mapPage((uint64_t)(reg));
-        }
-        dbg::printm(MODULE, "r64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx\n", this->base_addr, offset, reg);
         __asm__ volatile("mfence" ::: "memory");
         uint64_t ret = *reg;
+        dbg::printm(MODULE, "r64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx ret: 0x%llx\n", this->base_addr, offset, reg, ret);
         dbg::popTrace();
         return ret;
     }
     void NVMeDriver::writeReg(uint32_t offset, uint32_t value){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint32_t *reg = (volatile uint32_t *)(this->base_addr + offset);
-        if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)(reg), true) == 0){
-            mmu::vmm::mapPage((uint64_t)(reg));
-        }
         dbg::printm(MODULE, "w base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
+        __asm__ volatile("sfence" ::: "memory");
         *reg = value;
-        __asm__ volatile("mfence" ::: "memory");
         if(this->readReg(offset) != value){
-            dbg::printm(MODULE, "Failed to update value at 0x%llx\n", (uint64_t)reg);
+            dbg::printm(MODULE, "Failed to update value at 0x%llx (32 bit)\n", (uint64_t)reg);
             std::exit(1);
         }
         dbg::popTrace();
@@ -160,14 +149,11 @@ namespace drivers::block{
     void NVMeDriver::writeReg64(uint32_t offset, uint64_t value){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint64_t *reg = (volatile uint64_t *)(this->base_addr + offset);
-        if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)(reg), true) == 0){
-            mmu::vmm::mapPage((uint64_t)(reg));
-        }
         dbg::printm(MODULE, "w64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
+        __asm__ volatile("sfence" ::: "memory");
         *reg = value;
-        __asm__ volatile("mfence" ::: "memory");
         if(this->readReg64(offset) != value){
-            dbg::printm(MODULE, "Failed to update value at 0x%llx\n", (uint64_t)reg);
+            dbg::printm(MODULE, "Failed to update value at 0x%llx (64 bit)\n", (uint64_t)reg);
             std::exit(1);
         }
         dbg::popTrace();
@@ -203,7 +189,7 @@ namespace drivers::block{
     	cmd->cwd12 = (uint16_t)(num_blocks-1);
     	std::memcpy((void *)sq_entry_addr, cmd, sizeof(NVMeCommand));
     	this->ioSq_tail++;
-    	this->writeReg(0x1000 + 2 * (4 << this->cap_stride), this->ioSq_tail);
+    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->ioSq_tail);
     	if (this->ioSq_tail == this->ioSq->size)
     		this->ioSq_tail = 0;
         NVMeCompletion *completion = (NVMeCompletion *)(cq_entry_addr);
@@ -219,7 +205,7 @@ namespace drivers::block{
 	    	}
 	    }
     	this->ioCq_head++;
-    	this->writeReg(0x1000 + (3 * (4 << this->cap_stride)), this->ioCq_head);
+    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->ioCq_head);
     	if (this->ioCq_head == this->ioCq->size)
     		this->ioCq_head = 0;
         uint16_t status = completion->status;
@@ -235,7 +221,7 @@ namespace drivers::block{
     bool NVMeDriver::sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t cwd11, uint32_t cwd1){
         dbg::addTrace(__PRETTY_FUNCTION__);
         void* pageAllignedBuffer = (void*)mmu::pmm::allocate();
-        if(!mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)pageAllignedBuffer, true) == 0){
+        if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), (uint64_t)pageAllignedBuffer, true) == 0){
             mmu::vmm::mapPage((size_t)pageAllignedBuffer);
         }
         std::memset(pageAllignedBuffer, 0, PAGE_SIZE);
@@ -255,18 +241,11 @@ namespace drivers::block{
     	cmd->cwd11 = cwd11;
     	std::memcpy((void *)sq_entry_addr, cmd, sizeof(NVMeCommand));
     	this->admSq_tail++;
-    	this->writeReg(0x1000 + 2 * (4 << this->cap_stride), this->admSq_tail);
-        uint32_t admSqTail = this->readReg(0x1000 + 2 * (4 << this->cap_stride));
+    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->admSq_tail);
+        uint32_t admSqTail = this->readReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride));
         if(this->admSq_tail != admSqTail){
             uint32_t status = this->readReg(0x1C);
             dbg::printm(MODULE, "Submission queue tail not acknowledged\nStatus: 0b%032lb\n", status);
-            uint8_t* cAddr = (uint8_t*)this->base_addr+0x1000;
-            for(size_t i = 0; i < PAGE_SIZE; ++i){
-                dbg::printf("%02x ", cAddr[i]);
-                if((i+1)%32 == 0){
-                    dbg::print("\n");
-                }
-            }
             std::abort();
         }
     	if (this->admSq_tail == this->admSq->size)
@@ -275,7 +254,7 @@ namespace drivers::block{
         if(mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), cq_entry_addr, true) != cq_entry_addr){
             mmu::vmm::mapPage(cq_entry_addr);
         }
-        uint32_t timeout = UINT32_MAX;
+        uint64_t timeout = this->capabilities.TimeoutMax;
         while (timeout > 0) {
             if (completion->cmd_id == cmd->command_id || timeout == 0) {
                 break;
@@ -287,7 +266,7 @@ namespace drivers::block{
             std::abort();
         }
     	this->admCq_head++;
-    	this->writeReg(0x1000 + (3 * (4 << this->cap_stride)), this->admCq_head);
+    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->admCq_head);
     	if (this->admCq_head == this->admCq->size)
     		this->admCq_head = 0;
         uint16_t status = completion->status;

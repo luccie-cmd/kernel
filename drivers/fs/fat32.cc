@@ -6,6 +6,7 @@
 #include <kernel/task/task.h>
 #include <common/dbg/dbg.h>
 #include <cassert>
+#include <string>
 #define MODULE "FAT32 Driver"
 
 namespace drivers::fs{
@@ -79,7 +80,7 @@ namespace drivers::fs{
             } else{
                 size_t len = std::strlen(path);
                 std::memcpy(name, path, len);
-                name[len + 1] = '\0';
+                name[len] = '\0';
                 path += len;
                 isLast = true;
             }
@@ -105,7 +106,8 @@ namespace drivers::fs{
     }
     void FAT32Driver::read(int file, size_t length, void* buffer){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        std::abort();
+        FAT_File fatFile = this->files.at(file)->Public;
+        this->readBytes(&fatFile, fatFile.Size, buffer);
         dbg::popTrace();
     }
     void FAT32Driver::close(int file){
@@ -122,8 +124,32 @@ namespace drivers::fs{
         }
         dbg::popTrace();
     }
+    int FAT32Driver::getLengthOfFile(int file){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        FAT_File fatFile = this->files.at(file)->Public;
+        int size = fatFile.Size;
+        dbg::popTrace();
+        return size;
+    }
     void FAT32Driver::listFiles(){
-        
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
+        FAT_File* current = &this->rootDir->Public;
+        while(this->readEntry(current, entry)){
+            if(entry->Name[0] == 0x00){
+                dbg::popTrace();
+                delete entry;
+                return;
+            }
+            if(entry->Name[0] == ' '){
+                dbg::popTrace();
+                delete entry;
+                return;
+            }
+            dbg::printm(MODULE, "%s: %.11s\n", entry->Attributes & (uint8_t)FAT_Attributes::DIRECTORY ? "DIR " : "FILE", entry->Name);
+        }
+        delete entry;
+        dbg::popTrace();
     }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
         return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster);
@@ -207,20 +233,55 @@ namespace drivers::fs{
     bool FAT32Driver::readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry){
         return this->readBytes(file, sizeof(FAT_DirectoryEntry), (void*)dirEntry) == sizeof(FAT_DirectoryEntry);
     }
+    static void appendLFN(FAT_DirectoryEntry* entry, std::vector<uint16_t>& buffer){
+        const FAT_LFNEntry* lfn = reinterpret_cast<const FAT_LFNEntry*>(entry);
+        if (lfn->Attributes != 0x0F) {
+            dbg::printm(MODULE, "Error: Not an LFN entry\n");
+            return;
+        }
+        uint16_t namePart[13];
+        std::memcpy(&namePart[0], lfn->Name1, 5 * sizeof(uint16_t));
+        std::memcpy(&namePart[5], lfn->Name2, 6 * sizeof(uint16_t));
+        std::memcpy(&namePart[11], lfn->Name3, 2 * sizeof(uint16_t));
+        for (uint16_t c : namePart) {
+            if (c == 0xFFFF || c == 0x0000) break;
+            buffer.push_back(c);
+        }
+    }
+    static std::string decodeLFN(const std::vector<uint16_t>& buffer) {
+        std::string result;
+        for (uint16_t c : buffer) {
+            if (c == 0xFFFF || c == 0x0000) break;
+            result += static_cast<char>(c);
+        }
+        return result;
+    }
     bool FAT32Driver::findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry){
         dbg::addTrace(__PRETTY_FUNCTION__);
         char shortName[12];
         FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
         assert(entry != nullptr);
         getShortName(name, shortName);
+        std::vector<uint16_t> lfnBuffer;
+        bool lfnActive = false;
         while(this->readEntry(file, entry)){
             if(entry->Name[0] == 0x00){
-                dbg::popTrace();
-                return false;
+                break;
             }
-            if(entry->Name[0] == ' '){
-                dbg::popTrace();
-                return false;
+            if(entry->Attributes == (uint8_t)FAT_Attributes::LFN){
+                lfnActive = true;
+                appendLFN(entry, lfnBuffer);
+                continue;
+            }
+            if(lfnActive){
+                std::string lfnName = decodeLFN(lfnBuffer);
+                if(lfnName == name){
+                    *outEntry = *entry;
+                    dbg::popTrace();
+                    return true;
+                }
+                lfnBuffer.clear();
+                lfnActive = false;
             }
             if(std::memcmp(shortName, entry->Name, 11) == 0){
                 *outEntry = *entry;

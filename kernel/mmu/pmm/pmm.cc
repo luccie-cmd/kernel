@@ -26,12 +26,14 @@ namespace mmu::pmm{
             std::abort();
         }
         uint64_t memmap_entries = memmap_request.response->entry_count;
+        uint64_t total = 0;
         for(uint64_t i = 0; i < memmap_entries; ++i){
             limine_memmap_entry* entry = memmap_request.response->entries[i];
             if((entry->type == LIMINE_MEMMAP_USABLE || entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE) && entry->length >= PAGE_SIZE){
                 if(entry->base == io::rcr3()){
                     continue;
                 }
+                total += entry->length;
                 node* newNode = (node*)vmm::makeVirtual(entry->base);
                 newNode->size = entry->length;
                 if(__head == nullptr){

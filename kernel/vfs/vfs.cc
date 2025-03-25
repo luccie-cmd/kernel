@@ -253,4 +253,35 @@ namespace vfs{
         vfsFile->used = false;
         dbg::popTrace();
     }
+    void readFile(int handle, int size, void* buffer){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        VFSFile* vfsFile = vfsFiles[handle];
+        if(!vfsFile){
+            dbg::printm(MODULE, "ERROR: Tried reading non existent entry!!!\n");
+            abort();
+        }
+        if(vfsFile->mpIdx > MAX_MOUNTPOINTS){
+            dbg::printm(MODULE, "No mountpoint available at index 0x%llx\n", vfsFile->mpIdx);
+            abort();
+        }
+        MountPoint* mp = mountPoints[vfsFile->mpIdx];
+        mp->fileSystemDriver->read(vfsFile->fsHandle, 0, buffer);
+        dbg::popTrace();
+    }
+    int getLen(int handle){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        VFSFile* vfsFile = vfsFiles[handle];
+        if(!vfsFile){
+            dbg::printm(MODULE, "ERROR: Tried reading non existent entry!!!\n");
+            abort();
+        }
+        if(vfsFile->mpIdx > MAX_MOUNTPOINTS){
+            dbg::printm(MODULE, "No mountpoint available at index 0x%llx\n", vfsFile->mpIdx);
+            abort();
+        }
+        MountPoint* mp = mountPoints[vfsFile->mpIdx];
+        int size = mp->fileSystemDriver->getLengthOfFile(vfsFile->fsHandle);
+        dbg::popTrace();
+        return size;
+    }
 };

@@ -17,7 +17,7 @@ void* operator new(size_t size){
     dbg::popTrace();
     return addr;
 }
-void* operator new(size_t size, const std::nothrow_t& nothrow){
+void* operator new(size_t size, const std::nothrow_t& nothrow) noexcept{
     (void)nothrow;
     dbg::addTrace(__PRETTY_FUNCTION__);
     void* addr = mmu::heap::allocate(size);

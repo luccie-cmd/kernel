@@ -59,6 +59,16 @@ namespace drivers::fs{
         uint16_t FirstClusterLow;
         uint32_t Size;
     } __attribute__((packed));
+    struct FAT_LFNEntry{
+        uint8_t sequence;
+        uint16_t Name1[5];
+        uint8_t Attributes;
+        uint8_t Type;
+        uint8_t Checksum;
+        uint16_t Name2[6];
+        uint16_t FirstCluster;
+        uint16_t Name3[2];
+    } __attribute__((packed));
     struct FAT_File{
         int Handle;
         task::pid_t Pid;
@@ -74,40 +84,41 @@ namespace drivers::fs{
         uint32_t CurrentCluster;
         uint32_t CurrentSectorInCluster;
     };
-    enum struct FAT_Attributes : int{
+    enum struct FAT_Attributes : uint8_t {
         READ_ONLY         = 0x01,
         HIDDEN            = 0x02,
         SYSTEM            = 0x04,
         VOLUME_ID         = 0x08,
         DIRECTORY         = 0x10,
         ARCHIVE           = 0x20,
+        LFN               = READ_ONLY|HIDDEN|SYSTEM|VOLUME_ID
     };
     class FAT32Driver : public FSDriver{
         public:
             FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
             ~FAT32Driver();
-            void __attribute__((nonnull(1))) init(pci::device* dev);
+            void init(pci::device* dev);
             void deinit();
-            int __attribute__((nonnull(1))) open(task::pid_t PID, const char* path, int flags);
-            void __attribute__((nonnull(1))) read(int file, size_t length, void* buffer);
+            int open(task::pid_t PID, const char* path, int flags);
+            void read(int file, size_t length, void* buffer);
             void close(int file);
+            int getLengthOfFile(int file);
             void listFiles();
         private:
             FAT_BootSector* bootSector;
             FAT_FileData* rootDir;
             std::vector<FAT_FileData*> files;
-            // FAT_FileData* openedFiles[FAT32_MAX_FILE_HANDLES];
             uint8_t cache[FAT32_CACHE_SIZE*SECTOR_SIZE];
             uint32_t cachePos;
             uint32_t maxSectors;
             uint32_t sectorsPerFat;
             uint32_t dataSectionLBA;
             uint32_t clusterToLBA(uint32_t cluster);
-            bool __attribute__((nonnull(1, 2, 3))) findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
-            FAT_File* __attribute__((nonnull(1))) openEntry(FAT_DirectoryEntry *entry);
-            bool __attribute__((nonnull(1, 2))) readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
+            bool findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
+            FAT_File* openEntry(FAT_DirectoryEntry *entry);
+            bool readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
             uint32_t nextCluster(uint32_t currentCluster);
-            uint32_t __attribute__((nonnull(1, 2))) readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
+            uint32_t readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
             void readFat(size_t lbaIdx);
     };
 };

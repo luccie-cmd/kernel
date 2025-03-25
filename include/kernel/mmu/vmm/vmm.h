@@ -21,6 +21,8 @@
 #define PROTECTION_KERNEL (1 << 2)
 #define MAP_GLOBAL        (1 << 0)
 #define MAP_PRESENT       (1 << 1)
+#define MAP_UC            (1 << 2)
+#define MAP_WT            (1 << 3)
 
 namespace mmu{
 namespace vmm{

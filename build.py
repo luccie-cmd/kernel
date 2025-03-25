@@ -83,12 +83,12 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-nodefaultlibs', '-nostdlib', '-D_LIBCPP_HAS_NO_THREADS']
-CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-finline-functions-called-once', '-finline-limit=1000', '-fmax-errors=1', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fno-stack-protector', '-ffast-math', '-funroll-loops', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays']
+CONFIG["CFLAGS"] = ['-c', '-nodefaultlibs', '-nostdlib', '-D_LIBCPP_HAS_NO_THREADS', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include']
+CONFIG["CFLAGS"] += ['-ffreestanding', '-finline-functions', '-fno-strict-aliasing', '-fno-common', '-fno-asynchronous-unwind-tables', '-fno-delete-null-pointer-checks', '-fno-stack-protector', '-ffast-math', '-funroll-loops']
 CONFIG["CFLAGS"] += ['-fno-builtin', '-fomit-frame-pointer', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic', '-fno-lto', '-fno-unwind-tables']
-CONFIG["CFLAGS"] += ['-mno-sse2', '-mno-red-zone', '-mno-avx', '-march=native', '-mtune=native', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=native', '-mtune=native', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wcast-align', '-Wpointer-arith', '-Wshadow']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wno-unused-parameter', '-Wno-unused-variable', '-Wno-unused-function', '-Wno-cast-align', '-Wpointer-arith', '-Wshadow']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti', '-Wno-write-strings', '-Wno-cast-qual']
 CONFIG["ASFLAGS"] = ['-felf64']
 CONFIG["LDFLAGS"] = ['-nostdlib', '-nodefaultlibs', '-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-fno-PIE', '-fno-pie', '-fno-PIC', '-fno-pic', '-fno-lto']
@@ -113,6 +113,9 @@ if "debug" in CONFIG.get("config"):
 else:
     CONFIG["LDFLAGS"] += ["-O2"]
 
+if "gcc" in CONFIG.get("compiler"):
+    CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=1000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']
+
 stopEvent = threading.Event()
 
 def callCmd(command, print_out=False):
@@ -135,7 +138,9 @@ def getExtension(file):
     return file.split(".")[-1]
 
 def buildC(file):
-    compiler = "gcc-11"
+    compiler = CONFIG.get("compiler")[0]
+    if compiler == "gcc":
+        compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options.append("-std=c11")
     command = compiler + " " + file
@@ -146,7 +151,9 @@ def buildC(file):
     return callCmd(command, True)[0]
 
 def buildCXX(file):
-    compiler = "g++-11"
+    compiler = CONFIG.get("compiler")[0]
+    if compiler == "gcc":
+        compiler = "g++-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
     options.append("-std=c++23")
@@ -234,7 +241,7 @@ def linkKernel(kernel_dir, linker_file, static_lib_files=[]):
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"objdump -C -z -d -Mintel64 -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
+    callCmd(f"objdump -C -d -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])

@@ -125,12 +125,12 @@ namespace hal::arch::x64::idt{
         dbg::printf("R8 =0x%016.16llx R9 =0x%016.16llx R10=0x%016.16llx R11=0x%016.16llx\n", regs->r8, regs->r9, regs->r10, regs->r11);
         dbg::printf("R12=0x%016.16llx R13=0x%016.16llx R14=0x%016.16llx R15=0x%016.16llx\n", regs->r12, regs->r13, regs->r14, regs->r15);
         dbg::printf("RIP=0x%016.16llx RFL=", regs->rip); printRfl(regs->rflags);
-        dbg::printf("ES =0x%016.16llx\n", regs->es);
-        dbg::printf("CS =0x%016.16llx\n", regs->cs);
-        dbg::printf("SS =0x%016.16llx\n", regs->ss);
-        dbg::printf("DS =0x%016.16llx\n", regs->ds);
-        dbg::printf("FS =0x%016.16llx\n", regs->fs);
-        dbg::printf("GS =0x%016.16llx\n", regs->gs);
+        dbg::printf("ES =0x%02.2llx\n", regs->es);
+        dbg::printf("CS =0x%02.2llx\n", regs->cs);
+        dbg::printf("SS =0x%02.2llx\n", regs->ss);
+        dbg::printf("DS =0x%02.2llx\n", regs->ds);
+        dbg::printf("FS =0x%02.2llx\n", regs->fs);
+        dbg::printf("GS =0x%02.2llx\n", regs->gs);
         dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
     }
     extern "C" uint64_t handleInt(io::Registers* regs){
@@ -179,7 +179,7 @@ namespace hal::arch::x64::idt{
         }
         dbg::printf("Handled pagefault for address 0x%llx\n", io::rcr2() & PAGE_MASK);
         enablePageFaultProtection();
-        return 0;
+        return regs->rip;
     }
     uint64_t handleUD(io::Registers* regs){
         disableUDProtection();

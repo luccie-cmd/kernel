@@ -61,15 +61,14 @@ namespace drivers::block{
         public:
             NVMeDriver();
             ~NVMeDriver();
-            bool __attribute__((nonnull(1))) read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
-            bool __attribute__((nonnull(1))) write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
-            void __attribute__((nonnull(1))) init(pci::device* device);
+            bool read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
+            bool write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
+            void init(pci::device* device);
             void deinit();
             uint8_t getConnectedDrives();
             uint64_t getDiskSize(uint8_t disk);
         private:
             uint64_t base_addr;
-            uint64_t cap_stride;
             uint64_t nsid;
             uint64_t diskSize;
             NVMeCap capabilities;
@@ -78,8 +77,8 @@ namespace drivers::block{
             NVMeQueue* admCq;
             NVMeQueue* admSq;
             uint64_t ioSq_tail, ioCq_head, admSq_tail, admCq_head;
-            bool __attribute__((nonnull(1))) sendCmdIO(uint8_t opcode, void *data, uint64_t lba, uint16_t num_blocks);
-            bool __attribute__((nonnull(1))) sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t cwd11, uint32_t cwd1);
+            bool sendCmdIO(uint8_t opcode, void *data, uint64_t lba, uint16_t num_blocks);
+            bool sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t cwd11, uint32_t cwd1);
             uint32_t readReg(uint32_t offset);
             uint64_t readReg64(uint32_t offset);
             void writeReg(uint32_t offset, uint32_t value);

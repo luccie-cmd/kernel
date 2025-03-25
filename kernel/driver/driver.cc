@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdlib>
 #include <drivers/msc.h>
+#include <drivers/display.h>
 #define MODULE "Driver manager"
 
 namespace driver{
@@ -19,17 +20,19 @@ namespace driver{
                 driver = drivers::loadMSCdriver(device);
             } break;
             case 0x2: {
-                dbg::printm(MODULE, "TODO: Setup networking\n");
+                dbg::printm(MODULE, "TODO: Setup networking (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)pci::readConfigWord(device, 0x0a));
             } break;
             case 0x3: {
-                dbg::printm(MODULE, "TODO: display drivers\n");
+                driver = drivers::loadDisplayDriver(device);
             } break;
-            case 0xc:
+            case 0xc: {
+                dbg::printm(MODULE, "TODO: Load Serial Bus controllers (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)pci::readConfigWord(device, 0x0a));
+            } break;
             case 0x6: {
                 dbg::printm(MODULE, "Not loading bridge drivers\n");
             } break;
             default: {
-                dbg::printm(MODULE, "TODO: Load driver for class %x\n", device->classCode);
+                dbg::printm(MODULE, "TODO: Load driver for class %02x\n", device->classCode);
                 std::abort();
             } break;
         }

@@ -26,6 +26,8 @@ namespace vfs{
     void umount(const char* mountLocation);
     int openFile(const char* path, int flags);
     void closeFile(int handle);
+    void readFile(int handle, int size, void* buffer);
+    int getLen(int handle);
     void printInfo();
 };
 

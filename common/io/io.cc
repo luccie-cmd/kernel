@@ -34,6 +34,7 @@ namespace io{
     }
     void invalpg(void* addr){
         __asm__ volatile ( "invlpg (%0)" : : "r"(addr) : "memory" );
+        __asm__ volatile("sfence; lfence; mfence" ::: "memory");
     }
     void wcr3(uint64_t newCR3){
         __asm__ volatile ( "mov %0, %%cr3" : : "r" (newCR3) : "memory" );
