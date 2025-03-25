@@ -11,7 +11,6 @@ extern "C" void KernelMain(){
     int handle = vfs::openFile("/tmp/limine.conf", 0);
     dbg::printf("Everything worked %d\n", handle);
     char *buffer = new char[vfs::getLen(handle)];
-    
     vfs::readFile(handle, vfs::getLen(handle), (void*)buffer);
     vfs::closeFile(handle);
     std::abort();
