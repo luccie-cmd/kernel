@@ -216,17 +216,6 @@ namespace vfs{
         }   
         if(handle == -1 || mpIdx == -1){
             dbg::printm(MODULE, "Unable to find file `%s`\n", path);
-            for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
-                MountPoint* mp = mountPoints[i];
-                if(!mp){
-                    continue;
-                }
-                if(mp->mounted == false || mp->fileSystemDriver == nullptr){
-                    continue;
-                }
-                dbg::printm(MODULE, "Files on mountpoint `%s`:\n", mp->mountPath);
-                mp->fileSystemDriver->listFiles();
-            }
             std::abort();
         }
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);

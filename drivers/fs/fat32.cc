@@ -131,26 +131,6 @@ namespace drivers::fs{
         dbg::popTrace();
         return size;
     }
-    void FAT32Driver::listFiles(){
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
-        FAT_File* current = &this->rootDir->Public;
-        while(this->readEntry(current, entry)){
-            if(entry->Name[0] == 0x00){
-                dbg::popTrace();
-                delete entry;
-                return;
-            }
-            if(entry->Name[0] == ' '){
-                dbg::popTrace();
-                delete entry;
-                return;
-            }
-            dbg::printm(MODULE, "%s: %.11s\n", entry->Attributes & (uint8_t)FAT_Attributes::DIRECTORY ? "DIR " : "FILE", entry->Name);
-        }
-        delete entry;
-        dbg::popTrace();
-    }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
         return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster);
     }

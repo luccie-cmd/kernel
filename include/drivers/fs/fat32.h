@@ -103,7 +103,6 @@ namespace drivers::fs{
             void read(int file, size_t length, void* buffer);
             void close(int file);
             int getLengthOfFile(int file);
-            void listFiles();
         private:
             FAT_BootSector* bootSector;
             FAT_FileData* rootDir;
