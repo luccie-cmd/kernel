@@ -20,7 +20,7 @@ def readConfig(path: str) -> dict[str, list[str]]:
                     value = value.strip().strip("'")
                     config[key] = [v.strip().strip("'") for v in value.split(",")]
     except FileNotFoundError:
-        print(f"Error: Configuration file '{path}' not found.")
+        print(f"Configuration file '{path}' not found.")
         exit(1)
     return config
 

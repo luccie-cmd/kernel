@@ -6,15 +6,15 @@
 namespace std{
     const std::nothrow_t nothrow;
     void __throw_length_error(char const* str){
-        dbg::printf("ERROR: %s:%s\n", __PRETTY_FUNCTION__, str);
+        dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, str);
         abort();
     }
     void __throw_bad_alloc(){
-        dbg::printf("ERROR: %s\n", __PRETTY_FUNCTION__);
+        dbg::printf("%s\n", __PRETTY_FUNCTION__);
         abort();
     }
     void __throw_bad_array_new_length(){
-        dbg::printf("ERROR: %s\n", __PRETTY_FUNCTION__);
+        dbg::printf("%s\n", __PRETTY_FUNCTION__);
         abort();
     }
     void __throw_out_of_range_fmt(char const* fmt, ...){

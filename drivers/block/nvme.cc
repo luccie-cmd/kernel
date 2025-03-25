@@ -33,15 +33,15 @@ namespace drivers::block{
         uint64_t cap = this->readReg64(0x00);
         *(uint64_t*)&this->capabilities = cap;
         if(pow(2, 12+this->capabilities.MinPagesize) != PAGE_SIZE){
-            dbg::printm(MODULE, "ERROR: Page sizes of 0x%llx not supported, minimum size: 0x%llx\n", PAGE_SIZE, pow(2, 12+this->capabilities.MinPagesize));
+            dbg::printm(MODULE, "Page sizes of 0x%llx not supported, minimum size: 0x%llx\n", PAGE_SIZE, pow(2, 12+this->capabilities.MinPagesize));
             std::abort();
         }
         if(this->capabilities.DefaultCommandSet == 0){
-            dbg::printm(MODULE, "ERROR: Default command set not supported\n");
+            dbg::printm(MODULE, "Default command set not supported\n");
             std::abort();
         }
         if(this->capabilities.CSS_AdminOnly == 0){
-            dbg::printm(MODULE, "ERROR: Admin only commands are not supported\n");
+            dbg::printm(MODULE, "Admin only commands are not supported\n");
             std::abort();
         }
         uint32_t cc = this->readReg(0x14);
@@ -74,7 +74,7 @@ namespace drivers::block{
         }
         csts = this->readReg(0x1C);
         if ((csts & ~1) != 0) {
-            dbg::printm(MODULE, "ERROR: Controller status error bits are set: 0b%032b\n", csts);
+            dbg::printm(MODULE, "Controller status error bits are set: 0b%032b\n", csts);
             std::abort();
         }
         this->ioCq = new NVMeQueue;
@@ -176,7 +176,7 @@ namespace drivers::block{
     	uint64_t cq_entry_addr = this->ioCq->addr + (this->ioCq_head * sizeof(NVMeCompletion));
         NVMeCommand* cmd = new NVMeCommand;
         if(cmd == nullptr){
-            dbg::printm(MODULE, "ERROR: Failed to allocate NVMe command\n");
+            dbg::printm(MODULE, "Failed to allocate NVMe command\n");
             std::abort();
         }
         cmd->command_id = 0x1337;
@@ -229,7 +229,7 @@ namespace drivers::block{
     	uint64_t cq_entry_addr = this->admCq->addr + (this->admCq_head * sizeof(NVMeCompletion));
         NVMeCommand *cmd = new NVMeCommand;
         if(cmd == nullptr){
-            dbg::printm(MODULE, "ERROR: Failed to allocate NVMe command\n");
+            dbg::printm(MODULE, "Failed to allocate NVMe command\n");
             std::abort();
         }
         cmd->command_id = 0x1337;

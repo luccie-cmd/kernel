@@ -33,7 +33,7 @@ namespace vfs{
                 return vfsFiles[i];
             }
         }
-        dbg::printm(MODULE, "ERROR: No more VFS files available\n");
+        dbg::printm(MODULE, "No more VFS files available\n");
         abort();
     }
     void initialize(){
@@ -92,12 +92,12 @@ namespace vfs{
         uint8_t *MBR = new uint8_t[512];
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
-            dbg::printm(MODULE, "ERROR: Failed to read partition table header\n");
+            dbg::printm(MODULE, "Failed to read partition table header\n");
             std::abort();
         }
         uint8_t* buffer = new uint8_t[15872];
         if(!blockDriver->read(newDisk, 2, 31, buffer)){
-            dbg::printm(MODULE, "ERROR: Failed to read partition entries\n");
+            dbg::printm(MODULE, "Failed to read partition entries\n");
             std::abort();
         }
         std::vector<PartitionEntry*> entries;
@@ -107,7 +107,7 @@ namespace vfs{
                 break;
             }
             if(entry->endLBA > blockDriver->getDiskSize(newDisk)){
-                dbg::printm(MODULE, "ERROR: GPT entry more then maximum disk size\n");
+                dbg::printm(MODULE, "GPT entry more then maximum disk size\n");
                 std::abort();
             }
             uint8_t* newGUID = parseGUID(entry->GUID);
@@ -120,7 +120,7 @@ namespace vfs{
         delete[] buffer;
         delete PTH;
         if(entries.size() == 0){
-            dbg::printm(MODULE, "ERROR: Unable to find any partitions on disk %hd\n", disk);
+            dbg::printm(MODULE, "Unable to find any partitions on disk %hd\n", disk);
             std::abort();
         }
         if((uint8_t)(disk+1) > partitionEntries.size()){
@@ -142,7 +142,7 @@ namespace vfs{
                 return {mp, i};
             }
         }
-        dbg::printm(MODULE, "ERROR: Could not find available mount point\n");
+        dbg::printm(MODULE, "Could not find available mount point\n");
         std::abort();
     }
     void mount(uint8_t disk, uint8_t partition, const char* mountLocation){
@@ -154,15 +154,15 @@ namespace vfs{
             readGPT(disk);
         }
         if(partitionEntries.size() == 0 || partitionEntries.at(disk).size() == 0){
-            dbg::printm(MODULE, "ERROR: Unable to read GPT from disk %hd\n", disk);
+            dbg::printm(MODULE, "Unable to read GPT from disk %hd\n", disk);
             abort();
         }
         if(partitionEntries.size() <= disk){
-            dbg::printm(MODULE, "ERROR: Unable to mount disk %hhd as it doesn't have a partition table\n");
+            dbg::printm(MODULE, "Unable to mount disk %hhd as it doesn't have a partition table\n");
             std::abort();
         }
         if(partitionEntries.at(disk).size() <= partition){
-            dbg::printm(MODULE, "ERROR: Partition is out of the possible partitions\n");
+            dbg::printm(MODULE, "Partition is out of the possible partitions\n");
             dbg::printm(MODULE, "Attempted to load partition %hhd but only %lld partitions were found\n", partition, partitionEntries.at(disk).size());
             std::abort();
         }
@@ -221,16 +221,16 @@ namespace vfs{
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);
         dbg::popTrace();
         return vfsFile->vfsHandle;
-    }
+    }   
     void closeFile(int handle){
         dbg::addTrace(__PRETTY_FUNCTION__);
         VFSFile* vfsFile = vfsFiles[handle];
         if(!vfsFile){
-            dbg::printm(MODULE, "ERROR: Tried closing non existent entry!!!\n");
+            dbg::printm(MODULE, "Tried closing non existent entry!!!\n");
             abort();
         }
         if(vfsFile->used == false){
-            dbg::printm(MODULE, "ERROR: Tried closing already closed file!!!\n");
+            dbg::printm(MODULE, "Tried closing already closed file!!!\n");
             abort();
         }
         if(vfsFile->mpIdx > MAX_MOUNTPOINTS){
@@ -246,7 +246,7 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         VFSFile* vfsFile = vfsFiles[handle];
         if(!vfsFile){
-            dbg::printm(MODULE, "ERROR: Tried reading non existent entry!!!\n");
+            dbg::printm(MODULE, "Tried reading non existent entry!!!\n");
             abort();
         }
         if(vfsFile->mpIdx > MAX_MOUNTPOINTS){
@@ -265,7 +265,7 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         VFSFile* vfsFile = vfsFiles[handle];
         if(!vfsFile){
-            dbg::printm(MODULE, "ERROR: Tried reading non existent entry!!!\n");
+            dbg::printm(MODULE, "Tried reading non existent entry!!!\n");
             abort();
         }
         if(vfsFile->mpIdx > MAX_MOUNTPOINTS){

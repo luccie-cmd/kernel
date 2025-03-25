@@ -10,7 +10,7 @@ from decimal import Decimal
 def parseSize(size: str) -> int:
     size_match = re.match(r'([0-9\.]+)([kmg]?)', size, re.IGNORECASE)
     if size_match is None:
-        raise ValueError(f'Error: Invalid size {size}')
+        raise ValueError(f'Invalid size {size}')
 
     result = Decimal(size_match.group(1))
     multiplier = size_match.group(2).lower()

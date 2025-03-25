@@ -76,7 +76,7 @@ namespace driver{
             initialize();
         }
         if(getDevicesCount(type) == 0){
-            dbg::printm(MODULE, "ERROR: Unable to search for device type %d if there are no devices like that\n", (int)type);
+            dbg::printm(MODULE, "Unable to search for device type %d if there are no devices like that\n", (int)type);
             std::abort();
         }
         std::vector<Driver*> retDrivers;

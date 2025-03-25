@@ -113,7 +113,7 @@ namespace drivers::fs{
     void FAT32Driver::close(int file){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(file > (int)this->files.size()){
-            dbg::printm(MODULE, "ERROR: Can't close file which was not opened by FAT (handle=%llu)\n", file);
+            dbg::printm(MODULE, "Can't close file which was not opened by FAT (handle=%llu)\n", file);
             std::abort();
         }
         if(file == FAT32_ROOT_DIRECTORY_HANDLE){
@@ -154,7 +154,7 @@ namespace drivers::fs{
         FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
         uint8_t* u8DataOut = (uint8_t*)dataOut;
         if(u8DataOut == nullptr){
-            dbg::printm(MODULE, "ERROR: Unable to write to nullptr\n");
+            dbg::printm(MODULE, "Unable to write to nullptr\n");
             std::abort();
         }
         uint32_t oldBytesCount = bytesCount;
@@ -216,7 +216,7 @@ namespace drivers::fs{
     static void appendLFN(FAT_DirectoryEntry* entry, std::vector<uint16_t>& buffer){
         const FAT_LFNEntry* lfn = reinterpret_cast<const FAT_LFNEntry*>(entry);
         if (lfn->Attributes != 0x0F) {
-            dbg::printm(MODULE, "Error: Not an LFN entry\n");
+            dbg::printm(MODULE, "Not an LFN entry\n");
             return;
         }
         uint16_t namePart[13];
@@ -277,7 +277,7 @@ namespace drivers::fs{
         int handle = -1;
         for (uint64_t i = 0; i < files.size(); ++i) {
             if(this->files.at(i) == nullptr){
-                dbg::printm(MODULE, "ERROR: File at index %llu deallocated before module release\n", i);
+                dbg::printm(MODULE, "File at index %llu deallocated before module release\n", i);
                 std::abort();
             }
             if (this->files.at(i)->Opened == false) {
@@ -289,18 +289,18 @@ namespace drivers::fs{
             dbg::printm(MODULE, "WARNING: Ran out of fat file datas, adding new one\n");
             FAT_FileData* fd = new FAT_FileData;
             if(fd == nullptr){
-                dbg::printm(MODULE, "ERROR: new FAT_FileData returned nullptr");
+                dbg::printm(MODULE, "new FAT_FileData returned nullptr");
                 std::abort();
             }
             fd->Opened = false;
             this->files.push_back(fd);
             for (uint64_t i = 0; i < this->files.size(); ++i) {
                 if(this->files.data() == nullptr){
-                    dbg::printm(MODULE, "ERROR: FAT files data integrety comprimised\n");
+                    dbg::printm(MODULE, "FAT files data integrety comprimised\n");
                     std::abort();
                 }
                 if(this->files.at(i) == nullptr){
-                    dbg::printm(MODULE, "ERROR: File at index %llu deallocated before module release\n", i);
+                    dbg::printm(MODULE, "File at index %llu deallocated before module release\n", i);
                     std::abort();
                 }
                 if (this->files.at(i)->Opened == false) {

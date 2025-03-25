@@ -47,7 +47,7 @@ namespace drivers {
             dbg::popTrace();
             return drv;
         }
-        dbg::printm(MODULE, "ERROR: Unable to find a matching FS for GUID: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+        dbg::printm(MODULE, "Unable to find a matching FS for GUID: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
             entry->GUID[0], entry->GUID[1], entry->GUID[2], entry->GUID[3], entry->GUID[4], entry->GUID[5],
             entry->GUID[6], entry->GUID[7], entry->GUID[8], entry->GUID[9], entry->GUID[10], entry->GUID[11],
             entry->GUID[12], entry->GUID[13], entry->GUID[14], entry->GUID[15]);

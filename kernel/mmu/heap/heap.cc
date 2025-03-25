@@ -95,7 +95,7 @@ namespace mmu::heap{
     void free(void* ptr, size_t size){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
-            dbg::printm(MODULE, "ERROR: Called free before initialized\n");
+            dbg::printm(MODULE, "Called free before initialized\n");
             abort();
         }
         bool found = false;
@@ -111,18 +111,18 @@ namespace mmu::heap{
             current = current->next;
         }
         if(!found){
-            dbg::printm(MODULE, "ERROR: Tried freeing a node that was allocated elsewhere (ptr: 0x%llx ptr2: 0x%llx size: 0x%llx)\n", ptr, (uint64_t)ptr-sizeof(node), size);
+            dbg::printm(MODULE, "Tried freeing a node that was allocated elsewhere (ptr: 0x%llx ptr2: 0x%llx size: 0x%llx)\n", ptr, (uint64_t)ptr-sizeof(node), size);
             abort();
         }
         size_t ALIGN_SIZE = getAlignSize(size);
         size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
         node* freeNode = reinterpret_cast<node*>((uintptr_t)ptr-sizeof(node));
         if(freeNode->free){
-            dbg::printm(MODULE, "ERROR: Called free on an already free node\n");
+            dbg::printm(MODULE, "Called free on an already free node\n");
             abort();
         }
         if(freeNode->allocSize < alignedLength+freeNode->freedSize){
-            dbg::printm(MODULE, "ERROR: Called free with larger then supposed to size\n");
+            dbg::printm(MODULE, "Called free with larger then supposed to size\n");
             dbg::printm(MODULE, "Freenode allocSize: 0x%llx freedSize: 0x%llx size: 0x%llx calledSize: 0x%llx\n", freeNode->allocSize, freeNode->freedSize, freeNode->size, size);
             abort();
         }
@@ -144,7 +144,7 @@ namespace mmu::heap{
     void free(void* ptr){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
-            dbg::printm(MODULE, "ERROR: Called free before initialized\n");
+            dbg::printm(MODULE, "Called free before initialized\n");
             abort();
         }
         free(ptr, 0);

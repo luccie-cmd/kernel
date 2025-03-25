@@ -42,7 +42,7 @@ namespace drivers::block{
         uint32_t cwd14;
         uint32_t cwd15;
     } __attribute__((packed));
-    static_assert(sizeof(NVMeCommand) == 64, "ERROR: NVMe command improperely alligned");
+    static_assert(sizeof(NVMeCommand) == 64, "NVMe command improperely alligned");
     struct NVMeCompletion{
         uint32_t command;
         uint32_t reserved;
@@ -52,7 +52,7 @@ namespace drivers::block{
         uint8_t phase : 1;
         uint16_t status : 15;
     } __attribute__((packed));
-    static_assert(sizeof(NVMeCompletion) == 16, "ERROR: NVMe completion improperely alligned");
+    static_assert(sizeof(NVMeCompletion) == 16, "NVMe completion improperely alligned");
     struct NVMeQueue{
         uint64_t addr;
         uint64_t size;
