@@ -7,6 +7,7 @@ extern "C" void __stack_chk_fail(){
 }
 
 extern "C" void _Unwind_Resume(struct _Unwind_Exception * object){
+    (void)object;
     dbg::printf("* Exception resumed *\n");
     std::abort();
 }

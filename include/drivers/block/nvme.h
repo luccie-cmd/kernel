@@ -81,8 +81,8 @@ namespace drivers::block{
             bool sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t cwd11, uint32_t cwd1);
             uint32_t readReg(uint32_t offset);
             uint64_t readReg64(uint32_t offset);
-            void writeReg(uint32_t offset, uint32_t value);
-            void writeReg64(uint32_t offset, uint64_t value);
+            void writeReg(uint32_t offset, uint32_t value, bool check);
+            void writeReg64(uint32_t offset, uint64_t value, bool check);
     };
     NVMeDriver* loadNVMeDriver(pci::device* device);
 };

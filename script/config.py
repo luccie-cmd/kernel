@@ -1,7 +1,7 @@
 config: 'release'
 arch: 'x64'
 compiler: 'gcc'
-rootFS: 'ext4'
+rootFS: 'ext2'
 bootloader: 'limine-uefi'
 outDir: 'bin'
 imageSize: '512M'

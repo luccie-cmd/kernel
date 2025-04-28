@@ -163,6 +163,7 @@ namespace hal::arch::x64::idt{
         exceptionHandlers[0x6] = handleUD;
     }
     uint64_t handlePF(io::Registers* regs){
+        io::cli();
         disablePageFaultProtection();
         PageFaultError err = *(PageFaultError*)(&regs->error_code);
         if(err.PPV == 0){
@@ -179,6 +180,7 @@ namespace hal::arch::x64::idt{
         }
         dbg::printf("Handled pagefault for address 0x%llx\n", io::rcr2() & PAGE_MASK);
         enablePageFaultProtection();
+        io::sti();
         return regs->rip;
     }
     uint64_t handleUD(io::Registers* regs){

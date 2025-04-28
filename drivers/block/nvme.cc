@@ -9,6 +9,16 @@
 #include <cassert>
 #define MODULE "NVMe Driver"
 
+constexpr int64_t intpow(int64_t base, int64_t exp) {
+    int64_t result = 1;
+    while (exp > 0) {
+        if (exp % 2 == 1) result *= base;  // If exponent is odd, multiply base
+        base *= base;  // Square the base
+        exp /= 2;  // Reduce exponent by half
+    }
+    return result;
+}
+
 namespace drivers::block{
     NVMeDriver::NVMeDriver() :MSCDriver(StorageType::NVMe) {
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -30,10 +40,11 @@ namespace drivers::block{
         uint32_t BAR0 = pci::readConfig(device, 0x10);
         uint32_t BAR1 = pci::readConfig(device, 0x14);
         this->base_addr = (uint64_t)(((uint64_t)BAR1 << 32) | (BAR0 & 0xFFFFFFF0));
+        mmu::vmm::mapPage(mmu::vmm::getPML4(task::getCurrentPID()), this->base_addr, this->base_addr, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT | MAP_UC);
         uint64_t cap = this->readReg64(0x00);
         *(uint64_t*)&this->capabilities = cap;
-        if(pow(2, 12+this->capabilities.MinPagesize) != PAGE_SIZE){
-            dbg::printm(MODULE, "Page sizes of 0x%llx not supported, minimum size: 0x%llx\n", PAGE_SIZE, pow(2, 12+this->capabilities.MinPagesize));
+        if(intpow(2, 12+this->capabilities.MinPagesize) != PAGE_SIZE){
+            dbg::printm(MODULE, "Page sizes of 0x%llx not supported, minimum size: 0x%llx\n", PAGE_SIZE, intpow(2, 12+this->capabilities.MinPagesize));
             std::abort();
         }
         if(this->capabilities.DefaultCommandSet == 0){
@@ -46,7 +57,7 @@ namespace drivers::block{
         }
         uint32_t cc = this->readReg(0x14);
         cc &= (uint32_t)~1;
-        this->writeReg(0x14, cc);
+        this->writeReg(0x14, cc, false);
         while ((this->readReg(0x14) & 0x1) != 0){
             __asm__("nop");
         }
@@ -63,12 +74,12 @@ namespace drivers::block{
         this->admCq->size = this->capabilities.MaxQueueEntries;
         this->admCq_head = 0;
         this->admSq_tail = 0;
-        this->writeReg64(0x28, this->admSq->addr);
-        this->writeReg64(0x30, this->admCq->addr);
-        this->writeReg(0x24, (this->admCq->size << 16) | this->admSq->size);
+        this->writeReg64(0x28, this->admSq->addr, true);
+        this->writeReg64(0x30, this->admCq->addr, true);
+        this->writeReg(0x24, (this->admCq->size << 16) | this->admSq->size, true);
         cc = this->readReg(0x14);
         cc |= 1;
-        this->writeReg(0x14, cc);
+        this->writeReg(0x14, cc, false);
         while ((this->readReg(0x1C) & 0x1) == 0) {
             __asm__("nop");
         }
@@ -134,25 +145,25 @@ namespace drivers::block{
         dbg::popTrace();
         return ret;
     }
-    void NVMeDriver::writeReg(uint32_t offset, uint32_t value){
+    void NVMeDriver::writeReg(uint32_t offset, uint32_t value, bool check){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint32_t *reg = (volatile uint32_t *)(this->base_addr + offset);
         dbg::printm(MODULE, "w base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
         __asm__ volatile("sfence" ::: "memory");
         *reg = value;
-        if(this->readReg(offset) != value){
+        if(this->readReg(offset) != value && check){
             dbg::printm(MODULE, "Failed to update value at 0x%llx (32 bit)\n", (uint64_t)reg);
             std::exit(1);
         }
         dbg::popTrace();
     }
-    void NVMeDriver::writeReg64(uint32_t offset, uint64_t value){
+    void NVMeDriver::writeReg64(uint32_t offset, uint64_t value, bool check){
         dbg::addTrace(__PRETTY_FUNCTION__);
         volatile uint64_t *reg = (volatile uint64_t *)(this->base_addr + offset);
         dbg::printm(MODULE, "w64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n", this->base_addr, offset, reg, value);
         __asm__ volatile("sfence" ::: "memory");
         *reg = value;
-        if(this->readReg64(offset) != value){
+        if(this->readReg64(offset) != value && check){
             dbg::printm(MODULE, "Failed to update value at 0x%llx (64 bit)\n", (uint64_t)reg);
             std::exit(1);
         }
@@ -162,6 +173,7 @@ namespace drivers::block{
         return 1;
     }
     uint64_t NVMeDriver::getDiskSize(uint8_t disk){
+        (void)disk;
         return this->diskSize;
     }
     bool NVMeDriver::sendCmdIO(uint8_t opcode, void *data, uint64_t lba, uint16_t num_blocks) {
@@ -189,7 +201,7 @@ namespace drivers::block{
     	cmd->cwd12 = (uint16_t)(num_blocks-1);
     	std::memcpy((void *)sq_entry_addr, cmd, sizeof(NVMeCommand));
     	this->ioSq_tail++;
-    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->ioSq_tail);
+    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->ioSq_tail, true);
     	if (this->ioSq_tail == this->ioSq->size)
     		this->ioSq_tail = 0;
         NVMeCompletion *completion = (NVMeCompletion *)(cq_entry_addr);
@@ -205,7 +217,7 @@ namespace drivers::block{
 	    	}
 	    }
     	this->ioCq_head++;
-    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->ioCq_head);
+    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->ioCq_head, true);
     	if (this->ioCq_head == this->ioCq->size)
     		this->ioCq_head = 0;
         uint16_t status = completion->status;
@@ -241,7 +253,7 @@ namespace drivers::block{
     	cmd->cwd11 = cwd11;
     	std::memcpy((void *)sq_entry_addr, cmd, sizeof(NVMeCommand));
     	this->admSq_tail++;
-    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->admSq_tail);
+    	this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->admSq_tail, true);
         uint32_t admSqTail = this->readReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride));
         if(this->admSq_tail != admSqTail){
             uint32_t status = this->readReg(0x1C);
@@ -266,7 +278,7 @@ namespace drivers::block{
             std::abort();
         }
     	this->admCq_head++;
-    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->admCq_head);
+    	this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->admCq_head, true);
     	if (this->admCq_head == this->admCq->size)
     		this->admCq_head = 0;
         uint16_t status = completion->status;

@@ -75,6 +75,7 @@ namespace drivers::fs{
         bool IsDirectory;
         uint32_t Position;
         uint32_t Size;
+        int Flags;
     };
     struct FAT_FileData{
         uint8_t Buffer[SECTOR_SIZE];

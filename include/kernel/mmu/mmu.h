@@ -15,4 +15,8 @@
 #include "pmm/pmm.h"
 #include "vmm/vmm.h"
 
+namespace mmu{
+    void printInfo();
+}
+
 #endif // _KERNEL_MMU_MMU_H_

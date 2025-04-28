@@ -9,7 +9,9 @@ namespace drivers{
     uint64_t getNewIdentIndex(){
         return 0;
     }
-    MSCDriver::MSCDriver(StorageType type) :Driver(driver::driverType::BLOCK), __identifier_index(getNewIdentIndex()) {}
+    MSCDriver::MSCDriver(StorageType type) :Driver(driver::driverType::BLOCK), __identifier_index(getNewIdentIndex()) {
+        this->__storage_type = type;
+    }
     MSCDriver::~MSCDriver() {}
     MSCDriver* loadMSCdriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);

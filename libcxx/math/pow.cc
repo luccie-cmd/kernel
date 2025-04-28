@@ -1,5 +1,6 @@
 #include <cmath>
 
+#ifdef __SSE__
 double pow(double base, double exponent){
     if (exponent == 0) {
         return 1.0;
@@ -21,3 +22,4 @@ double pow(double base, double exponent){
     }
     return result;
 }
+#endif

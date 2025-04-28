@@ -61,7 +61,7 @@ namespace pci{
         return (uint8_t)((readConfigWord(bus, slot, function, 0xA) & ~0xFF00));
     }
     static void loopBus(uint8_t endBus){
-        for(uint32_t bus = 0; bus < 256; bus++){
+        for(uint32_t bus = 0; bus < endBus; bus++){
             for(uint32_t slot = 0; slot < 32; slot++){
                 for(uint32_t func = 0; func < 8; func++){
                     uint16_t vendorID = getVendor(bus, slot, func);

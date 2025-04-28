@@ -89,7 +89,6 @@ namespace vfs{
         auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         drivers::MSCDriver* blockDriver = drvDisk.first;
         uint8_t newDisk = drvDisk.second;
-        uint8_t *MBR = new uint8_t[512];
         PartitionTableHeader *PTH = new PartitionTableHeader;
         if(!blockDriver->read(newDisk, 1, 1, PTH)){
             dbg::printm(MODULE, "Failed to read partition table header\n");
@@ -178,6 +177,7 @@ namespace vfs{
         mp.first->mountPath = mountLocation;
         mp.first->mounted = true;
         mountPoints[mp.second] = mp.first;
+        dbg::printm(MODULE, "Successfully mounted %hhu:%hhu to %s\n", disk, partition, mountLocation);
         dbg::popTrace();
     }
     void umount(const char* path){
@@ -194,6 +194,7 @@ namespace vfs{
                 delete mp->fileSystemDriver;
             }
         }
+        dbg::printm(MODULE, "Successfully unmounted %s\n", path);
     }
     int openFile(const char* path, int flags){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -208,8 +209,9 @@ namespace vfs{
                 continue;
             }
             if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
-                path+=std::strlen(mp->mountPath);
-                handle = mp->fileSystemDriver->open(task::getCurrentPID(), path, flags);
+                const char* copyPath = path;
+                copyPath+=std::strlen(mp->mountPath);
+                handle = mp->fileSystemDriver->open(task::getCurrentPID(), copyPath, flags);
                 mpIdx = i;
                 break;
             }
@@ -258,7 +260,7 @@ namespace vfs{
             abort();
         }
         MountPoint* mp = mountPoints[vfsFile->mpIdx];
-        mp->fileSystemDriver->read(vfsFile->fsHandle, 0, buffer);
+        mp->fileSystemDriver->read(vfsFile->fsHandle, size, buffer);
         dbg::popTrace();
     }
     int getLen(int handle){

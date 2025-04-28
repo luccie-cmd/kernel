@@ -1,19 +1,27 @@
-#include <cstdlib>
-#include <kernel/vfs/vfs.h>
 #include <common/dbg/dbg.h>
-#include <kernel/hal/arch/init.h>
+#include <common/io/io.h>
+#include <cstdlib>
 #include <cstring>
+#include <drivers/display.h>
+#include <kernel/hal/arch/init.h>
+#include <kernel/vfs/vfs.h>
 
-extern "C" void KernelMain(){
+extern drivers::DisplayDriver *displayDriver;
+
+extern "C" void KernelMain()
+{
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    vfs::mount(0, 0, "/tmp");
-    int handle = vfs::openFile("/tmp/init.elf", 0);
+    displayDriver = reinterpret_cast<drivers::DisplayDriver *>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
+    vfs::mount(0, 0, "/boot");
+    int handle = vfs::openFile("/boot/test.txt", 0);
     dbg::printf("Everything worked %d\n", handle);
     char *buffer = new char[vfs::getLen(handle)];
-    vfs::readFile(handle, vfs::getLen(handle), (void*)buffer);
+    vfs::readFile(handle, vfs::getLen(handle)-1, (void *)buffer);
+    dbg::printf("Test `%.*s`\n", vfs::getLen(handle), buffer);
     vfs::closeFile(handle);
-    vfs::umount("/tmp");
+    vfs::umount("/boot");
     std::abort();
-    for(;;);
+    for (;;)
+        ;
 }

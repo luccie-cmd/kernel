@@ -1,3 +1,4 @@
+#ifdef __SSE__
 extern "C" double exp2(double x) {
     if (x == 0) return 1.0;
     double result = 1.0;
@@ -11,3 +12,4 @@ extern "C" double exp2(double x) {
     }
     return result;
 }
+#endif

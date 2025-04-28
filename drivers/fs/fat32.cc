@@ -52,6 +52,7 @@ namespace drivers::fs{
         }
     }
     void FAT32Driver::init(pci::device* dev){
+        (void)dev;
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "File systems drivers shouldn't be initialized with PCI devices!!!\n");
         std::abort();
@@ -102,12 +103,15 @@ namespace drivers::fs{
             }
         }
         dbg::popTrace();
+        current->Pid = PID;
+        current->Flags = flags;
         return current->Handle;
     }
     void FAT32Driver::read(int file, size_t length, void* buffer){
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_File fatFile = this->files.at(file)->Public;
-        this->readBytes(&fatFile, fatFile.Size, buffer);
+        size_t readLength = std::min(length, (size_t)fatFile.Size);
+        this->readBytes(&fatFile, readLength, buffer);
         dbg::popTrace();
     }
     void FAT32Driver::close(int file){

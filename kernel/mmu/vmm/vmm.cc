@@ -17,7 +17,7 @@
 namespace mmu::vmm{
     static uint64_t __HHDMoffset;
     static bool __initialized;
-    limine_hhdm_request hhdm_request = {
+    limine_hhdm_request __attribute__((section(".limine_requests")))  hhdm_request = {
         .id = LIMINE_HHDM_REQUEST,
         .revision = 0,
         .response = nullptr,
@@ -199,7 +199,7 @@ namespace mmu::vmm{
         vmm_address vma = getVMMfromVA(addr);
         if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
             if (!silent) {
-                dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", addr);
+                dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", oldAddr);
             }
             dbg::popTrace();
             return 0;
@@ -207,7 +207,7 @@ namespace mmu::vmm{
         PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
         if (pdpe[vma.pdpe].pde_ptr == 0 || pdpe[vma.pdpe].present == 0) {
             if (!silent) {
-                dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", addr);
+                dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", oldAddr);
             }
             dbg::popTrace();
             return 0;
@@ -215,7 +215,7 @@ namespace mmu::vmm{
         PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
         if (pde[vma.pde].pte_ptr == 0 || pde[vma.pde].present == 0) {
             if (!silent) {
-                dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", addr);
+                dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", oldAddr);
             }
             dbg::popTrace();
             return 0;
@@ -223,7 +223,7 @@ namespace mmu::vmm{
         PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
         if (pte[vma.pte].papn_ppn == 0 || pte[vma.pte].present == 0) {
             if (!silent) {
-                dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", addr);
+                dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", oldAddr);
             }
             dbg::popTrace();
             return 0;

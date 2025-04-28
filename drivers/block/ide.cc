@@ -260,6 +260,10 @@ namespace drivers::block{
         return true;
     }
     bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer){
+        (void)drive;
+        (void)lba;
+        (void)sectors;
+        (void)buffer;
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "TODO: implement writing of IDE controller\n");
         std::abort();

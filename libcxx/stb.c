@@ -5,4 +5,5 @@
  */
 
 #define STB_SPRINTF_IMPLEMENTATION
+#define STB_SPRINTF_NOFLOAT
 #include <thirdparty/stb_sprintf.h>
