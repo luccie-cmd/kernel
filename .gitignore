@@ -2,6 +2,8 @@ bin/
 limine/
 .vscode/
 script/__pycache__/
+.build-cache/
+temp.py
 *.txt
 pci.ids
 *.log
