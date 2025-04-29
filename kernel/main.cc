@@ -19,8 +19,8 @@ extern "C" void KernelMain()
     char *buffer = new char[vfs::getLen(handle)];
     vfs::readFile(handle, vfs::getLen(handle)-1, (void *)buffer);
     dbg::printf("Test `%.*s`\n", vfs::getLen(handle), buffer);
-    vfs::closeFile(handle);
-    vfs::umount("/boot");
+    // vfs::closeFile(handle);
+    // vfs::umount("/boot");
     std::abort();
     for (;;)
         ;

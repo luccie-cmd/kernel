@@ -14910,6 +14910,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 2 "kernel/driver/driver.cc" 2
 # 1 "include/common/dbg/dbg.h" 1
@@ -17265,5 +17266,8 @@ namespace driver{
         dbg::addTrace(__PRETTY_FUNCTION__);
         this->__driver_name = name;
         dbg::popTrace();
+    }
+    void printInfo(){
+        dbg::printm("Driver manager", "TODO: Print info\n");
     }
 };

@@ -15,7 +15,7 @@
 #include <kernel/task/task.h>
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
-#define VMM_MAX  GIGABYTE
+#define VMM_MAX  2 * MEGABYTE
 
 namespace mmu::heap{
     static bool __initialized = false;
@@ -149,5 +149,22 @@ namespace mmu::heap{
         }
         free(ptr, 0);
         dbg::popTrace();
+    }
+    void printInfo(){
+        dbg::printm(MODULE, "INFO\n");
+        uint64_t freeMemory = 0, allocatedMemory = 0, blocks = 0;
+        node* current = __head;
+        while(current){
+            if (current->free){
+                freeMemory += current->size;
+            } else {
+                allocatedMemory += current->size;
+            }
+            blocks++;
+            current = current->next;
+        }
+        dbg::printm(MODULE, "Currently free memory: %lu\n", freeMemory);
+        dbg::printm(MODULE, "Currently allocated memory: %lu\n", allocatedMemory);
+        dbg::printm(MODULE, "Current number of blocks: %lu\n", blocks);
     }
 };

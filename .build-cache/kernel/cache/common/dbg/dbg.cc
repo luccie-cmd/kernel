@@ -17871,6 +17871,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/display.h" 2
 # 1 "./limine/limine.h" 1

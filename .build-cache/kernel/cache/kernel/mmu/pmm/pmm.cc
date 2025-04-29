@@ -17249,6 +17249,8 @@ namespace mmu::pmm{
         .response = nullptr
     };
     static node* __head = nullptr;
+    uint64_t total = 0;
+    uint64_t allocatedPages = 0;
     void initialize(){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(memmap_request.response == nullptr){
@@ -17256,14 +17258,13 @@ namespace mmu::pmm{
             std::abort();
         }
         uint64_t memmap_entries = memmap_request.response->entry_count;
-
         for(uint64_t i = 0; i < memmap_entries; ++i){
             limine_memmap_entry* entry = memmap_request.response->entries[i];
             if((entry->type == 0 || entry->type == 5) && entry->length >= 0x1000){
                 if(entry->base == io::rcr3()){
                     continue;
                 }
-
+                total += entry->length;
                 node* newNode = (node*)vmm::makeVirtual(entry->base);
                 newNode->size = entry->length;
                 if(__head == nullptr){
@@ -17307,6 +17308,7 @@ namespace mmu::pmm{
                         __head = current->next;
                     }
                 }
+                allocatedPages += size / 0x1000;
                 dbg::popTrace();
                 return addr - vmm::getHHDM();
             }
@@ -17322,5 +17324,10 @@ namespace mmu::pmm{
         uint64_t addr = allocVirtual(0x1000);
         dbg::popTrace();
         return addr;
+    }
+    void printInfo(){
+        dbg::printm("MMU PMM", "INFO\n");
+        dbg::printm("MMU PMM", "Found pages: %lu\n", total / 0x1000);
+        dbg::printm("MMU PMM", "Allocated pages: %lu\n", allocatedPages);
     }
 }

@@ -16,6 +16,7 @@ namespace vfs{
         int mpIdx;
         int fsHandle;
         bool used;
+        const char* pathWithoutMountPoint;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();

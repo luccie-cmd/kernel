@@ -95,4 +95,7 @@ namespace driver{
         this->__driver_name = name;
         dbg::popTrace();
     }
+    void printInfo(){
+        dbg::printm(MODULE, "TODO: Print info\n");
+    }
 };

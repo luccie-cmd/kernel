@@ -12,6 +12,7 @@
 namespace drivers::fs{
     FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
         dbg::addTrace(__PRETTY_FUNCTION__);
+        this->__fs_type = FSType::FAT32;
         this->bootSector = new FAT_BootSector;
         if(!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector)){
             dbg::printm(MODULE, "Failed to read boot sector!!!\n");

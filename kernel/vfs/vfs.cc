@@ -200,6 +200,7 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         int handle = -1;
         int mpIdx = -1;
+        const char* pathWithoutMountPoint;
         for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
             MountPoint* mp = mountPoints[i];
             if(!mp){
@@ -211,6 +212,7 @@ namespace vfs{
             if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
                 const char* copyPath = path;
                 copyPath+=std::strlen(mp->mountPath);
+                pathWithoutMountPoint = copyPath;
                 handle = mp->fileSystemDriver->open(task::getCurrentPID(), copyPath, flags);
                 mpIdx = i;
                 break;
@@ -221,6 +223,7 @@ namespace vfs{
             std::abort();
         }
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);
+        vfsFile->pathWithoutMountPoint = pathWithoutMountPoint + 1;
         dbg::popTrace();
         return vfsFile->vfsHandle;
     }   
@@ -282,5 +285,39 @@ namespace vfs{
         int size = mp->fileSystemDriver->getLengthOfFile(vfsFile->fsHandle);
         dbg::popTrace();
         return size;
+    }
+    void printInfo(){
+        dbg::printm(MODULE, "INFO\n");
+        for (MountPoint* mp : mountPoints){
+            if (mp == nullptr){
+                continue;
+            }
+            if (mp->mounted){
+                dbg::printm(MODULE, "Mount point: %s ", mp->mountPath);
+                switch (mp->fileSystemDriver->getFsType()){
+                    case drivers::FSType::FAT32: {
+                        dbg::print("FAT32\n");
+                    } break;
+                    case drivers::FSType::EXT2: {
+                        dbg::print("EXT2\n");
+                    } break;
+                    case drivers::FSType::EXT3: {
+                        dbg::print("EXT3\n");
+                    } break;
+                    case drivers::FSType::EXT4: {
+                        dbg::print("EXT4\n");
+                    } break;
+                }
+                for (int i = 0; i < MAX_OPEN_FILES; ++i){
+                    VFSFile* vfsFile = vfsFiles[i];
+                    if (vfsFile == nullptr){
+                        continue;
+                    }
+                    if(mountPoints[vfsFile->mpIdx] == mp && vfsFile->used){
+                        dbg::printf("\t- `%s`: %d (Size: %lu)\n", vfsFile->pathWithoutMountPoint, vfsFile->fsHandle, getLen(i));
+                    }
+                }
+            }
+        }
     }
 };

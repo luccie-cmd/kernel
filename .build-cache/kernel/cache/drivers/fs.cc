@@ -4,11 +4,20 @@
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 0 "<command-line>" 2
 # 1 "drivers/fs.cc"
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 1
-# 41 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert"
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 1
+# 32 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array"
        
-# 42 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 3
+# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
 
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 1 3
+# 58 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
+       
+# 59 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
+# 68 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu/bits/c++config.h" 1 3
 # 278 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu/bits/c++config.h" 3
 
@@ -69,2299 +78,7 @@ namespace __gnu_cxx
 # 777 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu/bits/c++config.h" 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/pstl/pstl_config.h" 1 3
 # 778 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu/bits/c++config.h" 2 3
-# 44 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 2 3
-# 1 "/usr/include/assert.h" 1 3 4
-# 64 "/usr/include/assert.h" 3 4
-extern "C" {
-
-
-extern void __assert_fail (const char *__assertion, const char *__file,
-      unsigned int __line, const char *__function)
-     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
-
-
-extern void __assert_perror_fail (int __errnum, const char *__file,
-      unsigned int __line, const char *__function)
-     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
-
-
-
-
-extern void __assert (const char *__assertion, const char *__file, int __line)
-     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
-
-
-}
-# 45 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 2 3
-# 2 "drivers/fs.cc" 2
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 1
-# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring"
-       
-# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
-
-
-# 1 "/usr/include/string.h" 1 3 4
-# 26 "/usr/include/string.h" 3 4
-# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
-# 27 "/usr/include/string.h" 2 3 4
-
-extern "C" {
-
-
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
-# 209 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3 4
-typedef long unsigned int size_t;
-# 34 "/usr/include/string.h" 2 3 4
-# 43 "/usr/include/string.h" 3 4
-extern void *memcpy (void *__restrict __dest, const void *__restrict __src,
-       size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern void *memmove (void *__dest, const void *__src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-
-extern void *memccpy (void *__restrict __dest, const void *__restrict __src,
-        int __c, size_t __n)
-    noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__write_only__, 1, 4)));
-
-
-
-
-extern void *memset (void *__s, int __c, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-extern int memcmp (const void *__s1, const void *__s2, size_t __n)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-# 80 "/usr/include/string.h" 3 4
-extern int __memcmpeq (const void *__s1, const void *__s2, size_t __n)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-extern "C++"
-{
-extern void *memchr (void *__s, int __c, size_t __n)
-      noexcept (true) __asm ("memchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern const void *memchr (const void *__s, int __c, size_t __n)
-      noexcept (true) __asm ("memchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 105 "/usr/include/string.h" 3 4
-}
-# 115 "/usr/include/string.h" 3 4
-extern "C++" void *rawmemchr (void *__s, int __c)
-     noexcept (true) __asm ("rawmemchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern "C++" const void *rawmemchr (const void *__s, int __c)
-     noexcept (true) __asm ("rawmemchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-
-
-extern "C++" void *memrchr (void *__s, int __c, size_t __n)
-      noexcept (true) __asm ("memrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)))
-      __attribute__ ((__access__ (__read_only__, 1, 3)));
-extern "C++" const void *memrchr (const void *__s, int __c, size_t __n)
-      noexcept (true) __asm ("memrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)))
-      __attribute__ ((__access__ (__read_only__, 1, 3)));
-# 141 "/usr/include/string.h" 3 4
-extern char *strcpy (char *__restrict __dest, const char *__restrict __src)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-extern char *strncpy (char *__restrict __dest,
-        const char *__restrict __src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern char *strcat (char *__restrict __dest, const char *__restrict __src)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-extern char *strncat (char *__restrict __dest, const char *__restrict __src,
-        size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int strcmp (const char *__s1, const char *__s2)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-extern int strncmp (const char *__s1, const char *__s2, size_t __n)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int strcoll (const char *__s1, const char *__s2)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-extern size_t strxfrm (char *__restrict __dest,
-         const char *__restrict __src, size_t __n)
-    noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 1, 3)));
-
-
-
-# 1 "/usr/include/bits/types/locale_t.h" 1 3 4
-# 22 "/usr/include/bits/types/locale_t.h" 3 4
-# 1 "/usr/include/bits/types/__locale_t.h" 1 3 4
-# 27 "/usr/include/bits/types/__locale_t.h" 3 4
-struct __locale_struct
-{
-
-  struct __locale_data *__locales[13];
-
-
-  const unsigned short int *__ctype_b;
-  const int *__ctype_tolower;
-  const int *__ctype_toupper;
-
-
-  const char *__names[13];
-};
-
-typedef struct __locale_struct *__locale_t;
-# 23 "/usr/include/bits/types/locale_t.h" 2 3 4
-
-typedef __locale_t locale_t;
-# 173 "/usr/include/string.h" 2 3 4
-
-
-extern int strcoll_l (const char *__s1, const char *__s2, locale_t __l)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 3)));
-
-
-extern size_t strxfrm_l (char *__dest, const char *__src, size_t __n,
-    locale_t __l) noexcept (true) __attribute__ ((__nonnull__ (2, 4)))
-     __attribute__ ((__access__ (__write_only__, 1, 3)));
-
-
-
-
-
-extern char *strdup (const char *__s)
-     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-
-extern char *strndup (const char *__string, size_t __n)
-     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__nonnull__ (1)));
-# 224 "/usr/include/string.h" 3 4
-extern "C++"
-{
-extern char *strchr (char *__s, int __c)
-     noexcept (true) __asm ("strchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern const char *strchr (const char *__s, int __c)
-     noexcept (true) __asm ("strchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 244 "/usr/include/string.h" 3 4
-}
-
-
-
-
-
-
-extern "C++"
-{
-extern char *strrchr (char *__s, int __c)
-     noexcept (true) __asm ("strrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern const char *strrchr (const char *__s, int __c)
-     noexcept (true) __asm ("strrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 271 "/usr/include/string.h" 3 4
-}
-# 281 "/usr/include/string.h" 3 4
-extern "C++" char *strchrnul (char *__s, int __c)
-     noexcept (true) __asm ("strchrnul") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern "C++" const char *strchrnul (const char *__s, int __c)
-     noexcept (true) __asm ("strchrnul") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 293 "/usr/include/string.h" 3 4
-extern size_t strcspn (const char *__s, const char *__reject)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern size_t strspn (const char *__s, const char *__accept)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern "C++"
-{
-extern char *strpbrk (char *__s, const char *__accept)
-     noexcept (true) __asm ("strpbrk") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-extern const char *strpbrk (const char *__s, const char *__accept)
-     noexcept (true) __asm ("strpbrk") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-# 321 "/usr/include/string.h" 3 4
-}
-
-
-
-
-
-
-extern "C++"
-{
-extern char *strstr (char *__haystack, const char *__needle)
-     noexcept (true) __asm ("strstr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-extern const char *strstr (const char *__haystack, const char *__needle)
-     noexcept (true) __asm ("strstr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-# 348 "/usr/include/string.h" 3 4
-}
-
-
-
-
-
-
-
-extern char *strtok (char *__restrict __s, const char *__restrict __delim)
-     noexcept (true) __attribute__ ((__nonnull__ (2)));
-
-
-
-extern char *__strtok_r (char *__restrict __s,
-    const char *__restrict __delim,
-    char **__restrict __save_ptr)
-     noexcept (true) __attribute__ ((__nonnull__ (2, 3)));
-
-extern char *strtok_r (char *__restrict __s, const char *__restrict __delim,
-         char **__restrict __save_ptr)
-     noexcept (true) __attribute__ ((__nonnull__ (2, 3)));
-
-
-
-
-
-extern "C++" char *strcasestr (char *__haystack, const char *__needle)
-     noexcept (true) __asm ("strcasestr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-extern "C++" const char *strcasestr (const char *__haystack,
-         const char *__needle)
-     noexcept (true) __asm ("strcasestr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-# 389 "/usr/include/string.h" 3 4
-extern void *memmem (const void *__haystack, size_t __haystacklen,
-       const void *__needle, size_t __needlelen)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 3)))
-    __attribute__ ((__access__ (__read_only__, 1, 2)))
-    __attribute__ ((__access__ (__read_only__, 3, 4)));
-
-
-
-extern void *__mempcpy (void *__restrict __dest,
-   const void *__restrict __src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern void *mempcpy (void *__restrict __dest,
-        const void *__restrict __src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-extern size_t strlen (const char *__s)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-extern size_t strnlen (const char *__string, size_t __maxlen)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-extern char *strerror (int __errnum) noexcept (true);
-# 444 "/usr/include/string.h" 3 4
-extern char *strerror_r (int __errnum, char *__buf, size_t __buflen)
-     noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 2, 3)));
-
-
-
-
-extern const char *strerrordesc_np (int __err) noexcept (true);
-
-extern const char *strerrorname_np (int __err) noexcept (true);
-
-
-
-
-
-extern char *strerror_l (int __errnum, locale_t __l) noexcept (true);
-
-
-
-# 1 "/usr/include/strings.h" 1 3 4
-# 23 "/usr/include/strings.h" 3 4
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
-# 24 "/usr/include/strings.h" 2 3 4
-
-
-
-
-
-
-extern "C" {
-
-
-
-extern int bcmp (const void *__s1, const void *__s2, size_t __n)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern void bcopy (const void *__src, void *__dest, size_t __n)
-  noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern void bzero (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern "C++"
-{
-extern char *index (char *__s, int __c)
-     noexcept (true) __asm ("index") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern const char *index (const char *__s, int __c)
-     noexcept (true) __asm ("index") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 66 "/usr/include/strings.h" 3 4
-}
-
-
-
-
-
-
-
-extern "C++"
-{
-extern char *rindex (char *__s, int __c)
-     noexcept (true) __asm ("rindex") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-extern const char *rindex (const char *__s, int __c)
-     noexcept (true) __asm ("rindex") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
-# 94 "/usr/include/strings.h" 3 4
-}
-# 104 "/usr/include/strings.h" 3 4
-extern int ffs (int __i) noexcept (true) __attribute__ ((__const__));
-
-
-
-
-
-extern int ffsl (long int __l) noexcept (true) __attribute__ ((__const__));
-__extension__ extern int ffsll (long long int __ll)
-     noexcept (true) __attribute__ ((__const__));
-
-
-
-extern int strcasecmp (const char *__s1, const char *__s2)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int strncasecmp (const char *__s1, const char *__s2, size_t __n)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-
-
-extern int strcasecmp_l (const char *__s1, const char *__s2, locale_t __loc)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 3)));
-
-
-
-extern int strncasecmp_l (const char *__s1, const char *__s2,
-     size_t __n, locale_t __loc)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 4)));
-
-
-}
-# 463 "/usr/include/string.h" 2 3 4
-
-
-
-extern void explicit_bzero (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)))
-    __attribute__ ((__access__ (__write_only__, 1, 2)));
-
-
-
-extern char *strsep (char **__restrict __stringp,
-       const char *__restrict __delim)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-extern char *strsignal (int __sig) noexcept (true);
-
-
-
-extern const char *sigabbrev_np (int __sig) noexcept (true);
-
-
-extern const char *sigdescr_np (int __sig) noexcept (true);
-
-
-
-extern char *__stpcpy (char *__restrict __dest, const char *__restrict __src)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern char *stpcpy (char *__restrict __dest, const char *__restrict __src)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-extern char *__stpncpy (char *__restrict __dest,
-   const char *__restrict __src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern char *stpncpy (char *__restrict __dest,
-        const char *__restrict __src, size_t __n)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-extern size_t strlcpy (char *__restrict __dest,
-         const char *__restrict __src, size_t __n)
-  noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__write_only__, 1, 3)));
-
-
-
-extern size_t strlcat (char *__restrict __dest,
-         const char *__restrict __src, size_t __n)
-  noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__read_write__, 1, 3)));
-
-
-
-
-extern int strverscmp (const char *__s1, const char *__s2)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern char *strfry (char *__string) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-extern void *memfrob (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)))
-    __attribute__ ((__access__ (__read_write__, 1, 2)));
-
-
-
-
-
-
-
-extern "C++" char *basename (char *__filename)
-     noexcept (true) __asm ("basename") __attribute__ ((__nonnull__ (1)));
-extern "C++" const char *basename (const char *__filename)
-     noexcept (true) __asm ("basename") __attribute__ ((__nonnull__ (1)));
-# 552 "/usr/include/string.h" 3 4
-}
-# 43 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 2 3
-# 71 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
-extern "C++"
-{
-namespace std __attribute__ ((__visibility__ ("default")))
-{
-
-
-  using ::memchr;
-  using ::memcmp;
-  using ::memcpy;
-  using ::memmove;
-  using ::memset;
-  using ::strcat;
-  using ::strcmp;
-  using ::strcoll;
-  using ::strcpy;
-  using ::strcspn;
-  using ::strerror;
-  using ::strlen;
-  using ::strncat;
-  using ::strncmp;
-  using ::strncpy;
-  using ::strspn;
-  using ::strtok;
-  using ::strxfrm;
-  using ::strchr;
-  using ::strpbrk;
-  using ::strrchr;
-  using ::strstr;
-# 122 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
-
-}
-}
-# 3 "drivers/fs.cc" 2
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 1
-# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib"
-       
-# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
-# 75 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
-# 1 "/usr/include/c++/14.2.1/stdlib.h" 1 3
-# 30 "/usr/include/c++/14.2.1/stdlib.h" 3
-# 1 "/usr/include/stdlib.h" 1 3 4
-# 26 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
-# 27 "/usr/include/stdlib.h" 2 3 4
-
-
-
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
-# 33 "/usr/include/stdlib.h" 2 3 4
-
-extern "C" {
-
-
-
-
-
-# 1 "/usr/include/bits/waitflags.h" 1 3 4
-# 41 "/usr/include/stdlib.h" 2 3 4
-# 1 "/usr/include/bits/waitstatus.h" 1 3 4
-# 42 "/usr/include/stdlib.h" 2 3 4
-# 56 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/include/bits/floatn.h" 1 3 4
-# 131 "/usr/include/bits/floatn.h" 3 4
-# 1 "/usr/include/bits/floatn-common.h" 1 3 4
-# 24 "/usr/include/bits/floatn-common.h" 3 4
-# 1 "/usr/include/bits/long-double.h" 1 3 4
-# 25 "/usr/include/bits/floatn-common.h" 2 3 4
-# 132 "/usr/include/bits/floatn.h" 2 3 4
-# 57 "/usr/include/stdlib.h" 2 3 4
-
-
-typedef struct
-  {
-    int quot;
-    int rem;
-  } div_t;
-
-
-
-typedef struct
-  {
-    long int quot;
-    long int rem;
-  } ldiv_t;
-
-
-
-
-
-__extension__ typedef struct
-  {
-    long long int quot;
-    long long int rem;
-  } lldiv_t;
-# 98 "/usr/include/stdlib.h" 3 4
-extern size_t __ctype_get_mb_cur_max (void) noexcept (true) ;
-
-
-
-extern double atof (const char *__nptr)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
-
-extern int atoi (const char *__nptr)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
-
-extern long int atol (const char *__nptr)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-__extension__ extern long long int atoll (const char *__nptr)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-extern double strtod (const char *__restrict __nptr,
-        char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern float strtof (const char *__restrict __nptr,
-       char **__restrict __endptr) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-extern long double strtold (const char *__restrict __nptr,
-       char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-# 141 "/usr/include/stdlib.h" 3 4
-extern _Float32 strtof32 (const char *__restrict __nptr,
-     char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern _Float64 strtof64 (const char *__restrict __nptr,
-     char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern _Float128 strtof128 (const char *__restrict __nptr,
-       char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern _Float32x strtof32x (const char *__restrict __nptr,
-       char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern _Float64x strtof64x (const char *__restrict __nptr,
-       char **__restrict __endptr)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-# 177 "/usr/include/stdlib.h" 3 4
-extern long int strtol (const char *__restrict __nptr,
-   char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-extern unsigned long int strtoul (const char *__restrict __nptr,
-      char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-__extension__
-extern long long int strtoq (const char *__restrict __nptr,
-        char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-__extension__
-extern unsigned long long int strtouq (const char *__restrict __nptr,
-           char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-__extension__
-extern long long int strtoll (const char *__restrict __nptr,
-         char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-__extension__
-extern unsigned long long int strtoull (const char *__restrict __nptr,
-     char **__restrict __endptr, int __base)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-
-extern long int strtol (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtol")
-
-
-     __attribute__ ((__nonnull__ (1)));
-extern unsigned long int strtoul (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoul")
-
-
-
-     __attribute__ ((__nonnull__ (1)));
-
-__extension__
-extern long long int strtoq (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoll")
-
-
-     __attribute__ ((__nonnull__ (1)));
-__extension__
-extern unsigned long long int strtouq (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoull")
-
-
-
-     __attribute__ ((__nonnull__ (1)));
-
-__extension__
-extern long long int strtoll (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoll")
-
-
-     __attribute__ ((__nonnull__ (1)));
-__extension__
-extern unsigned long long int strtoull (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoull")
-
-
-
-     __attribute__ ((__nonnull__ (1)));
-# 278 "/usr/include/stdlib.h" 3 4
-extern int strfromd (char *__dest, size_t __size, const char *__format,
-       double __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-extern int strfromf (char *__dest, size_t __size, const char *__format,
-       float __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-extern int strfroml (char *__dest, size_t __size, const char *__format,
-       long double __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-# 298 "/usr/include/stdlib.h" 3 4
-extern int strfromf32 (char *__dest, size_t __size, const char * __format,
-         _Float32 __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-
-
-extern int strfromf64 (char *__dest, size_t __size, const char * __format,
-         _Float64 __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-
-
-extern int strfromf128 (char *__dest, size_t __size, const char * __format,
-   _Float128 __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-
-
-extern int strfromf32x (char *__dest, size_t __size, const char * __format,
-   _Float32x __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-
-
-
-extern int strfromf64x (char *__dest, size_t __size, const char * __format,
-   _Float64x __f)
-     noexcept (true) __attribute__ ((__nonnull__ (3)));
-# 340 "/usr/include/stdlib.h" 3 4
-extern long int strtol_l (const char *__restrict __nptr,
-     char **__restrict __endptr, int __base,
-     locale_t __loc) noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
-
-extern unsigned long int strtoul_l (const char *__restrict __nptr,
-        char **__restrict __endptr,
-        int __base, locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
-
-__extension__
-extern long long int strtoll_l (const char *__restrict __nptr,
-    char **__restrict __endptr, int __base,
-    locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
-
-__extension__
-extern unsigned long long int strtoull_l (const char *__restrict __nptr,
-       char **__restrict __endptr,
-       int __base, locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
-
-
-
-
-
-extern long int strtol_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtol_l")
-
-
-
-     __attribute__ ((__nonnull__ (1, 4)));
-extern unsigned long int strtoul_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoul_l")
-
-
-
-
-     __attribute__ ((__nonnull__ (1, 4)));
-__extension__
-extern long long int strtoll_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoll_l")
-
-
-
-
-     __attribute__ ((__nonnull__ (1, 4)));
-__extension__
-extern unsigned long long int strtoull_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoull_l")
-
-
-
-
-     __attribute__ ((__nonnull__ (1, 4)));
-# 415 "/usr/include/stdlib.h" 3 4
-extern double strtod_l (const char *__restrict __nptr,
-   char **__restrict __endptr, locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-extern float strtof_l (const char *__restrict __nptr,
-         char **__restrict __endptr, locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-extern long double strtold_l (const char *__restrict __nptr,
-         char **__restrict __endptr,
-         locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-# 436 "/usr/include/stdlib.h" 3 4
-extern _Float32 strtof32_l (const char *__restrict __nptr,
-       char **__restrict __endptr,
-       locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-
-
-extern _Float64 strtof64_l (const char *__restrict __nptr,
-       char **__restrict __endptr,
-       locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-
-
-extern _Float128 strtof128_l (const char *__restrict __nptr,
-         char **__restrict __endptr,
-         locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-
-
-extern _Float32x strtof32x_l (const char *__restrict __nptr,
-         char **__restrict __endptr,
-         locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-
-
-
-extern _Float64x strtof64x_l (const char *__restrict __nptr,
-         char **__restrict __endptr,
-         locale_t __loc)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
-# 505 "/usr/include/stdlib.h" 3 4
-extern char *l64a (long int __n) noexcept (true) ;
-
-
-extern long int a64l (const char *__s)
-     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-
-# 1 "/usr/include/sys/types.h" 1 3 4
-# 27 "/usr/include/sys/types.h" 3 4
-extern "C" {
-
-# 1 "/usr/include/bits/types.h" 1 3 4
-# 27 "/usr/include/bits/types.h" 3 4
-# 1 "/usr/include/bits/wordsize.h" 1 3 4
-# 28 "/usr/include/bits/types.h" 2 3 4
-# 1 "/usr/include/bits/timesize.h" 1 3 4
-# 19 "/usr/include/bits/timesize.h" 3 4
-# 1 "/usr/include/bits/wordsize.h" 1 3 4
-# 20 "/usr/include/bits/timesize.h" 2 3 4
-# 29 "/usr/include/bits/types.h" 2 3 4
-
-
-typedef unsigned char __u_char;
-typedef unsigned short int __u_short;
-typedef unsigned int __u_int;
-typedef unsigned long int __u_long;
-
-
-typedef signed char __int8_t;
-typedef unsigned char __uint8_t;
-typedef signed short int __int16_t;
-typedef unsigned short int __uint16_t;
-typedef signed int __int32_t;
-typedef unsigned int __uint32_t;
-
-typedef signed long int __int64_t;
-typedef unsigned long int __uint64_t;
-
-
-
-
-
-
-typedef __int8_t __int_least8_t;
-typedef __uint8_t __uint_least8_t;
-typedef __int16_t __int_least16_t;
-typedef __uint16_t __uint_least16_t;
-typedef __int32_t __int_least32_t;
-typedef __uint32_t __uint_least32_t;
-typedef __int64_t __int_least64_t;
-typedef __uint64_t __uint_least64_t;
-
-
-
-typedef long int __quad_t;
-typedef unsigned long int __u_quad_t;
-
-
-
-
-
-
-
-typedef long int __intmax_t;
-typedef unsigned long int __uintmax_t;
-# 141 "/usr/include/bits/types.h" 3 4
-# 1 "/usr/include/bits/typesizes.h" 1 3 4
-# 142 "/usr/include/bits/types.h" 2 3 4
-# 1 "/usr/include/bits/time64.h" 1 3 4
-# 143 "/usr/include/bits/types.h" 2 3 4
-
-
-typedef unsigned long int __dev_t;
-typedef unsigned int __uid_t;
-typedef unsigned int __gid_t;
-typedef unsigned long int __ino_t;
-typedef unsigned long int __ino64_t;
-typedef unsigned int __mode_t;
-typedef unsigned long int __nlink_t;
-typedef long int __off_t;
-typedef long int __off64_t;
-typedef int __pid_t;
-typedef struct { int __val[2]; } __fsid_t;
-typedef long int __clock_t;
-typedef unsigned long int __rlim_t;
-typedef unsigned long int __rlim64_t;
-typedef unsigned int __id_t;
-typedef long int __time_t;
-typedef unsigned int __useconds_t;
-typedef long int __suseconds_t;
-typedef long int __suseconds64_t;
-
-typedef int __daddr_t;
-typedef int __key_t;
-
-
-typedef int __clockid_t;
-
-
-typedef void * __timer_t;
-
-
-typedef long int __blksize_t;
-
-
-
-
-typedef long int __blkcnt_t;
-typedef long int __blkcnt64_t;
-
-
-typedef unsigned long int __fsblkcnt_t;
-typedef unsigned long int __fsblkcnt64_t;
-
-
-typedef unsigned long int __fsfilcnt_t;
-typedef unsigned long int __fsfilcnt64_t;
-
-
-typedef long int __fsword_t;
-
-typedef long int __ssize_t;
-
-
-typedef long int __syscall_slong_t;
-
-typedef unsigned long int __syscall_ulong_t;
-
-
-
-typedef __off64_t __loff_t;
-typedef char *__caddr_t;
-
-
-typedef long int __intptr_t;
-
-
-typedef unsigned int __socklen_t;
-
-
-
-
-typedef int __sig_atomic_t;
-# 30 "/usr/include/sys/types.h" 2 3 4
-
-
-
-typedef __u_char u_char;
-typedef __u_short u_short;
-typedef __u_int u_int;
-typedef __u_long u_long;
-typedef __quad_t quad_t;
-typedef __u_quad_t u_quad_t;
-typedef __fsid_t fsid_t;
-
-
-typedef __loff_t loff_t;
-
-
-
-
-typedef __ino_t ino_t;
-
-
-
-
-
-
-typedef __ino64_t ino64_t;
-
-
-
-
-typedef __dev_t dev_t;
-
-
-
-
-typedef __gid_t gid_t;
-
-
-
-
-typedef __mode_t mode_t;
-
-
-
-
-typedef __nlink_t nlink_t;
-
-
-
-
-typedef __uid_t uid_t;
-
-
-
-
-
-typedef __off_t off_t;
-
-
-
-
-
-
-typedef __off64_t off64_t;
-
-
-
-
-typedef __pid_t pid_t;
-
-
-
-
-
-typedef __id_t id_t;
-
-
-
-
-typedef __ssize_t ssize_t;
-
-
-
-
-
-typedef __daddr_t daddr_t;
-typedef __caddr_t caddr_t;
-
-
-
-
-
-typedef __key_t key_t;
-
-
-
-
-# 1 "/usr/include/bits/types/clock_t.h" 1 3 4
-
-
-
-
-
-
-typedef __clock_t clock_t;
-# 127 "/usr/include/sys/types.h" 2 3 4
-
-# 1 "/usr/include/bits/types/clockid_t.h" 1 3 4
-
-
-
-
-
-
-typedef __clockid_t clockid_t;
-# 129 "/usr/include/sys/types.h" 2 3 4
-# 1 "/usr/include/bits/types/time_t.h" 1 3 4
-# 10 "/usr/include/bits/types/time_t.h" 3 4
-typedef __time_t time_t;
-# 130 "/usr/include/sys/types.h" 2 3 4
-# 1 "/usr/include/bits/types/timer_t.h" 1 3 4
-
-
-
-
-
-
-typedef __timer_t timer_t;
-# 131 "/usr/include/sys/types.h" 2 3 4
-
-
-
-typedef __useconds_t useconds_t;
-
-
-
-typedef __suseconds_t suseconds_t;
-
-
-
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
-# 145 "/usr/include/sys/types.h" 2 3 4
-
-
-
-typedef unsigned long int ulong;
-typedef unsigned short int ushort;
-typedef unsigned int uint;
-
-
-
-
-# 1 "/usr/include/bits/stdint-intn.h" 1 3 4
-# 24 "/usr/include/bits/stdint-intn.h" 3 4
-typedef __int8_t int8_t;
-typedef __int16_t int16_t;
-typedef __int32_t int32_t;
-typedef __int64_t int64_t;
-# 156 "/usr/include/sys/types.h" 2 3 4
-
-
-typedef __uint8_t u_int8_t;
-typedef __uint16_t u_int16_t;
-typedef __uint32_t u_int32_t;
-typedef __uint64_t u_int64_t;
-
-
-typedef int register_t __attribute__ ((__mode__ (__word__)));
-# 176 "/usr/include/sys/types.h" 3 4
-# 1 "/usr/include/endian.h" 1 3 4
-# 24 "/usr/include/endian.h" 3 4
-# 1 "/usr/include/bits/endian.h" 1 3 4
-# 35 "/usr/include/bits/endian.h" 3 4
-# 1 "/usr/include/bits/endianness.h" 1 3 4
-# 36 "/usr/include/bits/endian.h" 2 3 4
-# 25 "/usr/include/endian.h" 2 3 4
-# 35 "/usr/include/endian.h" 3 4
-# 1 "/usr/include/bits/byteswap.h" 1 3 4
-# 33 "/usr/include/bits/byteswap.h" 3 4
-static __inline __uint16_t
-__bswap_16 (__uint16_t __bsx)
-{
-
-  return __builtin_bswap16 (__bsx);
-
-
-
-}
-
-
-
-
-
-
-static __inline __uint32_t
-__bswap_32 (__uint32_t __bsx)
-{
-
-  return __builtin_bswap32 (__bsx);
-
-
-
-}
-# 69 "/usr/include/bits/byteswap.h" 3 4
-__extension__ static __inline __uint64_t
-__bswap_64 (__uint64_t __bsx)
-{
-
-  return __builtin_bswap64 (__bsx);
-
-
-
-}
-# 36 "/usr/include/endian.h" 2 3 4
-# 1 "/usr/include/bits/uintn-identity.h" 1 3 4
-# 32 "/usr/include/bits/uintn-identity.h" 3 4
-static __inline __uint16_t
-__uint16_identity (__uint16_t __x)
-{
-  return __x;
-}
-
-static __inline __uint32_t
-__uint32_identity (__uint32_t __x)
-{
-  return __x;
-}
-
-static __inline __uint64_t
-__uint64_identity (__uint64_t __x)
-{
-  return __x;
-}
-# 37 "/usr/include/endian.h" 2 3 4
-# 177 "/usr/include/sys/types.h" 2 3 4
-
-
-# 1 "/usr/include/sys/select.h" 1 3 4
-# 30 "/usr/include/sys/select.h" 3 4
-# 1 "/usr/include/bits/select.h" 1 3 4
-# 31 "/usr/include/sys/select.h" 2 3 4
-
-
-# 1 "/usr/include/bits/types/sigset_t.h" 1 3 4
-
-
-
-# 1 "/usr/include/bits/types/__sigset_t.h" 1 3 4
-
-
-
-
-typedef struct
-{
-  unsigned long int __val[(1024 / (8 * sizeof (unsigned long int)))];
-} __sigset_t;
-# 5 "/usr/include/bits/types/sigset_t.h" 2 3 4
-
-
-typedef __sigset_t sigset_t;
-# 34 "/usr/include/sys/select.h" 2 3 4
-
-
-
-# 1 "/usr/include/bits/types/struct_timeval.h" 1 3 4
-
-
-
-
-
-
-
-struct timeval
-{
-
-
-
-
-  __time_t tv_sec;
-  __suseconds_t tv_usec;
-
-};
-# 38 "/usr/include/sys/select.h" 2 3 4
-
-# 1 "/usr/include/bits/types/struct_timespec.h" 1 3 4
-# 11 "/usr/include/bits/types/struct_timespec.h" 3 4
-struct timespec
-{
-
-
-
-  __time_t tv_sec;
-
-
-
-
-  __syscall_slong_t tv_nsec;
-# 31 "/usr/include/bits/types/struct_timespec.h" 3 4
-};
-# 40 "/usr/include/sys/select.h" 2 3 4
-# 49 "/usr/include/sys/select.h" 3 4
-typedef long int __fd_mask;
-# 59 "/usr/include/sys/select.h" 3 4
-typedef struct
-  {
-
-
-
-    __fd_mask fds_bits[1024 / (8 * (int) sizeof (__fd_mask))];
-
-
-
-
-
-  } fd_set;
-
-
-
-
-
-
-typedef __fd_mask fd_mask;
-# 91 "/usr/include/sys/select.h" 3 4
-extern "C" {
-# 102 "/usr/include/sys/select.h" 3 4
-extern int select (int __nfds, fd_set *__restrict __readfds,
-     fd_set *__restrict __writefds,
-     fd_set *__restrict __exceptfds,
-     struct timeval *__restrict __timeout);
-# 127 "/usr/include/sys/select.h" 3 4
-extern int pselect (int __nfds, fd_set *__restrict __readfds,
-      fd_set *__restrict __writefds,
-      fd_set *__restrict __exceptfds,
-      const struct timespec *__restrict __timeout,
-      const __sigset_t *__restrict __sigmask);
-# 153 "/usr/include/sys/select.h" 3 4
-}
-# 180 "/usr/include/sys/types.h" 2 3 4
-
-
-
-
-
-typedef __blksize_t blksize_t;
-
-
-
-
-
-
-typedef __blkcnt_t blkcnt_t;
-
-
-
-typedef __fsblkcnt_t fsblkcnt_t;
-
-
-
-typedef __fsfilcnt_t fsfilcnt_t;
-# 219 "/usr/include/sys/types.h" 3 4
-typedef __blkcnt64_t blkcnt64_t;
-typedef __fsblkcnt64_t fsblkcnt64_t;
-typedef __fsfilcnt64_t fsfilcnt64_t;
-
-
-
-
-
-# 1 "/usr/include/bits/pthreadtypes.h" 1 3 4
-# 23 "/usr/include/bits/pthreadtypes.h" 3 4
-# 1 "/usr/include/bits/thread-shared-types.h" 1 3 4
-# 44 "/usr/include/bits/thread-shared-types.h" 3 4
-# 1 "/usr/include/bits/pthreadtypes-arch.h" 1 3 4
-# 21 "/usr/include/bits/pthreadtypes-arch.h" 3 4
-# 1 "/usr/include/bits/wordsize.h" 1 3 4
-# 22 "/usr/include/bits/pthreadtypes-arch.h" 2 3 4
-# 45 "/usr/include/bits/thread-shared-types.h" 2 3 4
-
-# 1 "/usr/include/bits/atomic_wide_counter.h" 1 3 4
-# 25 "/usr/include/bits/atomic_wide_counter.h" 3 4
-typedef union
-{
-  __extension__ unsigned long long int __value64;
-  struct
-  {
-    unsigned int __low;
-    unsigned int __high;
-  } __value32;
-} __atomic_wide_counter;
-# 47 "/usr/include/bits/thread-shared-types.h" 2 3 4
-
-
-
-
-typedef struct __pthread_internal_list
-{
-  struct __pthread_internal_list *__prev;
-  struct __pthread_internal_list *__next;
-} __pthread_list_t;
-
-typedef struct __pthread_internal_slist
-{
-  struct __pthread_internal_slist *__next;
-} __pthread_slist_t;
-# 76 "/usr/include/bits/thread-shared-types.h" 3 4
-# 1 "/usr/include/bits/struct_mutex.h" 1 3 4
-# 22 "/usr/include/bits/struct_mutex.h" 3 4
-struct __pthread_mutex_s
-{
-  int __lock;
-  unsigned int __count;
-  int __owner;
-
-  unsigned int __nusers;
-
-
-
-  int __kind;
-
-  short __spins;
-  short __elision;
-  __pthread_list_t __list;
-# 53 "/usr/include/bits/struct_mutex.h" 3 4
-};
-# 77 "/usr/include/bits/thread-shared-types.h" 2 3 4
-# 89 "/usr/include/bits/thread-shared-types.h" 3 4
-# 1 "/usr/include/bits/struct_rwlock.h" 1 3 4
-# 23 "/usr/include/bits/struct_rwlock.h" 3 4
-struct __pthread_rwlock_arch_t
-{
-  unsigned int __readers;
-  unsigned int __writers;
-  unsigned int __wrphase_futex;
-  unsigned int __writers_futex;
-  unsigned int __pad3;
-  unsigned int __pad4;
-
-  int __cur_writer;
-  int __shared;
-  signed char __rwelision;
-
-
-
-
-  unsigned char __pad1[7];
-
-
-  unsigned long int __pad2;
-
-
-  unsigned int __flags;
-# 55 "/usr/include/bits/struct_rwlock.h" 3 4
-};
-# 90 "/usr/include/bits/thread-shared-types.h" 2 3 4
-
-
-
-
-struct __pthread_cond_s
-{
-  __atomic_wide_counter __wseq;
-  __atomic_wide_counter __g1_start;
-  unsigned int __g_size[2] ;
-  unsigned int __g1_orig_size;
-  unsigned int __wrefs;
-  unsigned int __g_signals[2];
-  unsigned int __unused_initialized_1;
-  unsigned int __unused_initialized_2;
-};
-
-typedef unsigned int __tss_t;
-typedef unsigned long int __thrd_t;
-
-typedef struct
-{
-  int __data ;
-} __once_flag;
-# 24 "/usr/include/bits/pthreadtypes.h" 2 3 4
-
-
-
-typedef unsigned long int pthread_t;
-
-
-
-
-typedef union
-{
-  char __size[4];
-  int __align;
-} pthread_mutexattr_t;
-
-
-
-
-typedef union
-{
-  char __size[4];
-  int __align;
-} pthread_condattr_t;
-
-
-
-typedef unsigned int pthread_key_t;
-
-
-
-typedef int pthread_once_t;
-
-
-union pthread_attr_t
-{
-  char __size[56];
-  long int __align;
-};
-
-typedef union pthread_attr_t pthread_attr_t;
-
-
-
-
-typedef union
-{
-  struct __pthread_mutex_s __data;
-  char __size[40];
-  long int __align;
-} pthread_mutex_t;
-
-
-typedef union
-{
-  struct __pthread_cond_s __data;
-  char __size[48];
-  __extension__ long long int __align;
-} pthread_cond_t;
-
-
-
-
-
-typedef union
-{
-  struct __pthread_rwlock_arch_t __data;
-  char __size[56];
-  long int __align;
-} pthread_rwlock_t;
-
-typedef union
-{
-  char __size[8];
-  long int __align;
-} pthread_rwlockattr_t;
-
-
-
-
-
-typedef volatile int pthread_spinlock_t;
-
-
-
-
-typedef union
-{
-  char __size[32];
-  long int __align;
-} pthread_barrier_t;
-
-typedef union
-{
-  char __size[4];
-  int __align;
-} pthread_barrierattr_t;
-# 228 "/usr/include/sys/types.h" 2 3 4
-
-
-}
-# 515 "/usr/include/stdlib.h" 2 3 4
-
-
-
-
-
-
-extern long int random (void) noexcept (true);
-
-
-extern void srandom (unsigned int __seed) noexcept (true);
-
-
-
-
-
-extern char *initstate (unsigned int __seed, char *__statebuf,
-   size_t __statelen) noexcept (true) __attribute__ ((__nonnull__ (2)));
-
-
-
-extern char *setstate (char *__statebuf) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-
-
-struct random_data
-  {
-    int32_t *fptr;
-    int32_t *rptr;
-    int32_t *state;
-    int rand_type;
-    int rand_deg;
-    int rand_sep;
-    int32_t *end_ptr;
-  };
-
-extern int random_r (struct random_data *__restrict __buf,
-       int32_t *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-extern int srandom_r (unsigned int __seed, struct random_data *__buf)
-     noexcept (true) __attribute__ ((__nonnull__ (2)));
-
-extern int initstate_r (unsigned int __seed, char *__restrict __statebuf,
-   size_t __statelen,
-   struct random_data *__restrict __buf)
-     noexcept (true) __attribute__ ((__nonnull__ (2, 4)));
-
-extern int setstate_r (char *__restrict __statebuf,
-         struct random_data *__restrict __buf)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-
-
-
-extern int rand (void) noexcept (true);
-
-extern void srand (unsigned int __seed) noexcept (true);
-
-
-
-extern int rand_r (unsigned int *__seed) noexcept (true);
-
-
-
-
-
-
-
-extern double drand48 (void) noexcept (true);
-extern double erand48 (unsigned short int __xsubi[3]) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-extern long int lrand48 (void) noexcept (true);
-extern long int nrand48 (unsigned short int __xsubi[3])
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-extern long int mrand48 (void) noexcept (true);
-extern long int jrand48 (unsigned short int __xsubi[3])
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-extern void srand48 (long int __seedval) noexcept (true);
-extern unsigned short int *seed48 (unsigned short int __seed16v[3])
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-extern void lcong48 (unsigned short int __param[7]) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-struct drand48_data
-  {
-    unsigned short int __x[3];
-    unsigned short int __old_x[3];
-    unsigned short int __c;
-    unsigned short int __init;
-    __extension__ unsigned long long int __a;
-
-  };
-
-
-extern int drand48_r (struct drand48_data *__restrict __buffer,
-        double *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern int erand48_r (unsigned short int __xsubi[3],
-        struct drand48_data *__restrict __buffer,
-        double *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int lrand48_r (struct drand48_data *__restrict __buffer,
-        long int *__restrict __result)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern int nrand48_r (unsigned short int __xsubi[3],
-        struct drand48_data *__restrict __buffer,
-        long int *__restrict __result)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int mrand48_r (struct drand48_data *__restrict __buffer,
-        long int *__restrict __result)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-extern int jrand48_r (unsigned short int __xsubi[3],
-        struct drand48_data *__restrict __buffer,
-        long int *__restrict __result)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern int srand48_r (long int __seedval, struct drand48_data *__buffer)
-     noexcept (true) __attribute__ ((__nonnull__ (2)));
-
-extern int seed48_r (unsigned short int __seed16v[3],
-       struct drand48_data *__buffer) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-extern int lcong48_r (unsigned short int __param[7],
-        struct drand48_data *__buffer)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
-
-
-extern __uint32_t arc4random (void)
-     noexcept (true) ;
-
-
-extern void arc4random_buf (void *__buf, size_t __size)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-extern __uint32_t arc4random_uniform (__uint32_t __upper_bound)
-     noexcept (true) ;
-
-
-
-
-extern void *malloc (size_t __size) noexcept (true) __attribute__ ((__malloc__))
-     __attribute__ ((__alloc_size__ (1))) ;
-
-extern void *calloc (size_t __nmemb, size_t __size)
-     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__alloc_size__ (1, 2))) ;
-
-
-
-
-
-
-extern void *realloc (void *__ptr, size_t __size)
-     noexcept (true) __attribute__ ((__warn_unused_result__)) __attribute__ ((__alloc_size__ (2)));
-
-
-extern void free (void *__ptr) noexcept (true);
-
-
-
-
-
-
-
-extern void *reallocarray (void *__ptr, size_t __nmemb, size_t __size)
-     noexcept (true) __attribute__ ((__warn_unused_result__))
-     __attribute__ ((__alloc_size__ (2, 3)))
-    __attribute__ ((__malloc__ (__builtin_free, 1)));
-
-
-extern void *reallocarray (void *__ptr, size_t __nmemb, size_t __size)
-     noexcept (true) __attribute__ ((__malloc__ (reallocarray, 1)));
-
-
-
-# 1 "/usr/include/alloca.h" 1 3 4
-# 24 "/usr/include/alloca.h" 3 4
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
-# 25 "/usr/include/alloca.h" 2 3 4
-
-extern "C" {
-
-
-
-
-
-extern void *alloca (size_t __size) noexcept (true);
-
-
-
-
-
-}
-# 707 "/usr/include/stdlib.h" 2 3 4
-
-
-
-
-
-extern void *valloc (size_t __size) noexcept (true) __attribute__ ((__malloc__))
-     __attribute__ ((__alloc_size__ (1))) ;
-
-
-
-
-extern int posix_memalign (void **__memptr, size_t __alignment, size_t __size)
-     noexcept (true) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-
-extern void *aligned_alloc (size_t __alignment, size_t __size)
-     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__alloc_align__ (1)))
-     __attribute__ ((__alloc_size__ (2))) ;
-
-
-
-extern void abort (void) noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
-
-
-
-extern int atexit (void (*__func) (void)) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-extern "C++" int at_quick_exit (void (*__func) (void))
-     noexcept (true) __asm ("at_quick_exit") __attribute__ ((__nonnull__ (1)));
-# 749 "/usr/include/stdlib.h" 3 4
-extern int on_exit (void (*__func) (int __status, void *__arg), void *__arg)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-extern void exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
-
-
-
-
-
-extern void quick_exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
-
-
-
-
-
-extern void _Exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
-
-
-
-
-extern char *getenv (const char *__name) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-
-extern char *secure_getenv (const char *__name)
-     noexcept (true) __attribute__ ((__nonnull__ (1))) ;
-
-
-
-
-
-
-extern int putenv (char *__string) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-extern int setenv (const char *__name, const char *__value, int __replace)
-     noexcept (true) __attribute__ ((__nonnull__ (2)));
-
-
-extern int unsetenv (const char *__name) noexcept (true) __attribute__ ((__nonnull__ (1)));
-
-
-
-
-
-
-extern int clearenv (void) noexcept (true);
-# 814 "/usr/include/stdlib.h" 3 4
-extern char *mktemp (char *__template) noexcept (true) __attribute__ ((__nonnull__ (1)));
-# 827 "/usr/include/stdlib.h" 3 4
-extern int mkstemp (char *__template) __attribute__ ((__nonnull__ (1))) ;
-# 837 "/usr/include/stdlib.h" 3 4
-extern int mkstemp64 (char *__template) __attribute__ ((__nonnull__ (1))) ;
-# 849 "/usr/include/stdlib.h" 3 4
-extern int mkstemps (char *__template, int __suffixlen) __attribute__ ((__nonnull__ (1))) ;
-# 859 "/usr/include/stdlib.h" 3 4
-extern int mkstemps64 (char *__template, int __suffixlen)
-     __attribute__ ((__nonnull__ (1))) ;
-# 870 "/usr/include/stdlib.h" 3 4
-extern char *mkdtemp (char *__template) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
-# 881 "/usr/include/stdlib.h" 3 4
-extern int mkostemp (char *__template, int __flags) __attribute__ ((__nonnull__ (1))) ;
-# 891 "/usr/include/stdlib.h" 3 4
-extern int mkostemp64 (char *__template, int __flags) __attribute__ ((__nonnull__ (1))) ;
-# 901 "/usr/include/stdlib.h" 3 4
-extern int mkostemps (char *__template, int __suffixlen, int __flags)
-     __attribute__ ((__nonnull__ (1))) ;
-# 913 "/usr/include/stdlib.h" 3 4
-extern int mkostemps64 (char *__template, int __suffixlen, int __flags)
-     __attribute__ ((__nonnull__ (1))) ;
-# 923 "/usr/include/stdlib.h" 3 4
-extern int system (const char *__command) ;
-
-
-
-
-
-extern char *canonicalize_file_name (const char *__name)
-     noexcept (true) __attribute__ ((__nonnull__ (1))) __attribute__ ((__malloc__))
-     __attribute__ ((__malloc__ (__builtin_free, 1))) ;
-# 940 "/usr/include/stdlib.h" 3 4
-extern char *realpath (const char *__restrict __name,
-         char *__restrict __resolved) noexcept (true) ;
-
-
-
-
-
-
-typedef int (*__compar_fn_t) (const void *, const void *);
-
-
-typedef __compar_fn_t comparison_fn_t;
-
-
-
-typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
-
-
-
-
-extern void *bsearch (const void *__key, const void *__base,
-        size_t __nmemb, size_t __size, __compar_fn_t __compar)
-     __attribute__ ((__nonnull__ (1, 2, 5))) ;
-
-
-
-
-
-
-
-extern void qsort (void *__base, size_t __nmemb, size_t __size,
-     __compar_fn_t __compar) __attribute__ ((__nonnull__ (1, 4)));
-
-extern void qsort_r (void *__base, size_t __nmemb, size_t __size,
-       __compar_d_fn_t __compar, void *__arg)
-  __attribute__ ((__nonnull__ (1, 4)));
-
-
-
-
-extern int abs (int __x) noexcept (true) __attribute__ ((__const__)) ;
-extern long int labs (long int __x) noexcept (true) __attribute__ ((__const__)) ;
-
-
-__extension__ extern long long int llabs (long long int __x)
-     noexcept (true) __attribute__ ((__const__)) ;
-
-
-
-
-
-
-extern div_t div (int __numer, int __denom)
-     noexcept (true) __attribute__ ((__const__)) ;
-extern ldiv_t ldiv (long int __numer, long int __denom)
-     noexcept (true) __attribute__ ((__const__)) ;
-
-
-__extension__ extern lldiv_t lldiv (long long int __numer,
-        long long int __denom)
-     noexcept (true) __attribute__ ((__const__)) ;
-# 1012 "/usr/include/stdlib.h" 3 4
-extern char *ecvt (double __value, int __ndigit, int *__restrict __decpt,
-     int *__restrict __sign) noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
-
-
-
-
-extern char *fcvt (double __value, int __ndigit, int *__restrict __decpt,
-     int *__restrict __sign) noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
-
-
-
-
-extern char *gcvt (double __value, int __ndigit, char *__buf)
-     noexcept (true) __attribute__ ((__nonnull__ (3))) ;
-
-
-
-
-extern char *qecvt (long double __value, int __ndigit,
-      int *__restrict __decpt, int *__restrict __sign)
-     noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
-extern char *qfcvt (long double __value, int __ndigit,
-      int *__restrict __decpt, int *__restrict __sign)
-     noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
-extern char *qgcvt (long double __value, int __ndigit, char *__buf)
-     noexcept (true) __attribute__ ((__nonnull__ (3))) ;
-
-
-
-
-extern int ecvt_r (double __value, int __ndigit, int *__restrict __decpt,
-     int *__restrict __sign, char *__restrict __buf,
-     size_t __len) noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
-extern int fcvt_r (double __value, int __ndigit, int *__restrict __decpt,
-     int *__restrict __sign, char *__restrict __buf,
-     size_t __len) noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
-
-extern int qecvt_r (long double __value, int __ndigit,
-      int *__restrict __decpt, int *__restrict __sign,
-      char *__restrict __buf, size_t __len)
-     noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
-extern int qfcvt_r (long double __value, int __ndigit,
-      int *__restrict __decpt, int *__restrict __sign,
-      char *__restrict __buf, size_t __len)
-     noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
-
-
-
-
-
-extern int mblen (const char *__s, size_t __n) noexcept (true);
-
-
-extern int mbtowc (wchar_t *__restrict __pwc,
-     const char *__restrict __s, size_t __n) noexcept (true);
-
-
-extern int wctomb (char *__s, wchar_t __wchar) noexcept (true);
-
-
-
-extern size_t mbstowcs (wchar_t *__restrict __pwcs,
-   const char *__restrict __s, size_t __n) noexcept (true)
-    __attribute__ ((__access__ (__read_only__, 2)));
-
-extern size_t wcstombs (char *__restrict __s,
-   const wchar_t *__restrict __pwcs, size_t __n)
-     noexcept (true)
-  __attribute__ ((__access__ (__write_only__, 1, 3)))
-  __attribute__ ((__access__ (__read_only__, 2)));
-
-
-
-
-
-
-extern int rpmatch (const char *__response) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
-# 1099 "/usr/include/stdlib.h" 3 4
-extern int getsubopt (char **__restrict __optionp,
-        char *const *__restrict __tokens,
-        char **__restrict __valuep)
-     noexcept (true) __attribute__ ((__nonnull__ (1, 2, 3))) ;
-
-
-
-
-
-
-
-extern int posix_openpt (int __oflag) ;
-
-
-
-
-
-
-
-extern int grantpt (int __fd) noexcept (true);
-
-
-
-extern int unlockpt (int __fd) noexcept (true);
-
-
-
-
-extern char *ptsname (int __fd) noexcept (true) ;
-
-
-
-
-
-
-extern int ptsname_r (int __fd, char *__buf, size_t __buflen)
-     noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 2, 3)));
-
-
-extern int getpt (void);
-
-
-
-
-
-
-extern int getloadavg (double __loadavg[], int __nelem)
-     noexcept (true) __attribute__ ((__nonnull__ (1)));
-# 1155 "/usr/include/stdlib.h" 3 4
-# 1 "/usr/include/bits/stdlib-float.h" 1 3 4
-# 1156 "/usr/include/stdlib.h" 2 3 4
-# 1167 "/usr/include/stdlib.h" 3 4
-}
-# 31 "/usr/include/c++/14.2.1/stdlib.h" 2 3
-# 76 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 2 3
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 1 3
-# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
-       
-# 34 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
-
-
-
-
-# 1 "/usr/include/c++/14.2.1/stdlib.h" 1 3
-# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 2 3
-
-
-
-
-
-
-
-extern "C++"
-{
-namespace std __attribute__ ((__visibility__ ("default")))
-{
-
-
-  using ::abs;
-
-
-  inline long
-  abs(long __i) { return __builtin_labs(__i); }
-
-
-
-  inline long long
-  abs(long long __x) { return __builtin_llabs (__x); }
-# 70 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
-  inline constexpr double
-  abs(double __x)
-  { return __builtin_fabs(__x); }
-
-  inline constexpr float
-  abs(float __x)
-  { return __builtin_fabsf(__x); }
-
-  inline constexpr long double
-  abs(long double __x)
-  { return __builtin_fabsl(__x); }
-
-
-
-  inline constexpr __int128
-  abs(__int128 __x) { return __x >= 0 ? __x : -__x; }
-# 101 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
-  inline constexpr
-  __float128
-  abs(__float128 __x)
-  { return __x < 0 ? -__x : __x; }
-
-
-
-}
-}
-# 78 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 2 3
-# 121 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
-extern "C++"
-{
-namespace std __attribute__ ((__visibility__ ("default")))
-{
-
-
-  using ::div_t;
-  using ::ldiv_t;
-
-  using ::abort;
-
-  using ::aligned_alloc;
-
-  using ::atexit;
-
-
-  using ::at_quick_exit;
-
-
-  using ::atof;
-  using ::atoi;
-  using ::atol;
-  using ::bsearch;
-  using ::calloc;
-  using ::div;
-  using ::exit;
-  using ::free;
-  using ::getenv;
-  using ::labs;
-  using ::ldiv;
-  using ::malloc;
-
-  using ::mblen;
-  using ::mbstowcs;
-  using ::mbtowc;
-
-  using ::qsort;
-
-
-  using ::quick_exit;
-
-
-  using ::rand;
-  using ::realloc;
-  using ::srand;
-  using ::strtod;
-  using ::strtol;
-  using ::strtoul;
-  using ::system;
-
-  using ::wcstombs;
-  using ::wctomb;
-
-
-
-  inline ldiv_t
-  div(long __i, long __j) { return ldiv(__i, __j); }
-
-
-
-
-}
-# 195 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
-namespace __gnu_cxx __attribute__ ((__visibility__ ("default")))
-{
-
-
-
-  using ::lldiv_t;
-
-
-
-
-
-  using ::_Exit;
-
-
-
-  using ::llabs;
-
-  inline lldiv_t
-  div(long long __n, long long __d)
-  { lldiv_t __q; __q.quot = __n / __d; __q.rem = __n % __d; return __q; }
-
-  using ::lldiv;
-# 227 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
-  using ::atoll;
-  using ::strtoll;
-  using ::strtoull;
-
-  using ::strtof;
-  using ::strtold;
-
-
-}
-
-namespace std
-{
-
-  using ::__gnu_cxx::lldiv_t;
-
-  using ::__gnu_cxx::_Exit;
-
-  using ::__gnu_cxx::llabs;
-  using ::__gnu_cxx::div;
-  using ::__gnu_cxx::lldiv;
-
-  using ::__gnu_cxx::atoll;
-  using ::__gnu_cxx::strtof;
-  using ::__gnu_cxx::strtoll;
-  using ::__gnu_cxx::strtoull;
-  using ::__gnu_cxx::strtold;
-}
-
-
-
-}
-# 4 "drivers/fs.cc" 2
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 1
-# 58 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility"
-       
-# 59 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
-# 69 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
+# 69 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 2 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_relops.h" 1 3
 # 67 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_relops.h" 3
 namespace std __attribute__ ((__visibility__ ("default")))
@@ -6416,178 +4133,7 @@ namespace std __attribute__ ((__visibility__ ("default")))
 # 476 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/utility" 3
 
 }
-# 5 "drivers/fs.cc" 2
-# 1 "include/drivers/fs.h" 1
-
-
-# 1 "include/kernel/driver/driver.h" 1
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 1
-# 42 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef"
-       
-# 43 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 3
-
-
-
-
-
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3
-# 143 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
-typedef long int ptrdiff_t;
-# 415 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
-typedef struct {
-  long long __max_align_ll __attribute__((__aligned__(__alignof__(long long))));
-  long double __max_align_ld __attribute__((__aligned__(__alignof__(long double))));
-# 426 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
-} max_align_t;
-
-
-
-
-
-
-  typedef decltype(nullptr) nullptr_t;
-# 51 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 2 3
-
-extern "C++"
-{
-
-namespace std
-{
-
-  using ::max_align_t;
-}
-
-
-
-namespace std
-{
-
-
-
-
-  enum class byte : unsigned char {};
-
-  template<typename _IntegerType> struct __byte_operand { };
-  template<> struct __byte_operand<bool> { using __type = byte; };
-  template<> struct __byte_operand<char> { using __type = byte; };
-  template<> struct __byte_operand<signed char> { using __type = byte; };
-  template<> struct __byte_operand<unsigned char> { using __type = byte; };
-
-  template<> struct __byte_operand<wchar_t> { using __type = byte; };
-
-
-
-
-  template<> struct __byte_operand<char16_t> { using __type = byte; };
-  template<> struct __byte_operand<char32_t> { using __type = byte; };
-  template<> struct __byte_operand<short> { using __type = byte; };
-  template<> struct __byte_operand<unsigned short> { using __type = byte; };
-  template<> struct __byte_operand<int> { using __type = byte; };
-  template<> struct __byte_operand<unsigned int> { using __type = byte; };
-  template<> struct __byte_operand<long> { using __type = byte; };
-  template<> struct __byte_operand<unsigned long> { using __type = byte; };
-  template<> struct __byte_operand<long long> { using __type = byte; };
-  template<> struct __byte_operand<unsigned long long> { using __type = byte; };
-
-  template<> struct __byte_operand<__int128>
-  { using __type = byte; };
-  template<> struct __byte_operand<unsigned __int128>
-  { using __type = byte; };
-# 110 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 3
-  template<typename _IntegerType>
-    struct __byte_operand<const _IntegerType>
-    : __byte_operand<_IntegerType> { };
-  template<typename _IntegerType>
-    struct __byte_operand<volatile _IntegerType>
-    : __byte_operand<_IntegerType> { };
-  template<typename _IntegerType>
-    struct __byte_operand<const volatile _IntegerType>
-    : __byte_operand<_IntegerType> { };
-
-  template<typename _IntegerType>
-    using __byte_op_t = typename __byte_operand<_IntegerType>::__type;
-
-  template<typename _IntegerType>
-    [[__gnu__::__always_inline__]]
-    constexpr __byte_op_t<_IntegerType>
-    operator<<(byte __b, _IntegerType __shift) noexcept
-    { return (byte)(unsigned char)((unsigned)__b << __shift); }
-
-  template<typename _IntegerType>
-    [[__gnu__::__always_inline__]]
-    constexpr __byte_op_t<_IntegerType>
-    operator>>(byte __b, _IntegerType __shift) noexcept
-    { return (byte)(unsigned char)((unsigned)__b >> __shift); }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte
-  operator|(byte __l, byte __r) noexcept
-  { return (byte)(unsigned char)((unsigned)__l | (unsigned)__r); }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte
-  operator&(byte __l, byte __r) noexcept
-  { return (byte)(unsigned char)((unsigned)__l & (unsigned)__r); }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte
-  operator^(byte __l, byte __r) noexcept
-  { return (byte)(unsigned char)((unsigned)__l ^ (unsigned)__r); }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte
-  operator~(byte __b) noexcept
-  { return (byte)(unsigned char)~(unsigned)__b; }
-
-  template<typename _IntegerType>
-    [[__gnu__::__always_inline__]]
-    constexpr __byte_op_t<_IntegerType>&
-    operator<<=(byte& __b, _IntegerType __shift) noexcept
-    { return __b = __b << __shift; }
-
-  template<typename _IntegerType>
-    [[__gnu__::__always_inline__]]
-    constexpr __byte_op_t<_IntegerType>&
-    operator>>=(byte& __b, _IntegerType __shift) noexcept
-    { return __b = __b >> __shift; }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte&
-  operator|=(byte& __l, byte __r) noexcept
-  { return __l = __l | __r; }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte&
-  operator&=(byte& __l, byte __r) noexcept
-  { return __l = __l & __r; }
-
-  [[__gnu__::__always_inline__]]
-  constexpr byte&
-  operator^=(byte& __l, byte __r) noexcept
-  { return __l = __l ^ __r; }
-
-  template<typename _IntegerType>
-    [[nodiscard,__gnu__::__always_inline__]]
-    constexpr _IntegerType
-    to_integer(__byte_op_t<_IntegerType> __b) noexcept
-    { return _IntegerType(__b); }
-
-
-}
-
-}
-# 4 "include/kernel/driver/driver.h" 2
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 1
-# 58 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector"
-       
-# 59 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 3
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_algobase.h" 1 3
-# 60 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_algobase.h" 3
+# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 2 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/functexcept.h" 1 3
 # 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/functexcept.h" 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/exception_defines.h" 1 3
@@ -6668,7 +4214,9 @@ namespace std __attribute__ ((__visibility__ ("default")))
 
 
 }
-# 61 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_algobase.h" 2 3
+# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 2 3
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_algobase.h" 1 3
+# 61 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/stl_algobase.h" 3
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/cpp_type_traits.h" 1 3
 # 35 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/cpp_type_traits.h" 3
        
@@ -10970,7 +8518,690 @@ namespace std __attribute__ ((__visibility__ ("default")))
 
 
 }
-# 61 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 2 3
+# 41 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 2 3
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 1 3
+# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
+       
+# 34 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
+
+
+
+
+
+
+namespace std __attribute__ ((__visibility__ ("default")))
+{
+
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    begin(_Container& __cont) -> decltype(__cont.begin())
+    { return __cont.begin(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    begin(const _Container& __cont) -> decltype(__cont.begin())
+    { return __cont.begin(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    end(_Container& __cont) -> decltype(__cont.end())
+    { return __cont.end(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    end(const _Container& __cont) -> decltype(__cont.end())
+    { return __cont.end(); }
+
+
+
+
+
+  template<typename _Tp, size_t _Nm>
+    inline constexpr _Tp*
+    begin(_Tp (&__arr)[_Nm]) noexcept
+    { return __arr; }
+
+
+
+
+
+
+  template<typename _Tp, size_t _Nm>
+    inline constexpr _Tp*
+    end(_Tp (&__arr)[_Nm]) noexcept
+    { return __arr + _Nm; }
+
+
+
+  template<typename _Tp> class valarray;
+
+  template<typename _Tp> _Tp* begin(valarray<_Tp>&) noexcept;
+  template<typename _Tp> const _Tp* begin(const valarray<_Tp>&) noexcept;
+  template<typename _Tp> _Tp* end(valarray<_Tp>&) noexcept;
+  template<typename _Tp> const _Tp* end(const valarray<_Tp>&) noexcept;
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    cbegin(const _Container& __cont) noexcept(noexcept(std::begin(__cont)))
+      -> decltype(std::begin(__cont))
+    { return std::begin(__cont); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    cend(const _Container& __cont) noexcept(noexcept(std::end(__cont)))
+      -> decltype(std::end(__cont))
+    { return std::end(__cont); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    rbegin(_Container& __cont) -> decltype(__cont.rbegin())
+    { return __cont.rbegin(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    rbegin(const _Container& __cont) -> decltype(__cont.rbegin())
+    { return __cont.rbegin(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    rend(_Container& __cont) -> decltype(__cont.rend())
+    { return __cont.rend(); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    rend(const _Container& __cont) -> decltype(__cont.rend())
+    { return __cont.rend(); }
+
+
+
+
+
+
+  template<typename _Tp, size_t _Nm>
+    inline constexpr reverse_iterator<_Tp*>
+    rbegin(_Tp (&__arr)[_Nm]) noexcept
+    { return reverse_iterator<_Tp*>(__arr + _Nm); }
+
+
+
+
+
+
+  template<typename _Tp, size_t _Nm>
+    inline constexpr reverse_iterator<_Tp*>
+    rend(_Tp (&__arr)[_Nm]) noexcept
+    { return reverse_iterator<_Tp*>(__arr); }
+
+
+
+
+
+
+  template<typename _Tp>
+    inline constexpr reverse_iterator<const _Tp*>
+    rbegin(initializer_list<_Tp> __il) noexcept
+    { return reverse_iterator<const _Tp*>(__il.end()); }
+
+
+
+
+
+
+  template<typename _Tp>
+    inline constexpr reverse_iterator<const _Tp*>
+    rend(initializer_list<_Tp> __il) noexcept
+    { return reverse_iterator<const _Tp*>(__il.begin()); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    crbegin(const _Container& __cont) -> decltype(std::rbegin(__cont))
+    { return std::rbegin(__cont); }
+
+
+
+
+
+
+  template<typename _Container>
+    inline constexpr auto
+    crend(const _Container& __cont) -> decltype(std::rend(__cont))
+    { return std::rend(__cont); }
+# 243 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
+  template <typename _Container>
+    constexpr auto
+    size(const _Container& __cont) noexcept(noexcept(__cont.size()))
+    -> decltype(__cont.size())
+    { return __cont.size(); }
+
+
+
+
+  template <typename _Tp, size_t _Nm>
+    constexpr size_t
+    size(const _Tp (&)[_Nm]) noexcept
+    { return _Nm; }
+
+
+
+
+
+  template <typename _Container>
+    [[nodiscard]] constexpr auto
+    empty(const _Container& __cont) noexcept(noexcept(__cont.empty()))
+    -> decltype(__cont.empty())
+    { return __cont.empty(); }
+
+
+
+
+  template <typename _Tp, size_t _Nm>
+    [[nodiscard]] constexpr bool
+    empty(const _Tp (&)[_Nm]) noexcept
+    { return false; }
+
+
+
+
+
+  template <typename _Tp>
+    [[nodiscard]] constexpr bool
+    empty(initializer_list<_Tp> __il) noexcept
+    { return __il.size() == 0;}
+
+
+
+
+
+  template <typename _Container>
+    constexpr auto
+    data(_Container& __cont) noexcept(noexcept(__cont.data()))
+    -> decltype(__cont.data())
+    { return __cont.data(); }
+
+
+
+
+
+  template <typename _Container>
+    constexpr auto
+    data(const _Container& __cont) noexcept(noexcept(__cont.data()))
+    -> decltype(__cont.data())
+    { return __cont.data(); }
+
+
+
+
+
+  template <typename _Tp, size_t _Nm>
+    constexpr _Tp*
+    data(_Tp (&__array)[_Nm]) noexcept
+    { return __array; }
+
+
+
+
+
+  template <typename _Tp>
+    constexpr const _Tp*
+    data(initializer_list<_Tp> __il) noexcept
+    { return __il.begin(); }
+# 341 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
+
+}
+# 42 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 2 3
+
+
+namespace std __attribute__ ((__visibility__ ("default")))
+{
+
+
+  template<typename _Tp, std::size_t _Nm>
+    struct __array_traits
+    {
+      typedef _Tp _Type[_Nm];
+      typedef __is_swappable<_Tp> _Is_swappable;
+      typedef __is_nothrow_swappable<_Tp> _Is_nothrow_swappable;
+
+      static constexpr _Tp&
+      _S_ref(const _Type& __t, std::size_t __n) noexcept
+      { return const_cast<_Tp&>(__t[__n]); }
+
+      static constexpr _Tp*
+      _S_ptr(const _Type& __t) noexcept
+      { return const_cast<_Tp*>(__t); }
+    };
+
+ template<typename _Tp>
+   struct __array_traits<_Tp, 0>
+   {
+     struct _Type { };
+     typedef true_type _Is_swappable;
+     typedef true_type _Is_nothrow_swappable;
+
+     static constexpr _Tp&
+     _S_ref(const _Type&, std::size_t) noexcept
+     { return *static_cast<_Tp*>(nullptr); }
+
+     static constexpr _Tp*
+     _S_ptr(const _Type&) noexcept
+     { return nullptr; }
+   };
+# 94 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
+  template<typename _Tp, std::size_t _Nm>
+    struct array
+    {
+      typedef _Tp value_type;
+      typedef value_type* pointer;
+      typedef const value_type* const_pointer;
+      typedef value_type& reference;
+      typedef const value_type& const_reference;
+      typedef value_type* iterator;
+      typedef const value_type* const_iterator;
+      typedef std::size_t size_type;
+      typedef std::ptrdiff_t difference_type;
+      typedef std::reverse_iterator<iterator> reverse_iterator;
+      typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+
+      typedef __array_traits<_Tp, _Nm> _AT_Type;
+      typename _AT_Type::_Type _M_elems;
+
+
+
+
+      void
+      fill(const value_type& __u)
+      { std::fill_n(begin(), size(), __u); }
+
+      void
+      swap(array& __other)
+      noexcept(_AT_Type::_Is_nothrow_swappable::value)
+      { std::swap_ranges(begin(), end(), __other.begin()); }
+
+
+      constexpr iterator
+      begin() noexcept
+      { return iterator(data()); }
+
+      constexpr const_iterator
+      begin() const noexcept
+      { return const_iterator(data()); }
+
+      constexpr iterator
+      end() noexcept
+      { return iterator(data() + _Nm); }
+
+      constexpr const_iterator
+      end() const noexcept
+      { return const_iterator(data() + _Nm); }
+
+      constexpr reverse_iterator
+      rbegin() noexcept
+      { return reverse_iterator(end()); }
+
+      constexpr const_reverse_iterator
+      rbegin() const noexcept
+      { return const_reverse_iterator(end()); }
+
+      constexpr reverse_iterator
+      rend() noexcept
+      { return reverse_iterator(begin()); }
+
+      constexpr const_reverse_iterator
+      rend() const noexcept
+      { return const_reverse_iterator(begin()); }
+
+      constexpr const_iterator
+      cbegin() const noexcept
+      { return const_iterator(data()); }
+
+      constexpr const_iterator
+      cend() const noexcept
+      { return const_iterator(data() + _Nm); }
+
+      constexpr const_reverse_iterator
+      crbegin() const noexcept
+      { return const_reverse_iterator(end()); }
+
+      constexpr const_reverse_iterator
+      crend() const noexcept
+      { return const_reverse_iterator(begin()); }
+
+
+      constexpr size_type
+      size() const noexcept { return _Nm; }
+
+      constexpr size_type
+      max_size() const noexcept { return _Nm; }
+
+      [[__nodiscard__]] constexpr bool
+      empty() const noexcept { return size() == 0; }
+
+
+      constexpr reference
+      operator[](size_type __n) noexcept
+      {
+ ;
+ return _AT_Type::_S_ref(_M_elems, __n);
+      }
+
+      constexpr const_reference
+      operator[](size_type __n) const noexcept
+      {
+
+ ;
+
+ return _AT_Type::_S_ref(_M_elems, __n);
+      }
+
+      constexpr reference
+      at(size_type __n)
+      {
+ if (__n >= _Nm)
+   std::__throw_out_of_range_fmt(("array::at: __n (which is %zu) " ">= _Nm (which is %zu)")
+                                 ,
+     __n, _Nm);
+ return _AT_Type::_S_ref(_M_elems, __n);
+      }
+
+      constexpr const_reference
+      at(size_type __n) const
+      {
+
+
+ return __n < _Nm ? _AT_Type::_S_ref(_M_elems, __n)
+   : (std::__throw_out_of_range_fmt(("array::at: __n (which is %zu) " ">= _Nm (which is %zu)")
+                                    ,
+        __n, _Nm),
+      _AT_Type::_S_ref(_M_elems, 0));
+      }
+
+      constexpr reference
+      front() noexcept
+      {
+ ;
+ return *begin();
+      }
+
+      constexpr const_reference
+      front() const noexcept
+      {
+
+ ;
+
+ return _AT_Type::_S_ref(_M_elems, 0);
+      }
+
+      constexpr reference
+      back() noexcept
+      {
+ ;
+ return _Nm ? *(end() - 1) : *end();
+      }
+
+      constexpr const_reference
+      back() const noexcept
+      {
+
+ ;
+
+ return _Nm ? _AT_Type::_S_ref(_M_elems, _Nm - 1)
+             : _AT_Type::_S_ref(_M_elems, 0);
+      }
+
+      constexpr pointer
+      data() noexcept
+      { return _AT_Type::_S_ptr(_M_elems); }
+
+      constexpr const_pointer
+      data() const noexcept
+      { return _AT_Type::_S_ptr(_M_elems); }
+    };
+
+
+  template<typename _Tp, typename... _Up>
+    array(_Tp, _Up...)
+      -> array<enable_if_t<(is_same_v<_Tp, _Up> && ...), _Tp>,
+        1 + sizeof...(_Up)>;
+
+
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator==(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
+    { return std::equal(__one.begin(), __one.end(), __two.begin()); }
+# 302 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator!=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
+    { return !(__one == __two); }
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator<(const array<_Tp, _Nm>& __a, const array<_Tp, _Nm>& __b)
+    {
+      return std::lexicographical_compare(__a.begin(), __a.end(),
+       __b.begin(), __b.end());
+    }
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator>(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
+    { return __two < __one; }
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator<=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
+    { return !(__one > __two); }
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline bool
+    operator>=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
+    { return !(__one < __two); }
+
+
+
+  template<typename _Tp, std::size_t _Nm>
+   
+    inline
+
+
+    typename enable_if<
+      __array_traits<_Tp, _Nm>::_Is_swappable::value
+    >::type
+
+
+
+    swap(array<_Tp, _Nm>& __one, array<_Tp, _Nm>& __two)
+    noexcept(noexcept(__one.swap(__two)))
+    { __one.swap(__two); }
+
+
+  template<typename _Tp, std::size_t _Nm>
+    typename enable_if<
+      !__array_traits<_Tp, _Nm>::_Is_swappable::value>::type
+    swap(array<_Tp, _Nm>&, array<_Tp, _Nm>&) = delete;
+
+
+  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
+    constexpr _Tp&
+    get(array<_Tp, _Nm>& __arr) noexcept
+    {
+      static_assert(_Int < _Nm, "array index is within bounds");
+      return __array_traits<_Tp, _Nm>::_S_ref(__arr._M_elems, _Int);
+    }
+
+  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
+    constexpr _Tp&&
+    get(array<_Tp, _Nm>&& __arr) noexcept
+    {
+      static_assert(_Int < _Nm, "array index is within bounds");
+      return std::move(std::get<_Int>(__arr));
+    }
+
+  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
+    constexpr const _Tp&
+    get(const array<_Tp, _Nm>& __arr) noexcept
+    {
+      static_assert(_Int < _Nm, "array index is within bounds");
+      return __array_traits<_Tp, _Nm>::_S_ref(__arr._M_elems, _Int);
+    }
+
+  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
+    constexpr const _Tp&&
+    get(const array<_Tp, _Nm>&& __arr) noexcept
+    {
+      static_assert(_Int < _Nm, "array index is within bounds");
+      return std::move(std::get<_Int>(__arr));
+    }
+# 432 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
+  template<typename _Tp>
+    struct tuple_size;
+
+
+  template<typename _Tp, std::size_t _Nm>
+    struct tuple_size<array<_Tp, _Nm>>
+    : public integral_constant<std::size_t, _Nm> { };
+
+
+  template<std::size_t _Int, typename _Tp>
+    struct tuple_element;
+
+
+  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
+    struct tuple_element<_Int, array<_Tp, _Nm>>
+    {
+      static_assert(_Int < _Nm, "index is out of bounds");
+      typedef _Tp type;
+    };
+
+  template<typename _Tp, std::size_t _Nm>
+    struct __is_tuple_like_impl<array<_Tp, _Nm>> : true_type
+    { };
+
+
+}
+# 2 "drivers/fs.cc" 2
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 1
+# 41 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert"
+       
+# 42 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 3
+
+
+# 1 "/usr/include/assert.h" 1 3 4
+# 64 "/usr/include/assert.h" 3 4
+extern "C" {
+
+
+extern void __assert_fail (const char *__assertion, const char *__file,
+      unsigned int __line, const char *__function)
+     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
+
+
+extern void __assert_perror_fail (int __errnum, const char *__file,
+      unsigned int __line, const char *__function)
+     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
+
+
+
+
+extern void __assert (const char *__assertion, const char *__file, int __line)
+     noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
+
+
+}
+# 45 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cassert" 2 3
+# 3 "drivers/fs.cc" 2
+# 1 "include/common/dbg/dbg.h" 1
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 1
+# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg"
+       
+# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 3
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 1 3
+# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 3
+typedef __builtin_va_list __gnuc_va_list;
+# 99 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 3
+typedef __gnuc_va_list va_list;
+# 44 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 2 3
+# 53 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 3
+namespace std
+{
+  using ::va_list;
+}
+# 4 "include/common/dbg/dbg.h" 2
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 1
+# 58 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector"
+       
+# 59 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 3
+
+
 
 
 
@@ -15988,292 +14219,7 @@ namespace std __attribute__ ((__visibility__ ("default")))
 
 }
 # 69 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 2 3
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 1 3
-# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
-       
-# 34 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
 
-
-
-
-
-
-namespace std __attribute__ ((__visibility__ ("default")))
-{
-
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    begin(_Container& __cont) -> decltype(__cont.begin())
-    { return __cont.begin(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    begin(const _Container& __cont) -> decltype(__cont.begin())
-    { return __cont.begin(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    end(_Container& __cont) -> decltype(__cont.end())
-    { return __cont.end(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    end(const _Container& __cont) -> decltype(__cont.end())
-    { return __cont.end(); }
-
-
-
-
-
-  template<typename _Tp, size_t _Nm>
-    inline constexpr _Tp*
-    begin(_Tp (&__arr)[_Nm]) noexcept
-    { return __arr; }
-
-
-
-
-
-
-  template<typename _Tp, size_t _Nm>
-    inline constexpr _Tp*
-    end(_Tp (&__arr)[_Nm]) noexcept
-    { return __arr + _Nm; }
-
-
-
-  template<typename _Tp> class valarray;
-
-  template<typename _Tp> _Tp* begin(valarray<_Tp>&) noexcept;
-  template<typename _Tp> const _Tp* begin(const valarray<_Tp>&) noexcept;
-  template<typename _Tp> _Tp* end(valarray<_Tp>&) noexcept;
-  template<typename _Tp> const _Tp* end(const valarray<_Tp>&) noexcept;
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    cbegin(const _Container& __cont) noexcept(noexcept(std::begin(__cont)))
-      -> decltype(std::begin(__cont))
-    { return std::begin(__cont); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    cend(const _Container& __cont) noexcept(noexcept(std::end(__cont)))
-      -> decltype(std::end(__cont))
-    { return std::end(__cont); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    rbegin(_Container& __cont) -> decltype(__cont.rbegin())
-    { return __cont.rbegin(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    rbegin(const _Container& __cont) -> decltype(__cont.rbegin())
-    { return __cont.rbegin(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    rend(_Container& __cont) -> decltype(__cont.rend())
-    { return __cont.rend(); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    rend(const _Container& __cont) -> decltype(__cont.rend())
-    { return __cont.rend(); }
-
-
-
-
-
-
-  template<typename _Tp, size_t _Nm>
-    inline constexpr reverse_iterator<_Tp*>
-    rbegin(_Tp (&__arr)[_Nm]) noexcept
-    { return reverse_iterator<_Tp*>(__arr + _Nm); }
-
-
-
-
-
-
-  template<typename _Tp, size_t _Nm>
-    inline constexpr reverse_iterator<_Tp*>
-    rend(_Tp (&__arr)[_Nm]) noexcept
-    { return reverse_iterator<_Tp*>(__arr); }
-
-
-
-
-
-
-  template<typename _Tp>
-    inline constexpr reverse_iterator<const _Tp*>
-    rbegin(initializer_list<_Tp> __il) noexcept
-    { return reverse_iterator<const _Tp*>(__il.end()); }
-
-
-
-
-
-
-  template<typename _Tp>
-    inline constexpr reverse_iterator<const _Tp*>
-    rend(initializer_list<_Tp> __il) noexcept
-    { return reverse_iterator<const _Tp*>(__il.begin()); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    crbegin(const _Container& __cont) -> decltype(std::rbegin(__cont))
-    { return std::rbegin(__cont); }
-
-
-
-
-
-
-  template<typename _Container>
-    inline constexpr auto
-    crend(const _Container& __cont) -> decltype(std::rend(__cont))
-    { return std::rend(__cont); }
-# 243 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
-  template <typename _Container>
-    constexpr auto
-    size(const _Container& __cont) noexcept(noexcept(__cont.size()))
-    -> decltype(__cont.size())
-    { return __cont.size(); }
-
-
-
-
-  template <typename _Tp, size_t _Nm>
-    constexpr size_t
-    size(const _Tp (&)[_Nm]) noexcept
-    { return _Nm; }
-
-
-
-
-
-  template <typename _Container>
-    [[nodiscard]] constexpr auto
-    empty(const _Container& __cont) noexcept(noexcept(__cont.empty()))
-    -> decltype(__cont.empty())
-    { return __cont.empty(); }
-
-
-
-
-  template <typename _Tp, size_t _Nm>
-    [[nodiscard]] constexpr bool
-    empty(const _Tp (&)[_Nm]) noexcept
-    { return false; }
-
-
-
-
-
-  template <typename _Tp>
-    [[nodiscard]] constexpr bool
-    empty(initializer_list<_Tp> __il) noexcept
-    { return __il.size() == 0;}
-
-
-
-
-
-  template <typename _Container>
-    constexpr auto
-    data(_Container& __cont) noexcept(noexcept(__cont.data()))
-    -> decltype(__cont.data())
-    { return __cont.data(); }
-
-
-
-
-
-  template <typename _Container>
-    constexpr auto
-    data(const _Container& __cont) noexcept(noexcept(__cont.data()))
-    -> decltype(__cont.data())
-    { return __cont.data(); }
-
-
-
-
-
-  template <typename _Tp, size_t _Nm>
-    constexpr _Tp*
-    data(_Tp (&__array)[_Nm]) noexcept
-    { return __array; }
-
-
-
-
-
-  template <typename _Tp>
-    constexpr const _Tp*
-    data(initializer_list<_Tp> __il) noexcept
-    { return __il.begin(); }
-# 341 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/range_access.h" 3
-
-}
-# 70 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/vector" 2 3
 
 
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/vector.tcc" 1 3
@@ -17250,7 +15196,2453 @@ namespace std __attribute__ ((__visibility__ ("default")))
 
 
 }
-# 5 "include/kernel/driver/driver.h" 2
+# 5 "include/common/dbg/dbg.h" 2
+
+
+# 6 "include/common/dbg/dbg.h"
+namespace dbg{
+    void printm(const char* module, const char* fmt, ...);
+    void printv(const char* fmt, va_list args);
+    void printf(const char* str, ...);
+    void print(const char* str);
+    void printStackTrace();
+    void addTrace(const char* func);
+    void popTrace();
+    std::vector<const char*> getMessages();
+};
+# 4 "drivers/fs.cc" 2
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 1
+# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib"
+       
+# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
+# 75 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
+# 1 "/usr/include/c++/14.2.1/stdlib.h" 1 3
+# 30 "/usr/include/c++/14.2.1/stdlib.h" 3
+# 1 "/usr/include/stdlib.h" 1 3 4
+# 26 "/usr/include/stdlib.h" 3 4
+# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
+# 27 "/usr/include/stdlib.h" 2 3 4
+
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
+# 209 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3 4
+
+# 209 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3 4
+typedef long unsigned int size_t;
+# 33 "/usr/include/stdlib.h" 2 3 4
+
+extern "C" {
+
+
+
+
+
+# 1 "/usr/include/bits/waitflags.h" 1 3 4
+# 41 "/usr/include/stdlib.h" 2 3 4
+# 1 "/usr/include/bits/waitstatus.h" 1 3 4
+# 42 "/usr/include/stdlib.h" 2 3 4
+# 56 "/usr/include/stdlib.h" 3 4
+# 1 "/usr/include/bits/floatn.h" 1 3 4
+# 131 "/usr/include/bits/floatn.h" 3 4
+# 1 "/usr/include/bits/floatn-common.h" 1 3 4
+# 24 "/usr/include/bits/floatn-common.h" 3 4
+# 1 "/usr/include/bits/long-double.h" 1 3 4
+# 25 "/usr/include/bits/floatn-common.h" 2 3 4
+# 132 "/usr/include/bits/floatn.h" 2 3 4
+# 57 "/usr/include/stdlib.h" 2 3 4
+
+
+typedef struct
+  {
+    int quot;
+    int rem;
+  } div_t;
+
+
+
+typedef struct
+  {
+    long int quot;
+    long int rem;
+  } ldiv_t;
+
+
+
+
+
+__extension__ typedef struct
+  {
+    long long int quot;
+    long long int rem;
+  } lldiv_t;
+# 98 "/usr/include/stdlib.h" 3 4
+extern size_t __ctype_get_mb_cur_max (void) noexcept (true) ;
+
+
+
+extern double atof (const char *__nptr)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
+
+extern int atoi (const char *__nptr)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
+
+extern long int atol (const char *__nptr)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+__extension__ extern long long int atoll (const char *__nptr)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+extern double strtod (const char *__restrict __nptr,
+        char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern float strtof (const char *__restrict __nptr,
+       char **__restrict __endptr) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+extern long double strtold (const char *__restrict __nptr,
+       char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+# 141 "/usr/include/stdlib.h" 3 4
+extern _Float32 strtof32 (const char *__restrict __nptr,
+     char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern _Float64 strtof64 (const char *__restrict __nptr,
+     char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern _Float128 strtof128 (const char *__restrict __nptr,
+       char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern _Float32x strtof32x (const char *__restrict __nptr,
+       char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern _Float64x strtof64x (const char *__restrict __nptr,
+       char **__restrict __endptr)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+# 177 "/usr/include/stdlib.h" 3 4
+extern long int strtol (const char *__restrict __nptr,
+   char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+extern unsigned long int strtoul (const char *__restrict __nptr,
+      char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+__extension__
+extern long long int strtoq (const char *__restrict __nptr,
+        char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+__extension__
+extern unsigned long long int strtouq (const char *__restrict __nptr,
+           char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+__extension__
+extern long long int strtoll (const char *__restrict __nptr,
+         char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+__extension__
+extern unsigned long long int strtoull (const char *__restrict __nptr,
+     char **__restrict __endptr, int __base)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+
+extern long int strtol (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtol")
+
+
+     __attribute__ ((__nonnull__ (1)));
+extern unsigned long int strtoul (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoul")
+
+
+
+     __attribute__ ((__nonnull__ (1)));
+
+__extension__
+extern long long int strtoq (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoll")
+
+
+     __attribute__ ((__nonnull__ (1)));
+__extension__
+extern unsigned long long int strtouq (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoull")
+
+
+
+     __attribute__ ((__nonnull__ (1)));
+
+__extension__
+extern long long int strtoll (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoll")
+
+
+     __attribute__ ((__nonnull__ (1)));
+__extension__
+extern unsigned long long int strtoull (const char *__restrict __nptr, char **__restrict __endptr, int __base) noexcept (true) __asm__ ("" "__isoc23_strtoull")
+
+
+
+     __attribute__ ((__nonnull__ (1)));
+# 278 "/usr/include/stdlib.h" 3 4
+extern int strfromd (char *__dest, size_t __size, const char *__format,
+       double __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+extern int strfromf (char *__dest, size_t __size, const char *__format,
+       float __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+extern int strfroml (char *__dest, size_t __size, const char *__format,
+       long double __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+# 298 "/usr/include/stdlib.h" 3 4
+extern int strfromf32 (char *__dest, size_t __size, const char * __format,
+         _Float32 __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+
+
+extern int strfromf64 (char *__dest, size_t __size, const char * __format,
+         _Float64 __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+
+
+extern int strfromf128 (char *__dest, size_t __size, const char * __format,
+   _Float128 __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+
+
+extern int strfromf32x (char *__dest, size_t __size, const char * __format,
+   _Float32x __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+
+
+
+extern int strfromf64x (char *__dest, size_t __size, const char * __format,
+   _Float64x __f)
+     noexcept (true) __attribute__ ((__nonnull__ (3)));
+# 338 "/usr/include/stdlib.h" 3 4
+# 1 "/usr/include/bits/types/locale_t.h" 1 3 4
+# 22 "/usr/include/bits/types/locale_t.h" 3 4
+# 1 "/usr/include/bits/types/__locale_t.h" 1 3 4
+# 27 "/usr/include/bits/types/__locale_t.h" 3 4
+struct __locale_struct
+{
+
+  struct __locale_data *__locales[13];
+
+
+  const unsigned short int *__ctype_b;
+  const int *__ctype_tolower;
+  const int *__ctype_toupper;
+
+
+  const char *__names[13];
+};
+
+typedef struct __locale_struct *__locale_t;
+# 23 "/usr/include/bits/types/locale_t.h" 2 3 4
+
+typedef __locale_t locale_t;
+# 339 "/usr/include/stdlib.h" 2 3 4
+
+extern long int strtol_l (const char *__restrict __nptr,
+     char **__restrict __endptr, int __base,
+     locale_t __loc) noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
+
+extern unsigned long int strtoul_l (const char *__restrict __nptr,
+        char **__restrict __endptr,
+        int __base, locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
+
+__extension__
+extern long long int strtoll_l (const char *__restrict __nptr,
+    char **__restrict __endptr, int __base,
+    locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
+
+__extension__
+extern unsigned long long int strtoull_l (const char *__restrict __nptr,
+       char **__restrict __endptr,
+       int __base, locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 4)));
+
+
+
+
+
+extern long int strtol_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtol_l")
+
+
+
+     __attribute__ ((__nonnull__ (1, 4)));
+extern unsigned long int strtoul_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoul_l")
+
+
+
+
+     __attribute__ ((__nonnull__ (1, 4)));
+__extension__
+extern long long int strtoll_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoll_l")
+
+
+
+
+     __attribute__ ((__nonnull__ (1, 4)));
+__extension__
+extern unsigned long long int strtoull_l (const char *__restrict __nptr, char **__restrict __endptr, int __base, locale_t __loc) noexcept (true) __asm__ ("" "__isoc23_strtoull_l")
+
+
+
+
+     __attribute__ ((__nonnull__ (1, 4)));
+# 415 "/usr/include/stdlib.h" 3 4
+extern double strtod_l (const char *__restrict __nptr,
+   char **__restrict __endptr, locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+extern float strtof_l (const char *__restrict __nptr,
+         char **__restrict __endptr, locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+extern long double strtold_l (const char *__restrict __nptr,
+         char **__restrict __endptr,
+         locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+# 436 "/usr/include/stdlib.h" 3 4
+extern _Float32 strtof32_l (const char *__restrict __nptr,
+       char **__restrict __endptr,
+       locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+
+
+extern _Float64 strtof64_l (const char *__restrict __nptr,
+       char **__restrict __endptr,
+       locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+
+
+extern _Float128 strtof128_l (const char *__restrict __nptr,
+         char **__restrict __endptr,
+         locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+
+
+extern _Float32x strtof32x_l (const char *__restrict __nptr,
+         char **__restrict __endptr,
+         locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+
+
+
+extern _Float64x strtof64x_l (const char *__restrict __nptr,
+         char **__restrict __endptr,
+         locale_t __loc)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 3)));
+# 505 "/usr/include/stdlib.h" 3 4
+extern char *l64a (long int __n) noexcept (true) ;
+
+
+extern long int a64l (const char *__s)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+
+# 1 "/usr/include/sys/types.h" 1 3 4
+# 27 "/usr/include/sys/types.h" 3 4
+extern "C" {
+
+# 1 "/usr/include/bits/types.h" 1 3 4
+# 27 "/usr/include/bits/types.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 28 "/usr/include/bits/types.h" 2 3 4
+# 1 "/usr/include/bits/timesize.h" 1 3 4
+# 19 "/usr/include/bits/timesize.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 20 "/usr/include/bits/timesize.h" 2 3 4
+# 29 "/usr/include/bits/types.h" 2 3 4
+
+
+typedef unsigned char __u_char;
+typedef unsigned short int __u_short;
+typedef unsigned int __u_int;
+typedef unsigned long int __u_long;
+
+
+typedef signed char __int8_t;
+typedef unsigned char __uint8_t;
+typedef signed short int __int16_t;
+typedef unsigned short int __uint16_t;
+typedef signed int __int32_t;
+typedef unsigned int __uint32_t;
+
+typedef signed long int __int64_t;
+typedef unsigned long int __uint64_t;
+
+
+
+
+
+
+typedef __int8_t __int_least8_t;
+typedef __uint8_t __uint_least8_t;
+typedef __int16_t __int_least16_t;
+typedef __uint16_t __uint_least16_t;
+typedef __int32_t __int_least32_t;
+typedef __uint32_t __uint_least32_t;
+typedef __int64_t __int_least64_t;
+typedef __uint64_t __uint_least64_t;
+
+
+
+typedef long int __quad_t;
+typedef unsigned long int __u_quad_t;
+
+
+
+
+
+
+
+typedef long int __intmax_t;
+typedef unsigned long int __uintmax_t;
+# 141 "/usr/include/bits/types.h" 3 4
+# 1 "/usr/include/bits/typesizes.h" 1 3 4
+# 142 "/usr/include/bits/types.h" 2 3 4
+# 1 "/usr/include/bits/time64.h" 1 3 4
+# 143 "/usr/include/bits/types.h" 2 3 4
+
+
+typedef unsigned long int __dev_t;
+typedef unsigned int __uid_t;
+typedef unsigned int __gid_t;
+typedef unsigned long int __ino_t;
+typedef unsigned long int __ino64_t;
+typedef unsigned int __mode_t;
+typedef unsigned long int __nlink_t;
+typedef long int __off_t;
+typedef long int __off64_t;
+typedef int __pid_t;
+typedef struct { int __val[2]; } __fsid_t;
+typedef long int __clock_t;
+typedef unsigned long int __rlim_t;
+typedef unsigned long int __rlim64_t;
+typedef unsigned int __id_t;
+typedef long int __time_t;
+typedef unsigned int __useconds_t;
+typedef long int __suseconds_t;
+typedef long int __suseconds64_t;
+
+typedef int __daddr_t;
+typedef int __key_t;
+
+
+typedef int __clockid_t;
+
+
+typedef void * __timer_t;
+
+
+typedef long int __blksize_t;
+
+
+
+
+typedef long int __blkcnt_t;
+typedef long int __blkcnt64_t;
+
+
+typedef unsigned long int __fsblkcnt_t;
+typedef unsigned long int __fsblkcnt64_t;
+
+
+typedef unsigned long int __fsfilcnt_t;
+typedef unsigned long int __fsfilcnt64_t;
+
+
+typedef long int __fsword_t;
+
+typedef long int __ssize_t;
+
+
+typedef long int __syscall_slong_t;
+
+typedef unsigned long int __syscall_ulong_t;
+
+
+
+typedef __off64_t __loff_t;
+typedef char *__caddr_t;
+
+
+typedef long int __intptr_t;
+
+
+typedef unsigned int __socklen_t;
+
+
+
+
+typedef int __sig_atomic_t;
+# 30 "/usr/include/sys/types.h" 2 3 4
+
+
+
+typedef __u_char u_char;
+typedef __u_short u_short;
+typedef __u_int u_int;
+typedef __u_long u_long;
+typedef __quad_t quad_t;
+typedef __u_quad_t u_quad_t;
+typedef __fsid_t fsid_t;
+
+
+typedef __loff_t loff_t;
+
+
+
+
+typedef __ino_t ino_t;
+
+
+
+
+
+
+typedef __ino64_t ino64_t;
+
+
+
+
+typedef __dev_t dev_t;
+
+
+
+
+typedef __gid_t gid_t;
+
+
+
+
+typedef __mode_t mode_t;
+
+
+
+
+typedef __nlink_t nlink_t;
+
+
+
+
+typedef __uid_t uid_t;
+
+
+
+
+
+typedef __off_t off_t;
+
+
+
+
+
+
+typedef __off64_t off64_t;
+
+
+
+
+typedef __pid_t pid_t;
+
+
+
+
+
+typedef __id_t id_t;
+
+
+
+
+typedef __ssize_t ssize_t;
+
+
+
+
+
+typedef __daddr_t daddr_t;
+typedef __caddr_t caddr_t;
+
+
+
+
+
+typedef __key_t key_t;
+
+
+
+
+# 1 "/usr/include/bits/types/clock_t.h" 1 3 4
+
+
+
+
+
+
+typedef __clock_t clock_t;
+# 127 "/usr/include/sys/types.h" 2 3 4
+
+# 1 "/usr/include/bits/types/clockid_t.h" 1 3 4
+
+
+
+
+
+
+typedef __clockid_t clockid_t;
+# 129 "/usr/include/sys/types.h" 2 3 4
+# 1 "/usr/include/bits/types/time_t.h" 1 3 4
+# 10 "/usr/include/bits/types/time_t.h" 3 4
+typedef __time_t time_t;
+# 130 "/usr/include/sys/types.h" 2 3 4
+# 1 "/usr/include/bits/types/timer_t.h" 1 3 4
+
+
+
+
+
+
+typedef __timer_t timer_t;
+# 131 "/usr/include/sys/types.h" 2 3 4
+
+
+
+typedef __useconds_t useconds_t;
+
+
+
+typedef __suseconds_t suseconds_t;
+
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
+# 145 "/usr/include/sys/types.h" 2 3 4
+
+
+
+typedef unsigned long int ulong;
+typedef unsigned short int ushort;
+typedef unsigned int uint;
+
+
+
+
+# 1 "/usr/include/bits/stdint-intn.h" 1 3 4
+# 24 "/usr/include/bits/stdint-intn.h" 3 4
+typedef __int8_t int8_t;
+typedef __int16_t int16_t;
+typedef __int32_t int32_t;
+typedef __int64_t int64_t;
+# 156 "/usr/include/sys/types.h" 2 3 4
+
+
+typedef __uint8_t u_int8_t;
+typedef __uint16_t u_int16_t;
+typedef __uint32_t u_int32_t;
+typedef __uint64_t u_int64_t;
+
+
+typedef int register_t __attribute__ ((__mode__ (__word__)));
+# 176 "/usr/include/sys/types.h" 3 4
+# 1 "/usr/include/endian.h" 1 3 4
+# 24 "/usr/include/endian.h" 3 4
+# 1 "/usr/include/bits/endian.h" 1 3 4
+# 35 "/usr/include/bits/endian.h" 3 4
+# 1 "/usr/include/bits/endianness.h" 1 3 4
+# 36 "/usr/include/bits/endian.h" 2 3 4
+# 25 "/usr/include/endian.h" 2 3 4
+# 35 "/usr/include/endian.h" 3 4
+# 1 "/usr/include/bits/byteswap.h" 1 3 4
+# 33 "/usr/include/bits/byteswap.h" 3 4
+static __inline __uint16_t
+__bswap_16 (__uint16_t __bsx)
+{
+
+  return __builtin_bswap16 (__bsx);
+
+
+
+}
+
+
+
+
+
+
+static __inline __uint32_t
+__bswap_32 (__uint32_t __bsx)
+{
+
+  return __builtin_bswap32 (__bsx);
+
+
+
+}
+# 69 "/usr/include/bits/byteswap.h" 3 4
+__extension__ static __inline __uint64_t
+__bswap_64 (__uint64_t __bsx)
+{
+
+  return __builtin_bswap64 (__bsx);
+
+
+
+}
+# 36 "/usr/include/endian.h" 2 3 4
+# 1 "/usr/include/bits/uintn-identity.h" 1 3 4
+# 32 "/usr/include/bits/uintn-identity.h" 3 4
+static __inline __uint16_t
+__uint16_identity (__uint16_t __x)
+{
+  return __x;
+}
+
+static __inline __uint32_t
+__uint32_identity (__uint32_t __x)
+{
+  return __x;
+}
+
+static __inline __uint64_t
+__uint64_identity (__uint64_t __x)
+{
+  return __x;
+}
+# 37 "/usr/include/endian.h" 2 3 4
+# 177 "/usr/include/sys/types.h" 2 3 4
+
+
+# 1 "/usr/include/sys/select.h" 1 3 4
+# 30 "/usr/include/sys/select.h" 3 4
+# 1 "/usr/include/bits/select.h" 1 3 4
+# 31 "/usr/include/sys/select.h" 2 3 4
+
+
+# 1 "/usr/include/bits/types/sigset_t.h" 1 3 4
+
+
+
+# 1 "/usr/include/bits/types/__sigset_t.h" 1 3 4
+
+
+
+
+typedef struct
+{
+  unsigned long int __val[(1024 / (8 * sizeof (unsigned long int)))];
+} __sigset_t;
+# 5 "/usr/include/bits/types/sigset_t.h" 2 3 4
+
+
+typedef __sigset_t sigset_t;
+# 34 "/usr/include/sys/select.h" 2 3 4
+
+
+
+# 1 "/usr/include/bits/types/struct_timeval.h" 1 3 4
+
+
+
+
+
+
+
+struct timeval
+{
+
+
+
+
+  __time_t tv_sec;
+  __suseconds_t tv_usec;
+
+};
+# 38 "/usr/include/sys/select.h" 2 3 4
+
+# 1 "/usr/include/bits/types/struct_timespec.h" 1 3 4
+# 11 "/usr/include/bits/types/struct_timespec.h" 3 4
+struct timespec
+{
+
+
+
+  __time_t tv_sec;
+
+
+
+
+  __syscall_slong_t tv_nsec;
+# 31 "/usr/include/bits/types/struct_timespec.h" 3 4
+};
+# 40 "/usr/include/sys/select.h" 2 3 4
+# 49 "/usr/include/sys/select.h" 3 4
+typedef long int __fd_mask;
+# 59 "/usr/include/sys/select.h" 3 4
+typedef struct
+  {
+
+
+
+    __fd_mask fds_bits[1024 / (8 * (int) sizeof (__fd_mask))];
+
+
+
+
+
+  } fd_set;
+
+
+
+
+
+
+typedef __fd_mask fd_mask;
+# 91 "/usr/include/sys/select.h" 3 4
+extern "C" {
+# 102 "/usr/include/sys/select.h" 3 4
+extern int select (int __nfds, fd_set *__restrict __readfds,
+     fd_set *__restrict __writefds,
+     fd_set *__restrict __exceptfds,
+     struct timeval *__restrict __timeout);
+# 127 "/usr/include/sys/select.h" 3 4
+extern int pselect (int __nfds, fd_set *__restrict __readfds,
+      fd_set *__restrict __writefds,
+      fd_set *__restrict __exceptfds,
+      const struct timespec *__restrict __timeout,
+      const __sigset_t *__restrict __sigmask);
+# 153 "/usr/include/sys/select.h" 3 4
+}
+# 180 "/usr/include/sys/types.h" 2 3 4
+
+
+
+
+
+typedef __blksize_t blksize_t;
+
+
+
+
+
+
+typedef __blkcnt_t blkcnt_t;
+
+
+
+typedef __fsblkcnt_t fsblkcnt_t;
+
+
+
+typedef __fsfilcnt_t fsfilcnt_t;
+# 219 "/usr/include/sys/types.h" 3 4
+typedef __blkcnt64_t blkcnt64_t;
+typedef __fsblkcnt64_t fsblkcnt64_t;
+typedef __fsfilcnt64_t fsfilcnt64_t;
+
+
+
+
+
+# 1 "/usr/include/bits/pthreadtypes.h" 1 3 4
+# 23 "/usr/include/bits/pthreadtypes.h" 3 4
+# 1 "/usr/include/bits/thread-shared-types.h" 1 3 4
+# 44 "/usr/include/bits/thread-shared-types.h" 3 4
+# 1 "/usr/include/bits/pthreadtypes-arch.h" 1 3 4
+# 21 "/usr/include/bits/pthreadtypes-arch.h" 3 4
+# 1 "/usr/include/bits/wordsize.h" 1 3 4
+# 22 "/usr/include/bits/pthreadtypes-arch.h" 2 3 4
+# 45 "/usr/include/bits/thread-shared-types.h" 2 3 4
+
+# 1 "/usr/include/bits/atomic_wide_counter.h" 1 3 4
+# 25 "/usr/include/bits/atomic_wide_counter.h" 3 4
+typedef union
+{
+  __extension__ unsigned long long int __value64;
+  struct
+  {
+    unsigned int __low;
+    unsigned int __high;
+  } __value32;
+} __atomic_wide_counter;
+# 47 "/usr/include/bits/thread-shared-types.h" 2 3 4
+
+
+
+
+typedef struct __pthread_internal_list
+{
+  struct __pthread_internal_list *__prev;
+  struct __pthread_internal_list *__next;
+} __pthread_list_t;
+
+typedef struct __pthread_internal_slist
+{
+  struct __pthread_internal_slist *__next;
+} __pthread_slist_t;
+# 76 "/usr/include/bits/thread-shared-types.h" 3 4
+# 1 "/usr/include/bits/struct_mutex.h" 1 3 4
+# 22 "/usr/include/bits/struct_mutex.h" 3 4
+struct __pthread_mutex_s
+{
+  int __lock;
+  unsigned int __count;
+  int __owner;
+
+  unsigned int __nusers;
+
+
+
+  int __kind;
+
+  short __spins;
+  short __elision;
+  __pthread_list_t __list;
+# 53 "/usr/include/bits/struct_mutex.h" 3 4
+};
+# 77 "/usr/include/bits/thread-shared-types.h" 2 3 4
+# 89 "/usr/include/bits/thread-shared-types.h" 3 4
+# 1 "/usr/include/bits/struct_rwlock.h" 1 3 4
+# 23 "/usr/include/bits/struct_rwlock.h" 3 4
+struct __pthread_rwlock_arch_t
+{
+  unsigned int __readers;
+  unsigned int __writers;
+  unsigned int __wrphase_futex;
+  unsigned int __writers_futex;
+  unsigned int __pad3;
+  unsigned int __pad4;
+
+  int __cur_writer;
+  int __shared;
+  signed char __rwelision;
+
+
+
+
+  unsigned char __pad1[7];
+
+
+  unsigned long int __pad2;
+
+
+  unsigned int __flags;
+# 55 "/usr/include/bits/struct_rwlock.h" 3 4
+};
+# 90 "/usr/include/bits/thread-shared-types.h" 2 3 4
+
+
+
+
+struct __pthread_cond_s
+{
+  __atomic_wide_counter __wseq;
+  __atomic_wide_counter __g1_start;
+  unsigned int __g_size[2] ;
+  unsigned int __g1_orig_size;
+  unsigned int __wrefs;
+  unsigned int __g_signals[2];
+  unsigned int __unused_initialized_1;
+  unsigned int __unused_initialized_2;
+};
+
+typedef unsigned int __tss_t;
+typedef unsigned long int __thrd_t;
+
+typedef struct
+{
+  int __data ;
+} __once_flag;
+# 24 "/usr/include/bits/pthreadtypes.h" 2 3 4
+
+
+
+typedef unsigned long int pthread_t;
+
+
+
+
+typedef union
+{
+  char __size[4];
+  int __align;
+} pthread_mutexattr_t;
+
+
+
+
+typedef union
+{
+  char __size[4];
+  int __align;
+} pthread_condattr_t;
+
+
+
+typedef unsigned int pthread_key_t;
+
+
+
+typedef int pthread_once_t;
+
+
+union pthread_attr_t
+{
+  char __size[56];
+  long int __align;
+};
+
+typedef union pthread_attr_t pthread_attr_t;
+
+
+
+
+typedef union
+{
+  struct __pthread_mutex_s __data;
+  char __size[40];
+  long int __align;
+} pthread_mutex_t;
+
+
+typedef union
+{
+  struct __pthread_cond_s __data;
+  char __size[48];
+  __extension__ long long int __align;
+} pthread_cond_t;
+
+
+
+
+
+typedef union
+{
+  struct __pthread_rwlock_arch_t __data;
+  char __size[56];
+  long int __align;
+} pthread_rwlock_t;
+
+typedef union
+{
+  char __size[8];
+  long int __align;
+} pthread_rwlockattr_t;
+
+
+
+
+
+typedef volatile int pthread_spinlock_t;
+
+
+
+
+typedef union
+{
+  char __size[32];
+  long int __align;
+} pthread_barrier_t;
+
+typedef union
+{
+  char __size[4];
+  int __align;
+} pthread_barrierattr_t;
+# 228 "/usr/include/sys/types.h" 2 3 4
+
+
+}
+# 515 "/usr/include/stdlib.h" 2 3 4
+
+
+
+
+
+
+extern long int random (void) noexcept (true);
+
+
+extern void srandom (unsigned int __seed) noexcept (true);
+
+
+
+
+
+extern char *initstate (unsigned int __seed, char *__statebuf,
+   size_t __statelen) noexcept (true) __attribute__ ((__nonnull__ (2)));
+
+
+
+extern char *setstate (char *__statebuf) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+
+
+struct random_data
+  {
+    int32_t *fptr;
+    int32_t *rptr;
+    int32_t *state;
+    int rand_type;
+    int rand_deg;
+    int rand_sep;
+    int32_t *end_ptr;
+  };
+
+extern int random_r (struct random_data *__restrict __buf,
+       int32_t *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+extern int srandom_r (unsigned int __seed, struct random_data *__buf)
+     noexcept (true) __attribute__ ((__nonnull__ (2)));
+
+extern int initstate_r (unsigned int __seed, char *__restrict __statebuf,
+   size_t __statelen,
+   struct random_data *__restrict __buf)
+     noexcept (true) __attribute__ ((__nonnull__ (2, 4)));
+
+extern int setstate_r (char *__restrict __statebuf,
+         struct random_data *__restrict __buf)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+
+extern int rand (void) noexcept (true);
+
+extern void srand (unsigned int __seed) noexcept (true);
+
+
+
+extern int rand_r (unsigned int *__seed) noexcept (true);
+
+
+
+
+
+
+
+extern double drand48 (void) noexcept (true);
+extern double erand48 (unsigned short int __xsubi[3]) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+extern long int lrand48 (void) noexcept (true);
+extern long int nrand48 (unsigned short int __xsubi[3])
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+extern long int mrand48 (void) noexcept (true);
+extern long int jrand48 (unsigned short int __xsubi[3])
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+extern void srand48 (long int __seedval) noexcept (true);
+extern unsigned short int *seed48 (unsigned short int __seed16v[3])
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+extern void lcong48 (unsigned short int __param[7]) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+struct drand48_data
+  {
+    unsigned short int __x[3];
+    unsigned short int __old_x[3];
+    unsigned short int __c;
+    unsigned short int __init;
+    __extension__ unsigned long long int __a;
+
+  };
+
+
+extern int drand48_r (struct drand48_data *__restrict __buffer,
+        double *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern int erand48_r (unsigned short int __xsubi[3],
+        struct drand48_data *__restrict __buffer,
+        double *__restrict __result) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int lrand48_r (struct drand48_data *__restrict __buffer,
+        long int *__restrict __result)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern int nrand48_r (unsigned short int __xsubi[3],
+        struct drand48_data *__restrict __buffer,
+        long int *__restrict __result)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int mrand48_r (struct drand48_data *__restrict __buffer,
+        long int *__restrict __result)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern int jrand48_r (unsigned short int __xsubi[3],
+        struct drand48_data *__restrict __buffer,
+        long int *__restrict __result)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int srand48_r (long int __seedval, struct drand48_data *__buffer)
+     noexcept (true) __attribute__ ((__nonnull__ (2)));
+
+extern int seed48_r (unsigned short int __seed16v[3],
+       struct drand48_data *__buffer) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+extern int lcong48_r (unsigned short int __param[7],
+        struct drand48_data *__buffer)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern __uint32_t arc4random (void)
+     noexcept (true) ;
+
+
+extern void arc4random_buf (void *__buf, size_t __size)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern __uint32_t arc4random_uniform (__uint32_t __upper_bound)
+     noexcept (true) ;
+
+
+
+
+extern void *malloc (size_t __size) noexcept (true) __attribute__ ((__malloc__))
+     __attribute__ ((__alloc_size__ (1))) ;
+
+extern void *calloc (size_t __nmemb, size_t __size)
+     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__alloc_size__ (1, 2))) ;
+
+
+
+
+
+
+extern void *realloc (void *__ptr, size_t __size)
+     noexcept (true) __attribute__ ((__warn_unused_result__)) __attribute__ ((__alloc_size__ (2)));
+
+
+extern void free (void *__ptr) noexcept (true);
+
+
+
+
+
+
+
+extern void *reallocarray (void *__ptr, size_t __nmemb, size_t __size)
+     noexcept (true) __attribute__ ((__warn_unused_result__))
+     __attribute__ ((__alloc_size__ (2, 3)))
+    __attribute__ ((__malloc__ (__builtin_free, 1)));
+
+
+extern void *reallocarray (void *__ptr, size_t __nmemb, size_t __size)
+     noexcept (true) __attribute__ ((__malloc__ (reallocarray, 1)));
+
+
+
+# 1 "/usr/include/alloca.h" 1 3 4
+# 24 "/usr/include/alloca.h" 3 4
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
+# 25 "/usr/include/alloca.h" 2 3 4
+
+extern "C" {
+
+
+
+
+
+extern void *alloca (size_t __size) noexcept (true);
+
+
+
+
+
+}
+# 707 "/usr/include/stdlib.h" 2 3 4
+
+
+
+
+
+extern void *valloc (size_t __size) noexcept (true) __attribute__ ((__malloc__))
+     __attribute__ ((__alloc_size__ (1))) ;
+
+
+
+
+extern int posix_memalign (void **__memptr, size_t __alignment, size_t __size)
+     noexcept (true) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+
+extern void *aligned_alloc (size_t __alignment, size_t __size)
+     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__alloc_align__ (1)))
+     __attribute__ ((__alloc_size__ (2))) ;
+
+
+
+extern void abort (void) noexcept (true) __attribute__ ((__noreturn__)) __attribute__ ((__cold__));
+
+
+
+extern int atexit (void (*__func) (void)) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+extern "C++" int at_quick_exit (void (*__func) (void))
+     noexcept (true) __asm ("at_quick_exit") __attribute__ ((__nonnull__ (1)));
+# 749 "/usr/include/stdlib.h" 3 4
+extern int on_exit (void (*__func) (int __status, void *__arg), void *__arg)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+extern void exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
+
+
+
+
+
+extern void quick_exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
+
+
+
+
+
+extern void _Exit (int __status) noexcept (true) __attribute__ ((__noreturn__));
+
+
+
+
+extern char *getenv (const char *__name) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+
+extern char *secure_getenv (const char *__name)
+     noexcept (true) __attribute__ ((__nonnull__ (1))) ;
+
+
+
+
+
+
+extern int putenv (char *__string) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+extern int setenv (const char *__name, const char *__value, int __replace)
+     noexcept (true) __attribute__ ((__nonnull__ (2)));
+
+
+extern int unsetenv (const char *__name) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+
+extern int clearenv (void) noexcept (true);
+# 814 "/usr/include/stdlib.h" 3 4
+extern char *mktemp (char *__template) noexcept (true) __attribute__ ((__nonnull__ (1)));
+# 827 "/usr/include/stdlib.h" 3 4
+extern int mkstemp (char *__template) __attribute__ ((__nonnull__ (1))) ;
+# 837 "/usr/include/stdlib.h" 3 4
+extern int mkstemp64 (char *__template) __attribute__ ((__nonnull__ (1))) ;
+# 849 "/usr/include/stdlib.h" 3 4
+extern int mkstemps (char *__template, int __suffixlen) __attribute__ ((__nonnull__ (1))) ;
+# 859 "/usr/include/stdlib.h" 3 4
+extern int mkstemps64 (char *__template, int __suffixlen)
+     __attribute__ ((__nonnull__ (1))) ;
+# 870 "/usr/include/stdlib.h" 3 4
+extern char *mkdtemp (char *__template) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
+# 881 "/usr/include/stdlib.h" 3 4
+extern int mkostemp (char *__template, int __flags) __attribute__ ((__nonnull__ (1))) ;
+# 891 "/usr/include/stdlib.h" 3 4
+extern int mkostemp64 (char *__template, int __flags) __attribute__ ((__nonnull__ (1))) ;
+# 901 "/usr/include/stdlib.h" 3 4
+extern int mkostemps (char *__template, int __suffixlen, int __flags)
+     __attribute__ ((__nonnull__ (1))) ;
+# 913 "/usr/include/stdlib.h" 3 4
+extern int mkostemps64 (char *__template, int __suffixlen, int __flags)
+     __attribute__ ((__nonnull__ (1))) ;
+# 923 "/usr/include/stdlib.h" 3 4
+extern int system (const char *__command) ;
+
+
+
+
+
+extern char *canonicalize_file_name (const char *__name)
+     noexcept (true) __attribute__ ((__nonnull__ (1))) __attribute__ ((__malloc__))
+     __attribute__ ((__malloc__ (__builtin_free, 1))) ;
+# 940 "/usr/include/stdlib.h" 3 4
+extern char *realpath (const char *__restrict __name,
+         char *__restrict __resolved) noexcept (true) ;
+
+
+
+
+
+
+typedef int (*__compar_fn_t) (const void *, const void *);
+
+
+typedef __compar_fn_t comparison_fn_t;
+
+
+
+typedef int (*__compar_d_fn_t) (const void *, const void *, void *);
+
+
+
+
+extern void *bsearch (const void *__key, const void *__base,
+        size_t __nmemb, size_t __size, __compar_fn_t __compar)
+     __attribute__ ((__nonnull__ (1, 2, 5))) ;
+
+
+
+
+
+
+
+extern void qsort (void *__base, size_t __nmemb, size_t __size,
+     __compar_fn_t __compar) __attribute__ ((__nonnull__ (1, 4)));
+
+extern void qsort_r (void *__base, size_t __nmemb, size_t __size,
+       __compar_d_fn_t __compar, void *__arg)
+  __attribute__ ((__nonnull__ (1, 4)));
+
+
+
+
+extern int abs (int __x) noexcept (true) __attribute__ ((__const__)) ;
+extern long int labs (long int __x) noexcept (true) __attribute__ ((__const__)) ;
+
+
+__extension__ extern long long int llabs (long long int __x)
+     noexcept (true) __attribute__ ((__const__)) ;
+
+
+
+
+
+
+extern div_t div (int __numer, int __denom)
+     noexcept (true) __attribute__ ((__const__)) ;
+extern ldiv_t ldiv (long int __numer, long int __denom)
+     noexcept (true) __attribute__ ((__const__)) ;
+
+
+__extension__ extern lldiv_t lldiv (long long int __numer,
+        long long int __denom)
+     noexcept (true) __attribute__ ((__const__)) ;
+# 1012 "/usr/include/stdlib.h" 3 4
+extern char *ecvt (double __value, int __ndigit, int *__restrict __decpt,
+     int *__restrict __sign) noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
+
+
+
+
+extern char *fcvt (double __value, int __ndigit, int *__restrict __decpt,
+     int *__restrict __sign) noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
+
+
+
+
+extern char *gcvt (double __value, int __ndigit, char *__buf)
+     noexcept (true) __attribute__ ((__nonnull__ (3))) ;
+
+
+
+
+extern char *qecvt (long double __value, int __ndigit,
+      int *__restrict __decpt, int *__restrict __sign)
+     noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
+extern char *qfcvt (long double __value, int __ndigit,
+      int *__restrict __decpt, int *__restrict __sign)
+     noexcept (true) __attribute__ ((__nonnull__ (3, 4))) ;
+extern char *qgcvt (long double __value, int __ndigit, char *__buf)
+     noexcept (true) __attribute__ ((__nonnull__ (3))) ;
+
+
+
+
+extern int ecvt_r (double __value, int __ndigit, int *__restrict __decpt,
+     int *__restrict __sign, char *__restrict __buf,
+     size_t __len) noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
+extern int fcvt_r (double __value, int __ndigit, int *__restrict __decpt,
+     int *__restrict __sign, char *__restrict __buf,
+     size_t __len) noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
+
+extern int qecvt_r (long double __value, int __ndigit,
+      int *__restrict __decpt, int *__restrict __sign,
+      char *__restrict __buf, size_t __len)
+     noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
+extern int qfcvt_r (long double __value, int __ndigit,
+      int *__restrict __decpt, int *__restrict __sign,
+      char *__restrict __buf, size_t __len)
+     noexcept (true) __attribute__ ((__nonnull__ (3, 4, 5)));
+
+
+
+
+
+extern int mblen (const char *__s, size_t __n) noexcept (true);
+
+
+extern int mbtowc (wchar_t *__restrict __pwc,
+     const char *__restrict __s, size_t __n) noexcept (true);
+
+
+extern int wctomb (char *__s, wchar_t __wchar) noexcept (true);
+
+
+
+extern size_t mbstowcs (wchar_t *__restrict __pwcs,
+   const char *__restrict __s, size_t __n) noexcept (true)
+    __attribute__ ((__access__ (__read_only__, 2)));
+
+extern size_t wcstombs (char *__restrict __s,
+   const wchar_t *__restrict __pwcs, size_t __n)
+     noexcept (true)
+  __attribute__ ((__access__ (__write_only__, 1, 3)))
+  __attribute__ ((__access__ (__read_only__, 2)));
+
+
+
+
+
+
+extern int rpmatch (const char *__response) noexcept (true) __attribute__ ((__nonnull__ (1))) ;
+# 1099 "/usr/include/stdlib.h" 3 4
+extern int getsubopt (char **__restrict __optionp,
+        char *const *__restrict __tokens,
+        char **__restrict __valuep)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2, 3))) ;
+
+
+
+
+
+
+
+extern int posix_openpt (int __oflag) ;
+
+
+
+
+
+
+
+extern int grantpt (int __fd) noexcept (true);
+
+
+
+extern int unlockpt (int __fd) noexcept (true);
+
+
+
+
+extern char *ptsname (int __fd) noexcept (true) ;
+
+
+
+
+
+
+extern int ptsname_r (int __fd, char *__buf, size_t __buflen)
+     noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 2, 3)));
+
+
+extern int getpt (void);
+
+
+
+
+
+
+extern int getloadavg (double __loadavg[], int __nelem)
+     noexcept (true) __attribute__ ((__nonnull__ (1)));
+# 1155 "/usr/include/stdlib.h" 3 4
+# 1 "/usr/include/bits/stdlib-float.h" 1 3 4
+# 1156 "/usr/include/stdlib.h" 2 3 4
+# 1167 "/usr/include/stdlib.h" 3 4
+}
+# 31 "/usr/include/c++/14.2.1/stdlib.h" 2 3
+# 76 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 2 3
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 1 3
+# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
+       
+# 34 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
+
+
+
+
+# 1 "/usr/include/c++/14.2.1/stdlib.h" 1 3
+# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 2 3
+
+
+
+
+
+
+
+extern "C++"
+{
+namespace std __attribute__ ((__visibility__ ("default")))
+{
+
+
+  using ::abs;
+
+
+  inline long
+  abs(long __i) { return __builtin_labs(__i); }
+
+
+
+  inline long long
+  abs(long long __x) { return __builtin_llabs (__x); }
+# 70 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
+  inline constexpr double
+  abs(double __x)
+  { return __builtin_fabs(__x); }
+
+  inline constexpr float
+  abs(float __x)
+  { return __builtin_fabsf(__x); }
+
+  inline constexpr long double
+  abs(long double __x)
+  { return __builtin_fabsl(__x); }
+
+
+
+  inline constexpr __int128
+  abs(__int128 __x) { return __x >= 0 ? __x : -__x; }
+# 101 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/bits/std_abs.h" 3
+  inline constexpr
+  __float128
+  abs(__float128 __x)
+  { return __x < 0 ? -__x : __x; }
+
+
+
+}
+}
+# 78 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 2 3
+# 121 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
+extern "C++"
+{
+namespace std __attribute__ ((__visibility__ ("default")))
+{
+
+
+  using ::div_t;
+  using ::ldiv_t;
+
+  using ::abort;
+
+  using ::aligned_alloc;
+
+  using ::atexit;
+
+
+  using ::at_quick_exit;
+
+
+  using ::atof;
+  using ::atoi;
+  using ::atol;
+  using ::bsearch;
+  using ::calloc;
+  using ::div;
+  using ::exit;
+  using ::free;
+  using ::getenv;
+  using ::labs;
+  using ::ldiv;
+  using ::malloc;
+
+  using ::mblen;
+  using ::mbstowcs;
+  using ::mbtowc;
+
+  using ::qsort;
+
+
+  using ::quick_exit;
+
+
+  using ::rand;
+  using ::realloc;
+  using ::srand;
+  using ::strtod;
+  using ::strtol;
+  using ::strtoul;
+  using ::system;
+
+  using ::wcstombs;
+  using ::wctomb;
+
+
+
+  inline ldiv_t
+  div(long __i, long __j) { return ldiv(__i, __j); }
+
+
+
+
+}
+# 195 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
+namespace __gnu_cxx __attribute__ ((__visibility__ ("default")))
+{
+
+
+
+  using ::lldiv_t;
+
+
+
+
+
+  using ::_Exit;
+
+
+
+  using ::llabs;
+
+  inline lldiv_t
+  div(long long __n, long long __d)
+  { lldiv_t __q; __q.quot = __n / __d; __q.rem = __n % __d; return __q; }
+
+  using ::lldiv;
+# 227 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdlib" 3
+  using ::atoll;
+  using ::strtoll;
+  using ::strtoull;
+
+  using ::strtof;
+  using ::strtold;
+
+
+}
+
+namespace std
+{
+
+  using ::__gnu_cxx::lldiv_t;
+
+  using ::__gnu_cxx::_Exit;
+
+  using ::__gnu_cxx::llabs;
+  using ::__gnu_cxx::div;
+  using ::__gnu_cxx::lldiv;
+
+  using ::__gnu_cxx::atoll;
+  using ::__gnu_cxx::strtof;
+  using ::__gnu_cxx::strtoll;
+  using ::__gnu_cxx::strtoull;
+  using ::__gnu_cxx::strtold;
+}
+
+
+
+}
+# 5 "drivers/fs.cc" 2
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 1
+# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring"
+       
+# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
+
+
+# 1 "/usr/include/string.h" 1 3 4
+# 26 "/usr/include/string.h" 3 4
+# 1 "/usr/include/bits/libc-header-start.h" 1 3 4
+# 27 "/usr/include/string.h" 2 3 4
+
+extern "C" {
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
+# 34 "/usr/include/string.h" 2 3 4
+# 43 "/usr/include/string.h" 3 4
+extern void *memcpy (void *__restrict __dest, const void *__restrict __src,
+       size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern void *memmove (void *__dest, const void *__src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+
+extern void *memccpy (void *__restrict __dest, const void *__restrict __src,
+        int __c, size_t __n)
+    noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__write_only__, 1, 4)));
+
+
+
+
+extern void *memset (void *__s, int __c, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+extern int memcmp (const void *__s1, const void *__s2, size_t __n)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+# 80 "/usr/include/string.h" 3 4
+extern int __memcmpeq (const void *__s1, const void *__s2, size_t __n)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+extern "C++"
+{
+extern void *memchr (void *__s, int __c, size_t __n)
+      noexcept (true) __asm ("memchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern const void *memchr (const void *__s, int __c, size_t __n)
+      noexcept (true) __asm ("memchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 105 "/usr/include/string.h" 3 4
+}
+# 115 "/usr/include/string.h" 3 4
+extern "C++" void *rawmemchr (void *__s, int __c)
+     noexcept (true) __asm ("rawmemchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern "C++" const void *rawmemchr (const void *__s, int __c)
+     noexcept (true) __asm ("rawmemchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+
+
+extern "C++" void *memrchr (void *__s, int __c, size_t __n)
+      noexcept (true) __asm ("memrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)))
+      __attribute__ ((__access__ (__read_only__, 1, 3)));
+extern "C++" const void *memrchr (const void *__s, int __c, size_t __n)
+      noexcept (true) __asm ("memrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)))
+      __attribute__ ((__access__ (__read_only__, 1, 3)));
+# 141 "/usr/include/string.h" 3 4
+extern char *strcpy (char *__restrict __dest, const char *__restrict __src)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+extern char *strncpy (char *__restrict __dest,
+        const char *__restrict __src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern char *strcat (char *__restrict __dest, const char *__restrict __src)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+extern char *strncat (char *__restrict __dest, const char *__restrict __src,
+        size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int strcmp (const char *__s1, const char *__s2)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+extern int strncmp (const char *__s1, const char *__s2, size_t __n)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int strcoll (const char *__s1, const char *__s2)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+extern size_t strxfrm (char *__restrict __dest,
+         const char *__restrict __src, size_t __n)
+    noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 1, 3)));
+
+
+
+
+
+
+extern int strcoll_l (const char *__s1, const char *__s2, locale_t __l)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 3)));
+
+
+extern size_t strxfrm_l (char *__dest, const char *__src, size_t __n,
+    locale_t __l) noexcept (true) __attribute__ ((__nonnull__ (2, 4)))
+     __attribute__ ((__access__ (__write_only__, 1, 3)));
+
+
+
+
+
+extern char *strdup (const char *__s)
+     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+
+
+extern char *strndup (const char *__string, size_t __n)
+     noexcept (true) __attribute__ ((__malloc__)) __attribute__ ((__nonnull__ (1)));
+# 224 "/usr/include/string.h" 3 4
+extern "C++"
+{
+extern char *strchr (char *__s, int __c)
+     noexcept (true) __asm ("strchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern const char *strchr (const char *__s, int __c)
+     noexcept (true) __asm ("strchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 244 "/usr/include/string.h" 3 4
+}
+
+
+
+
+
+
+extern "C++"
+{
+extern char *strrchr (char *__s, int __c)
+     noexcept (true) __asm ("strrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern const char *strrchr (const char *__s, int __c)
+     noexcept (true) __asm ("strrchr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 271 "/usr/include/string.h" 3 4
+}
+# 281 "/usr/include/string.h" 3 4
+extern "C++" char *strchrnul (char *__s, int __c)
+     noexcept (true) __asm ("strchrnul") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern "C++" const char *strchrnul (const char *__s, int __c)
+     noexcept (true) __asm ("strchrnul") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 293 "/usr/include/string.h" 3 4
+extern size_t strcspn (const char *__s, const char *__reject)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern size_t strspn (const char *__s, const char *__accept)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern "C++"
+{
+extern char *strpbrk (char *__s, const char *__accept)
+     noexcept (true) __asm ("strpbrk") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+extern const char *strpbrk (const char *__s, const char *__accept)
+     noexcept (true) __asm ("strpbrk") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+# 321 "/usr/include/string.h" 3 4
+}
+
+
+
+
+
+
+extern "C++"
+{
+extern char *strstr (char *__haystack, const char *__needle)
+     noexcept (true) __asm ("strstr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+extern const char *strstr (const char *__haystack, const char *__needle)
+     noexcept (true) __asm ("strstr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+# 348 "/usr/include/string.h" 3 4
+}
+
+
+
+
+
+
+
+extern char *strtok (char *__restrict __s, const char *__restrict __delim)
+     noexcept (true) __attribute__ ((__nonnull__ (2)));
+
+
+
+extern char *__strtok_r (char *__restrict __s,
+    const char *__restrict __delim,
+    char **__restrict __save_ptr)
+     noexcept (true) __attribute__ ((__nonnull__ (2, 3)));
+
+extern char *strtok_r (char *__restrict __s, const char *__restrict __delim,
+         char **__restrict __save_ptr)
+     noexcept (true) __attribute__ ((__nonnull__ (2, 3)));
+
+
+
+
+
+extern "C++" char *strcasestr (char *__haystack, const char *__needle)
+     noexcept (true) __asm ("strcasestr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+extern "C++" const char *strcasestr (const char *__haystack,
+         const char *__needle)
+     noexcept (true) __asm ("strcasestr") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+# 389 "/usr/include/string.h" 3 4
+extern void *memmem (const void *__haystack, size_t __haystacklen,
+       const void *__needle, size_t __needlelen)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 3)))
+    __attribute__ ((__access__ (__read_only__, 1, 2)))
+    __attribute__ ((__access__ (__read_only__, 3, 4)));
+
+
+
+extern void *__mempcpy (void *__restrict __dest,
+   const void *__restrict __src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern void *mempcpy (void *__restrict __dest,
+        const void *__restrict __src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+extern size_t strlen (const char *__s)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+extern size_t strnlen (const char *__string, size_t __maxlen)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+
+
+
+
+extern char *strerror (int __errnum) noexcept (true);
+# 444 "/usr/include/string.h" 3 4
+extern char *strerror_r (int __errnum, char *__buf, size_t __buflen)
+     noexcept (true) __attribute__ ((__nonnull__ (2))) __attribute__ ((__access__ (__write_only__, 2, 3)));
+
+
+
+
+extern const char *strerrordesc_np (int __err) noexcept (true);
+
+extern const char *strerrorname_np (int __err) noexcept (true);
+
+
+
+
+
+extern char *strerror_l (int __errnum, locale_t __l) noexcept (true);
+
+
+
+# 1 "/usr/include/strings.h" 1 3 4
+# 23 "/usr/include/strings.h" 3 4
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3 4
+# 24 "/usr/include/strings.h" 2 3 4
+
+
+
+
+
+
+extern "C" {
+
+
+
+extern int bcmp (const void *__s1, const void *__s2, size_t __n)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern void bcopy (const void *__src, void *__dest, size_t __n)
+  noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern void bzero (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+
+extern "C++"
+{
+extern char *index (char *__s, int __c)
+     noexcept (true) __asm ("index") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern const char *index (const char *__s, int __c)
+     noexcept (true) __asm ("index") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 66 "/usr/include/strings.h" 3 4
+}
+
+
+
+
+
+
+
+extern "C++"
+{
+extern char *rindex (char *__s, int __c)
+     noexcept (true) __asm ("rindex") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+extern const char *rindex (const char *__s, int __c)
+     noexcept (true) __asm ("rindex") __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1)));
+# 94 "/usr/include/strings.h" 3 4
+}
+# 104 "/usr/include/strings.h" 3 4
+extern int ffs (int __i) noexcept (true) __attribute__ ((__const__));
+
+
+
+
+
+extern int ffsl (long int __l) noexcept (true) __attribute__ ((__const__));
+__extension__ extern int ffsll (long long int __ll)
+     noexcept (true) __attribute__ ((__const__));
+
+
+
+extern int strcasecmp (const char *__s1, const char *__s2)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern int strncasecmp (const char *__s1, const char *__s2, size_t __n)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+
+
+extern int strcasecmp_l (const char *__s1, const char *__s2, locale_t __loc)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 3)));
+
+
+
+extern int strncasecmp_l (const char *__s1, const char *__s2,
+     size_t __n, locale_t __loc)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2, 4)));
+
+
+}
+# 463 "/usr/include/string.h" 2 3 4
+
+
+
+extern void explicit_bzero (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)))
+    __attribute__ ((__access__ (__write_only__, 1, 2)));
+
+
+
+extern char *strsep (char **__restrict __stringp,
+       const char *__restrict __delim)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+extern char *strsignal (int __sig) noexcept (true);
+
+
+
+extern const char *sigabbrev_np (int __sig) noexcept (true);
+
+
+extern const char *sigdescr_np (int __sig) noexcept (true);
+
+
+
+extern char *__stpcpy (char *__restrict __dest, const char *__restrict __src)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern char *stpcpy (char *__restrict __dest, const char *__restrict __src)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+extern char *__stpncpy (char *__restrict __dest,
+   const char *__restrict __src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+extern char *stpncpy (char *__restrict __dest,
+        const char *__restrict __src, size_t __n)
+     noexcept (true) __attribute__ ((__nonnull__ (1, 2)));
+
+
+
+
+extern size_t strlcpy (char *__restrict __dest,
+         const char *__restrict __src, size_t __n)
+  noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__write_only__, 1, 3)));
+
+
+
+extern size_t strlcat (char *__restrict __dest,
+         const char *__restrict __src, size_t __n)
+  noexcept (true) __attribute__ ((__nonnull__ (1, 2))) __attribute__ ((__access__ (__read_write__, 1, 3)));
+
+
+
+
+extern int strverscmp (const char *__s1, const char *__s2)
+     noexcept (true) __attribute__ ((__pure__)) __attribute__ ((__nonnull__ (1, 2)));
+
+
+extern char *strfry (char *__string) noexcept (true) __attribute__ ((__nonnull__ (1)));
+
+
+extern void *memfrob (void *__s, size_t __n) noexcept (true) __attribute__ ((__nonnull__ (1)))
+    __attribute__ ((__access__ (__read_write__, 1, 2)));
+
+
+
+
+
+
+
+extern "C++" char *basename (char *__filename)
+     noexcept (true) __asm ("basename") __attribute__ ((__nonnull__ (1)));
+extern "C++" const char *basename (const char *__filename)
+     noexcept (true) __asm ("basename") __attribute__ ((__nonnull__ (1)));
+# 552 "/usr/include/string.h" 3 4
+}
+# 43 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 2 3
+# 71 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
+extern "C++"
+{
+namespace std __attribute__ ((__visibility__ ("default")))
+{
+
+
+  using ::memchr;
+  using ::memcmp;
+  using ::memcpy;
+  using ::memmove;
+  using ::memset;
+  using ::strcat;
+  using ::strcmp;
+  using ::strcoll;
+  using ::strcpy;
+  using ::strcspn;
+  using ::strerror;
+  using ::strlen;
+  using ::strncat;
+  using ::strncmp;
+  using ::strncpy;
+  using ::strspn;
+  using ::strtok;
+  using ::strxfrm;
+  using ::strchr;
+  using ::strpbrk;
+  using ::strrchr;
+  using ::strstr;
+# 122 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstring" 3
+
+}
+}
+# 6 "drivers/fs.cc" 2
+# 1 "include/drivers/fs.h" 1
+
+
+# 1 "include/kernel/driver/driver.h" 1
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 1
+# 42 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef"
+       
+# 43 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 3
+
+
+
+
+
+
+
+# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 1 3
+# 143 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
+typedef long int ptrdiff_t;
+# 415 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
+typedef struct {
+  long long __max_align_ll __attribute__((__aligned__(__alignof__(long long))));
+  long double __max_align_ld __attribute__((__aligned__(__alignof__(long double))));
+# 426 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stddef.h" 3
+} max_align_t;
+
+
+
+
+
+
+  typedef decltype(nullptr) nullptr_t;
+# 51 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 2 3
+
+extern "C++"
+{
+
+namespace std
+{
+
+  using ::max_align_t;
+}
+
+
+
+namespace std
+{
+
+
+
+
+  enum class byte : unsigned char {};
+
+  template<typename _IntegerType> struct __byte_operand { };
+  template<> struct __byte_operand<bool> { using __type = byte; };
+  template<> struct __byte_operand<char> { using __type = byte; };
+  template<> struct __byte_operand<signed char> { using __type = byte; };
+  template<> struct __byte_operand<unsigned char> { using __type = byte; };
+
+  template<> struct __byte_operand<wchar_t> { using __type = byte; };
+
+
+
+
+  template<> struct __byte_operand<char16_t> { using __type = byte; };
+  template<> struct __byte_operand<char32_t> { using __type = byte; };
+  template<> struct __byte_operand<short> { using __type = byte; };
+  template<> struct __byte_operand<unsigned short> { using __type = byte; };
+  template<> struct __byte_operand<int> { using __type = byte; };
+  template<> struct __byte_operand<unsigned int> { using __type = byte; };
+  template<> struct __byte_operand<long> { using __type = byte; };
+  template<> struct __byte_operand<unsigned long> { using __type = byte; };
+  template<> struct __byte_operand<long long> { using __type = byte; };
+  template<> struct __byte_operand<unsigned long long> { using __type = byte; };
+
+  template<> struct __byte_operand<__int128>
+  { using __type = byte; };
+  template<> struct __byte_operand<unsigned __int128>
+  { using __type = byte; };
+# 110 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstddef" 3
+  template<typename _IntegerType>
+    struct __byte_operand<const _IntegerType>
+    : __byte_operand<_IntegerType> { };
+  template<typename _IntegerType>
+    struct __byte_operand<volatile _IntegerType>
+    : __byte_operand<_IntegerType> { };
+  template<typename _IntegerType>
+    struct __byte_operand<const volatile _IntegerType>
+    : __byte_operand<_IntegerType> { };
+
+  template<typename _IntegerType>
+    using __byte_op_t = typename __byte_operand<_IntegerType>::__type;
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>
+    operator<<(byte __b, _IntegerType __shift) noexcept
+    { return (byte)(unsigned char)((unsigned)__b << __shift); }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>
+    operator>>(byte __b, _IntegerType __shift) noexcept
+    { return (byte)(unsigned char)((unsigned)__b >> __shift); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator|(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l | (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator&(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l & (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator^(byte __l, byte __r) noexcept
+  { return (byte)(unsigned char)((unsigned)__l ^ (unsigned)__r); }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte
+  operator~(byte __b) noexcept
+  { return (byte)(unsigned char)~(unsigned)__b; }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>&
+    operator<<=(byte& __b, _IntegerType __shift) noexcept
+    { return __b = __b << __shift; }
+
+  template<typename _IntegerType>
+    [[__gnu__::__always_inline__]]
+    constexpr __byte_op_t<_IntegerType>&
+    operator>>=(byte& __b, _IntegerType __shift) noexcept
+    { return __b = __b >> __shift; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator|=(byte& __l, byte __r) noexcept
+  { return __l = __l | __r; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator&=(byte& __l, byte __r) noexcept
+  { return __l = __l & __r; }
+
+  [[__gnu__::__always_inline__]]
+  constexpr byte&
+  operator^=(byte& __l, byte __r) noexcept
+  { return __l = __l ^ __r; }
+
+  template<typename _IntegerType>
+    [[nodiscard,__gnu__::__always_inline__]]
+    constexpr _IntegerType
+    to_integer(__byte_op_t<_IntegerType> __b) noexcept
+    { return _IntegerType(__b); }
+
+
+}
+
+}
+# 4 "include/kernel/driver/driver.h" 2
+
 # 1 "include/kernel/hal/pci/pci.h" 1
 # 9 "include/kernel/hal/pci/pci.h"
 # 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdint" 1
@@ -17421,6 +17813,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/fs.h" 2
 # 1 "include/kernel/vfs/gpt.h" 1
@@ -17504,6 +17897,8 @@ namespace drivers{
 namespace drivers{
     enum struct FSType{
         FAT32,
+        EXT2,
+        EXT3,
         EXT4,
     };
     class FSDriver : public driver::Driver{
@@ -17518,14 +17913,144 @@ namespace drivers{
             virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
+            FSType getFsType();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-
+        protected:
+            FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };
-# 6 "drivers/fs.cc" 2
+# 7 "drivers/fs.cc" 2
+# 1 "include/drivers/fs/ext4.h" 1
+# 8 "drivers/fs.cc" 2
+# 1 "include/drivers/fs/fat32.h" 1
+
+
+
+
+
+
+
+namespace drivers::fs{
+    struct FAT_ExtendedBootRecord{
+        uint8_t DriveNumber;
+        uint8_t _Reserved;
+        uint8_t Signature;
+        uint32_t VolumeId;
+        uint8_t VolumeLabel[11];
+        uint8_t SystemId[8];
+    } __attribute__((packed));
+    struct FAT32_ExtendedBootRecord{
+        uint32_t SectorsPerFat;
+        uint16_t Flags;
+        uint16_t FatVersion;
+        uint32_t RootDirectoryCluster;
+        uint16_t FSInfoSector;
+        uint16_t BackupBootSector;
+        uint8_t _Reserved[12];
+        FAT_ExtendedBootRecord EBR;
+    } __attribute((packed));
+    struct FAT_BootSector{
+        uint8_t BootJumpInstruction[3];
+        uint8_t OemIdentifier[8];
+        uint16_t BytesPerSector;
+        uint8_t SectorsPerCluster;
+        uint16_t ReservedSectors;
+        uint8_t FatCount;
+        uint16_t DirEntryCount;
+        uint16_t TotalSectors;
+        uint8_t MediaDescriptorType;
+        uint16_t SectorsPerFat;
+        uint16_t SectorsPerTrack;
+        uint16_t Heads;
+        uint32_t HiddenSectors;
+        uint32_t LargeSectorCount;
+        union {
+            FAT_ExtendedBootRecord EBR1216;
+            FAT32_ExtendedBootRecord EBR32;
+        };
+        uint8_t reserved0[422];
+    } __attribute__((packed));
+    struct FAT_DirectoryEntry{
+        uint8_t Name[11];
+        uint8_t Attributes;
+        uint8_t _Reserved;
+        uint8_t CreatedTimeTenths;
+        uint16_t CreatedTime;
+        uint16_t CreatedDate;
+        uint16_t AccessedDate;
+        uint16_t FirstClusterHigh;
+        uint16_t ModifiedTime;
+        uint16_t ModifiedDate;
+        uint16_t FirstClusterLow;
+        uint32_t Size;
+    } __attribute__((packed));
+    struct FAT_LFNEntry{
+        uint8_t sequence;
+        uint16_t Name1[5];
+        uint8_t Attributes;
+        uint8_t Type;
+        uint8_t Checksum;
+        uint16_t Name2[6];
+        uint16_t FirstCluster;
+        uint16_t Name3[2];
+    } __attribute__((packed));
+    struct FAT_File{
+        int Handle;
+        task::pid_t Pid;
+        bool IsDirectory;
+        uint32_t Position;
+        uint32_t Size;
+        int Flags;
+    };
+    struct FAT_FileData{
+        uint8_t Buffer[512];
+        FAT_File Public;
+        bool Opened;
+        uint32_t FirstCluster;
+        uint32_t CurrentCluster;
+        uint32_t CurrentSectorInCluster;
+    };
+    enum struct FAT_Attributes : uint8_t {
+        READ_ONLY = 0x01,
+        HIDDEN = 0x02,
+        SYSTEM = 0x04,
+        VOLUME_ID = 0x08,
+        DIRECTORY = 0x10,
+        ARCHIVE = 0x20,
+        LFN = READ_ONLY|HIDDEN|SYSTEM|VOLUME_ID
+    };
+    class FAT32Driver : public FSDriver{
+        public:
+            FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
+            ~FAT32Driver();
+            void init(pci::device* dev);
+            void deinit();
+            int open(task::pid_t PID, const char* path, int flags);
+            void read(int file, size_t length, void* buffer);
+            void close(int file);
+            int getLengthOfFile(int file);
+        private:
+            FAT_BootSector* bootSector;
+            FAT_FileData* rootDir;
+            std::vector<FAT_FileData*> files;
+            uint8_t cache[5*512];
+            uint32_t cachePos;
+            uint32_t maxSectors;
+            uint32_t sectorsPerFat;
+            uint32_t dataSectionLBA;
+            uint32_t clusterToLBA(uint32_t cluster);
+            bool findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
+            FAT_File* openEntry(FAT_DirectoryEntry *entry);
+            bool readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
+            uint32_t nextCluster(uint32_t currentCluster);
+            uint32_t readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
+            void readFat(size_t lbaIdx);
+    };
+};
+# 9 "drivers/fs.cc" 2
 # 1 "include/kernel/vfs/vfs.h" 1
 
 
@@ -17550,10 +18075,7 @@ extern "C" {
 # 35 "/usr/include/stdio.h" 2 3 4
 
 
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 1 3 4
-# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 3 4
-typedef __builtin_va_list __gnuc_va_list;
-# 38 "/usr/include/stdio.h" 2 3 4
+
 
 
 # 1 "/usr/include/bits/types/__fpos_t.h" 1 3 4
@@ -17717,12 +18239,6 @@ typedef struct _IO_cookie_io_functions_t
   cookie_close_function_t *close;
 } cookie_io_functions_t;
 # 48 "/usr/include/stdio.h" 2 3 4
-
-
-
-
-
-typedef __gnuc_va_list va_list;
 # 85 "/usr/include/stdio.h" 3 4
 typedef __fpos_t fpos_t;
 
@@ -18323,6 +18839,7 @@ namespace vfs{
         int mpIdx;
         int fsHandle;
         bool used;
+        const char* pathWithoutMountPoint;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();
@@ -18337,571 +18854,81 @@ namespace vfs{
     int getLen(int handle);
     void printInfo();
 };
-# 7 "drivers/fs.cc" 2
-# 1 "include/drivers/fs/fat32.h" 1
-
-
-
-
-
-
-
-namespace drivers::fs{
-    struct FAT_ExtendedBootRecord{
-        uint8_t DriveNumber;
-        uint8_t _Reserved;
-        uint8_t Signature;
-        uint32_t VolumeId;
-        uint8_t VolumeLabel[11];
-        uint8_t SystemId[8];
-    } __attribute__((packed));
-    struct FAT32_ExtendedBootRecord{
-        uint32_t SectorsPerFat;
-        uint16_t Flags;
-        uint16_t FatVersion;
-        uint32_t RootDirectoryCluster;
-        uint16_t FSInfoSector;
-        uint16_t BackupBootSector;
-        uint8_t _Reserved[12];
-        FAT_ExtendedBootRecord EBR;
-    } __attribute((packed));
-    struct FAT_BootSector{
-        uint8_t BootJumpInstruction[3];
-        uint8_t OemIdentifier[8];
-        uint16_t BytesPerSector;
-        uint8_t SectorsPerCluster;
-        uint16_t ReservedSectors;
-        uint8_t FatCount;
-        uint16_t DirEntryCount;
-        uint16_t TotalSectors;
-        uint8_t MediaDescriptorType;
-        uint16_t SectorsPerFat;
-        uint16_t SectorsPerTrack;
-        uint16_t Heads;
-        uint32_t HiddenSectors;
-        uint32_t LargeSectorCount;
-        union {
-            FAT_ExtendedBootRecord EBR1216;
-            FAT32_ExtendedBootRecord EBR32;
-        };
-        uint8_t reserved0[422];
-    } __attribute__((packed));
-    struct FAT_DirectoryEntry{
-        uint8_t Name[11];
-        uint8_t Attributes;
-        uint8_t _Reserved;
-        uint8_t CreatedTimeTenths;
-        uint16_t CreatedTime;
-        uint16_t CreatedDate;
-        uint16_t AccessedDate;
-        uint16_t FirstClusterHigh;
-        uint16_t ModifiedTime;
-        uint16_t ModifiedDate;
-        uint16_t FirstClusterLow;
-        uint32_t Size;
-    } __attribute__((packed));
-    struct FAT_LFNEntry{
-        uint8_t sequence;
-        uint16_t Name1[5];
-        uint8_t Attributes;
-        uint8_t Type;
-        uint8_t Checksum;
-        uint16_t Name2[6];
-        uint16_t FirstCluster;
-        uint16_t Name3[2];
-    } __attribute__((packed));
-    struct FAT_File{
-        int Handle;
-        task::pid_t Pid;
-        bool IsDirectory;
-        uint32_t Position;
-        uint32_t Size;
-        int Flags;
-    };
-    struct FAT_FileData{
-        uint8_t Buffer[512];
-        FAT_File Public;
-        bool Opened;
-        uint32_t FirstCluster;
-        uint32_t CurrentCluster;
-        uint32_t CurrentSectorInCluster;
-    };
-    enum struct FAT_Attributes : uint8_t {
-        READ_ONLY = 0x01,
-        HIDDEN = 0x02,
-        SYSTEM = 0x04,
-        VOLUME_ID = 0x08,
-        DIRECTORY = 0x10,
-        ARCHIVE = 0x20,
-        LFN = READ_ONLY|HIDDEN|SYSTEM|VOLUME_ID
-    };
-    class FAT32Driver : public FSDriver{
-        public:
-            FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
-            ~FAT32Driver();
-            void init(pci::device* dev);
-            void deinit();
-            int open(task::pid_t PID, const char* path, int flags);
-            void read(int file, size_t length, void* buffer);
-            void close(int file);
-            int getLengthOfFile(int file);
-        private:
-            FAT_BootSector* bootSector;
-            FAT_FileData* rootDir;
-            std::vector<FAT_FileData*> files;
-            uint8_t cache[5*512];
-            uint32_t cachePos;
-            uint32_t maxSectors;
-            uint32_t sectorsPerFat;
-            uint32_t dataSectionLBA;
-            uint32_t clusterToLBA(uint32_t cluster);
-            bool findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
-            FAT_File* openEntry(FAT_DirectoryEntry *entry);
-            bool readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
-            uint32_t nextCluster(uint32_t currentCluster);
-            uint32_t readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
-            void readFat(size_t lbaIdx);
-    };
-};
-# 8 "drivers/fs.cc" 2
-# 1 "include/drivers/fs/ext4.h" 1
-# 9 "drivers/fs.cc" 2
-# 1 "include/common/dbg/dbg.h" 1
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 1
-# 39 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg"
-       
-# 40 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 3
-
-
-
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/stdarg.h" 1 3
-# 44 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 2 3
-# 53 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 3
-
-# 53 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/cstdarg" 3
-namespace std
-{
-  using ::va_list;
-}
-# 4 "include/common/dbg/dbg.h" 2
-
-
-
-# 6 "include/common/dbg/dbg.h"
-namespace dbg{
-    void printm(const char* module, const char* fmt, ...);
-    void printv(const char* fmt, va_list args);
-    void printf(const char* str, ...);
-    void print(const char* str);
-    void printStackTrace();
-    void addTrace(const char* func);
-    void popTrace();
-    std::vector<const char*> getMessages();
-};
 # 10 "drivers/fs.cc" 2
-# 1 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 1
-# 32 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array"
-       
-# 33 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
-# 44 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
 
-# 44 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
-namespace std __attribute__ ((__visibility__ ("default")))
+
+
+namespace drivers
 {
-
-
-  template<typename _Tp, std::size_t _Nm>
-    struct __array_traits
+    FSDriver::FSDriver(vfs::PartitionEntry *entry, std::pair<MSCDriver *, uint8_t> drvDisk) : Driver(driver::driverType::FILESYSTEM)
     {
-      typedef _Tp _Type[_Nm];
-      typedef __is_swappable<_Tp> _Is_swappable;
-      typedef __is_nothrow_swappable<_Tp> _Is_nothrow_swappable;
-
-      static constexpr _Tp&
-      _S_ref(const _Type& __t, std::size_t __n) noexcept
-      { return const_cast<_Tp&>(__t[__n]); }
-
-      static constexpr _Tp*
-      _S_ptr(const _Type& __t) noexcept
-      { return const_cast<_Tp*>(__t); }
-    };
-
- template<typename _Tp>
-   struct __array_traits<_Tp, 0>
-   {
-     struct _Type { };
-     typedef true_type _Is_swappable;
-     typedef true_type _Is_nothrow_swappable;
-
-     static constexpr _Tp&
-     _S_ref(const _Type&, std::size_t) noexcept
-     { return *static_cast<_Tp*>(nullptr); }
-
-     static constexpr _Tp*
-     _S_ptr(const _Type&) noexcept
-     { return nullptr; }
-   };
-# 94 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
-  template<typename _Tp, std::size_t _Nm>
-    struct array
-    {
-      typedef _Tp value_type;
-      typedef value_type* pointer;
-      typedef const value_type* const_pointer;
-      typedef value_type& reference;
-      typedef const value_type& const_reference;
-      typedef value_type* iterator;
-      typedef const value_type* const_iterator;
-      typedef std::size_t size_type;
-      typedef std::ptrdiff_t difference_type;
-      typedef std::reverse_iterator<iterator> reverse_iterator;
-      typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
-
-
-      typedef __array_traits<_Tp, _Nm> _AT_Type;
-      typename _AT_Type::_Type _M_elems;
-
-
-
-
-      void
-      fill(const value_type& __u)
-      { std::fill_n(begin(), size(), __u); }
-
-      void
-      swap(array& __other)
-      noexcept(_AT_Type::_Is_nothrow_swappable::value)
-      { std::swap_ranges(begin(), end(), __other.begin()); }
-
-
-      constexpr iterator
-      begin() noexcept
-      { return iterator(data()); }
-
-      constexpr const_iterator
-      begin() const noexcept
-      { return const_iterator(data()); }
-
-      constexpr iterator
-      end() noexcept
-      { return iterator(data() + _Nm); }
-
-      constexpr const_iterator
-      end() const noexcept
-      { return const_iterator(data() + _Nm); }
-
-      constexpr reverse_iterator
-      rbegin() noexcept
-      { return reverse_iterator(end()); }
-
-      constexpr const_reverse_iterator
-      rbegin() const noexcept
-      { return const_reverse_iterator(end()); }
-
-      constexpr reverse_iterator
-      rend() noexcept
-      { return reverse_iterator(begin()); }
-
-      constexpr const_reverse_iterator
-      rend() const noexcept
-      { return const_reverse_iterator(begin()); }
-
-      constexpr const_iterator
-      cbegin() const noexcept
-      { return const_iterator(data()); }
-
-      constexpr const_iterator
-      cend() const noexcept
-      { return const_iterator(data() + _Nm); }
-
-      constexpr const_reverse_iterator
-      crbegin() const noexcept
-      { return const_reverse_iterator(end()); }
-
-      constexpr const_reverse_iterator
-      crend() const noexcept
-      { return const_reverse_iterator(begin()); }
-
-
-      constexpr size_type
-      size() const noexcept { return _Nm; }
-
-      constexpr size_type
-      max_size() const noexcept { return _Nm; }
-
-      [[__nodiscard__]] constexpr bool
-      empty() const noexcept { return size() == 0; }
-
-
-      constexpr reference
-      operator[](size_type __n) noexcept
-      {
- ;
- return _AT_Type::_S_ref(_M_elems, __n);
-      }
-
-      constexpr const_reference
-      operator[](size_type __n) const noexcept
-      {
-
- ;
-
- return _AT_Type::_S_ref(_M_elems, __n);
-      }
-
-      constexpr reference
-      at(size_type __n)
-      {
- if (__n >= _Nm)
-   std::__throw_out_of_range_fmt(("array::at: __n (which is %zu) " ">= _Nm (which is %zu)")
-                                 ,
-     __n, _Nm);
- return _AT_Type::_S_ref(_M_elems, __n);
-      }
-
-      constexpr const_reference
-      at(size_type __n) const
-      {
-
-
- return __n < _Nm ? _AT_Type::_S_ref(_M_elems, __n)
-   : (std::__throw_out_of_range_fmt(("array::at: __n (which is %zu) " ">= _Nm (which is %zu)")
-                                    ,
-        __n, _Nm),
-      _AT_Type::_S_ref(_M_elems, 0));
-      }
-
-      constexpr reference
-      front() noexcept
-      {
- ;
- return *begin();
-      }
-
-      constexpr const_reference
-      front() const noexcept
-      {
-
- ;
-
- return _AT_Type::_S_ref(_M_elems, 0);
-      }
-
-      constexpr reference
-      back() noexcept
-      {
- ;
- return _Nm ? *(end() - 1) : *end();
-      }
-
-      constexpr const_reference
-      back() const noexcept
-      {
-
- ;
-
- return _Nm ? _AT_Type::_S_ref(_M_elems, _Nm - 1)
-             : _AT_Type::_S_ref(_M_elems, 0);
-      }
-
-      constexpr pointer
-      data() noexcept
-      { return _AT_Type::_S_ptr(_M_elems); }
-
-      constexpr const_pointer
-      data() const noexcept
-      { return _AT_Type::_S_ptr(_M_elems); }
-    };
-
-
-  template<typename _Tp, typename... _Up>
-    array(_Tp, _Up...)
-      -> array<enable_if_t<(is_same_v<_Tp, _Up> && ...), _Tp>,
-        1 + sizeof...(_Up)>;
-
-
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator==(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
-    { return std::equal(__one.begin(), __one.end(), __two.begin()); }
-# 302 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator!=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
-    { return !(__one == __two); }
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator<(const array<_Tp, _Nm>& __a, const array<_Tp, _Nm>& __b)
-    {
-      return std::lexicographical_compare(__a.begin(), __a.end(),
-       __b.begin(), __b.end());
-    }
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator>(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
-    { return __two < __one; }
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator<=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
-    { return !(__one > __two); }
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline bool
-    operator>=(const array<_Tp, _Nm>& __one, const array<_Tp, _Nm>& __two)
-    { return !(__one < __two); }
-
-
-
-  template<typename _Tp, std::size_t _Nm>
-   
-    inline
-
-
-    typename enable_if<
-      __array_traits<_Tp, _Nm>::_Is_swappable::value
-    >::type
-
-
-
-    swap(array<_Tp, _Nm>& __one, array<_Tp, _Nm>& __two)
-    noexcept(noexcept(__one.swap(__two)))
-    { __one.swap(__two); }
-
-
-  template<typename _Tp, std::size_t _Nm>
-    typename enable_if<
-      !__array_traits<_Tp, _Nm>::_Is_swappable::value>::type
-    swap(array<_Tp, _Nm>&, array<_Tp, _Nm>&) = delete;
-
-
-  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
-    constexpr _Tp&
-    get(array<_Tp, _Nm>& __arr) noexcept
-    {
-      static_assert(_Int < _Nm, "array index is within bounds");
-      return __array_traits<_Tp, _Nm>::_S_ref(__arr._M_elems, _Int);
-    }
-
-  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
-    constexpr _Tp&&
-    get(array<_Tp, _Nm>&& __arr) noexcept
-    {
-      static_assert(_Int < _Nm, "array index is within bounds");
-      return std::move(std::get<_Int>(__arr));
-    }
-
-  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
-    constexpr const _Tp&
-    get(const array<_Tp, _Nm>& __arr) noexcept
-    {
-      static_assert(_Int < _Nm, "array index is within bounds");
-      return __array_traits<_Tp, _Nm>::_S_ref(__arr._M_elems, _Int);
-    }
-
-  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
-    constexpr const _Tp&&
-    get(const array<_Tp, _Nm>&& __arr) noexcept
-    {
-      static_assert(_Int < _Nm, "array index is within bounds");
-      return std::move(std::get<_Int>(__arr));
-    }
-# 432 "/usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/array" 3
-  template<typename _Tp>
-    struct tuple_size;
-
-
-  template<typename _Tp, std::size_t _Nm>
-    struct tuple_size<array<_Tp, _Nm>>
-    : public integral_constant<std::size_t, _Nm> { };
-
-
-  template<std::size_t _Int, typename _Tp>
-    struct tuple_element;
-
-
-  template<std::size_t _Int, typename _Tp, std::size_t _Nm>
-    struct tuple_element<_Int, array<_Tp, _Nm>>
-    {
-      static_assert(_Int < _Nm, "index is out of bounds");
-      typedef _Tp type;
-    };
-
-  template<typename _Tp, std::size_t _Nm>
-    struct __is_tuple_like_impl<array<_Tp, _Nm>> : true_type
-    { };
-
-
-}
-# 11 "drivers/fs.cc" 2
-
-
-
-# 13 "drivers/fs.cc"
-namespace drivers {
-    FSDriver::FSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) :Driver(driver::driverType::FILESYSTEM){
         this->__diskDevice = drvDisk;
         this->__partition_entry = entry;
     }
-    FSDriver::~FSDriver(){}
-    std::pair<MSCDriver*, uint8_t> FSDriver::getDiskDevice(){
+    FSDriver::~FSDriver() {}
+    std::pair<MSCDriver *, uint8_t> FSDriver::getDiskDevice()
+    {
         return this->__diskDevice;
     }
-    vfs::PartitionEntry* FSDriver::getPartEntry(){
+    vfs::PartitionEntry *FSDriver::getPartEntry()
+    {
         return this->__partition_entry;
     }
+    FSType FSDriver::getFsType()
+    {
+        return this->__fs_type;
+    }
     static std::array<std::pair<uint32_t, FSType>, 2> GUIDEntries;
-    FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) {
+    FSDriver *loadFSDriver(vfs::PartitionEntry *entry, std::pair<MSCDriver *, uint8_t> drvDisk)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         GUIDEntries[0] = std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4);
-        GUIDEntries[1] =std::pair<uint32_t, FSType>(0x28732ac1, FSType::FAT32);
+        GUIDEntries[1] = std::pair<uint32_t, FSType>(0x28732ac1, FSType::FAT32);
         
-# 30 "drivers/fs.cc" 3 4
+# 39 "drivers/fs.cc" 3 4
        (static_cast <bool> (
-# 30 "drivers/fs.cc"
+# 39 "drivers/fs.cc"
        entry
-# 30 "drivers/fs.cc" 3 4
+# 39 "drivers/fs.cc" 3 4
        ) ? void (0) : __assert_fail (
-# 30 "drivers/fs.cc"
+# 39 "drivers/fs.cc"
        "entry"
-# 30 "drivers/fs.cc" 3 4
+# 39 "drivers/fs.cc" 3 4
        , __builtin_FILE (), __builtin_LINE (), __extension__ __PRETTY_FUNCTION__))
-# 30 "drivers/fs.cc"
+# 39 "drivers/fs.cc"
                     ;
-        FSDriver* drv = nullptr;
-        for (auto guidEntry : GUIDEntries){
-            if (std::memcmp((void*)(uintptr_t)(&guidEntry.first), entry->GUID, sizeof(uint32_t)) == 0) {
-                switch (guidEntry.second) {
-                    case FSType::EXT4: {
-                        dbg::printm("File System driver", "TODO: load EXT4 FS driver\n");
-                        dbg::popTrace();
-                        return nullptr;
-                    }
-                    case FSType::FAT32: {
-                        drv = new fs::FAT32Driver(entry, drvDisk);
-                    } break;
+        FSDriver *drv = nullptr;
+        for (auto guidEntry : GUIDEntries)
+        {
+            if (std::memcmp((void *)(uintptr_t)(&guidEntry.first), entry->GUID, sizeof(uint32_t)) == 0)
+            {
+                switch (guidEntry.second)
+                {
+                case FSType::EXT2:
+                case FSType::EXT3:
+                case FSType::EXT4:
+                {
+                    dbg::printm("File System driver", "TODO: load EXT FS driver\n");
+                    dbg::popTrace();
+                    return nullptr;
+                }
+                case FSType::FAT32:
+                {
+                    drv = new fs::FAT32Driver(entry, drvDisk);
+                }
+                break;
                 }
             }
         }
-        if(drv){
+        if (drv)
+        {
             dbg::popTrace();
             return drv;
         }
         dbg::printm("File System driver", "Unable to find a matching FS for GUID: %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-            entry->GUID[0], entry->GUID[1], entry->GUID[2], entry->GUID[3], entry->GUID[4], entry->GUID[5],
-            entry->GUID[6], entry->GUID[7], entry->GUID[8], entry->GUID[9], entry->GUID[10], entry->GUID[11],
-            entry->GUID[12], entry->GUID[13], entry->GUID[14], entry->GUID[15]);
+                    entry->GUID[0], entry->GUID[1], entry->GUID[2], entry->GUID[3], entry->GUID[4], entry->GUID[5],
+                    entry->GUID[6], entry->GUID[7], entry->GUID[8], entry->GUID[9], entry->GUID[10], entry->GUID[11],
+                    entry->GUID[12], entry->GUID[13], entry->GUID[14], entry->GUID[15]);
         std::abort();
     }
 };

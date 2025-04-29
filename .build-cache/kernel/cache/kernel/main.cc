@@ -17099,6 +17099,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/display.h" 2
 # 1 "./limine/limine.h" 1
@@ -18497,6 +18498,8 @@ namespace drivers{
 namespace drivers{
     enum struct FSType{
         FAT32,
+        EXT2,
+        EXT3,
         EXT4,
     };
     class FSDriver : public driver::Driver{
@@ -18511,10 +18514,12 @@ namespace drivers{
             virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
+            FSType getFsType();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-
+        protected:
+            FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };
@@ -18532,6 +18537,7 @@ namespace vfs{
         int mpIdx;
         int fsHandle;
         bool used;
+        const char* pathWithoutMountPoint;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();
@@ -18561,8 +18567,8 @@ extern "C" void KernelMain()
     char *buffer = new char[vfs::getLen(handle)];
     vfs::readFile(handle, vfs::getLen(handle)-1, (void *)buffer);
     dbg::printf("Test `%.*s`\n", vfs::getLen(handle), buffer);
-    vfs::closeFile(handle);
-    vfs::umount("/boot");
+
+
     std::abort();
     for (;;)
         ;

@@ -17557,6 +17557,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/fs.h" 2
 # 1 "include/kernel/vfs/gpt.h" 1
@@ -17635,6 +17636,8 @@ namespace drivers{
 namespace drivers{
     enum struct FSType{
         FAT32,
+        EXT2,
+        EXT3,
         EXT4,
     };
     class FSDriver : public driver::Driver{
@@ -17649,10 +17652,12 @@ namespace drivers{
             virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
+            FSType getFsType();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-
+        protected:
+            FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };
@@ -17670,6 +17675,7 @@ namespace vfs{
         int mpIdx;
         int fsHandle;
         bool used;
+        const char* pathWithoutMountPoint;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();
@@ -17686,11 +17692,12 @@ namespace vfs{
 };
 # 7 "libcxx/stdlib/abort.cc" 2
 
+
 extern "C" void abort(){
     dbg::print("INFO:\n");
-
-
-
+    vfs::printInfo();
+    mmu::printInfo();
+    driver::printInfo();
     dbg::print("ABORTING KERNEL\n");
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();

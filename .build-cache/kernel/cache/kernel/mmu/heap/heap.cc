@@ -18354,7 +18354,7 @@ namespace mmu::heap{
     void* allocate(size_t size){
         dbg::addTrace(__PRETTY_FUNCTION__);
         if(!isInitialized()){
-            initialize((1024 * 1024ULL), (1024 * 1024 * 1024ULL));
+            initialize((1024 * 1024ULL), 2 * (1024 * 1024ULL));
         }
         size_t ALIGN_SIZE = getAlignSize(size);
         size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
@@ -18445,5 +18445,22 @@ namespace mmu::heap{
         }
         free(ptr, 0);
         dbg::popTrace();
+    }
+    void printInfo(){
+        dbg::printm("MMU HEAP", "INFO\n");
+        uint64_t freeMemory = 0, allocatedMemory = 0, blocks = 0;
+        node* current = __head;
+        while(current){
+            if (current->free){
+                freeMemory += current->size;
+            } else {
+                allocatedMemory += current->size;
+            }
+            blocks++;
+            current = current->next;
+        }
+        dbg::printm("MMU HEAP", "Currently free memory: %lu\n", freeMemory);
+        dbg::printm("MMU HEAP", "Currently allocated memory: %lu\n", allocatedMemory);
+        dbg::printm("MMU HEAP", "Current number of blocks: %lu\n", blocks);
     }
 };

@@ -16781,6 +16781,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/display.h" 2
 # 1 "./limine/limine.h" 1
@@ -17374,11 +17375,11 @@ namespace drivers
         if (this->screenX >= buffer->width)
         {
             this->screenX = 0;
-            this->screenY += (8) + 2;
+            this->screenY += 10;
         }
         if (this->screenY >= buffer->height)
         {
-            this->scrollBack(display, (8) + 2);
+            this->scrollBack(display, 10);
             this->screenY -= 10;
         }
         dbg::popTrace();
@@ -17388,8 +17389,11 @@ namespace drivers
         switch (c)
         {
         case '\n':
-            this->screenY += (8) + 2;
+            this->screenY += 10;
             this->screenX = 2;
+            break;
+        case '\t':
+            this->screenX += 40;
             break;
         default:
             this->drawCharacter(display, c);

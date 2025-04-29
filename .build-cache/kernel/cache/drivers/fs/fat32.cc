@@ -14916,6 +14916,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/fs.h" 2
 # 1 "include/kernel/vfs/gpt.h" 1
@@ -14999,6 +15000,8 @@ namespace drivers{
 namespace drivers{
     enum struct FSType{
         FAT32,
+        EXT2,
+        EXT3,
         EXT4,
     };
     class FSDriver : public driver::Driver{
@@ -15013,10 +15016,12 @@ namespace drivers{
             virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
+            FSType getFsType();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-
+        protected:
+            FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };
@@ -45937,6 +45942,7 @@ namespace std __attribute__ ((__visibility__ ("default")))
 namespace drivers::fs{
     FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
         dbg::addTrace(__PRETTY_FUNCTION__);
+        this->__fs_type = FSType::FAT32;
         this->bootSector = new FAT_BootSector;
         if(!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector)){
             dbg::printm("FAT32 Driver", "Failed to read boot sector!!!\n");
@@ -46068,9 +46074,9 @@ namespace drivers::fs{
         shortName[11] = '\0';
         const char* ext = std::strchr(name, '.');
         if (ext == 
-# 145 "drivers/fs/fat32.cc" 3 4
+# 146 "drivers/fs/fat32.cc" 3 4
                   __null
-# 145 "drivers/fs/fat32.cc"
+# 146 "drivers/fs/fat32.cc"
                       )
             ext = name + 11;
 
@@ -46174,17 +46180,17 @@ namespace drivers::fs{
         char shortName[12];
         FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
         
-# 247 "drivers/fs/fat32.cc" 3 4
+# 248 "drivers/fs/fat32.cc" 3 4
        (static_cast <bool> (
-# 247 "drivers/fs/fat32.cc"
+# 248 "drivers/fs/fat32.cc"
        entry != nullptr
-# 247 "drivers/fs/fat32.cc" 3 4
+# 248 "drivers/fs/fat32.cc" 3 4
        ) ? void (0) : __assert_fail (
-# 247 "drivers/fs/fat32.cc"
+# 248 "drivers/fs/fat32.cc"
        "entry != nullptr"
-# 247 "drivers/fs/fat32.cc" 3 4
+# 248 "drivers/fs/fat32.cc" 3 4
        , __builtin_FILE (), __builtin_LINE (), __extension__ __PRETTY_FUNCTION__))
-# 247 "drivers/fs/fat32.cc"
+# 248 "drivers/fs/fat32.cc"
                                ;
         getShortName(name, shortName);
         std::vector<uint16_t> lfnBuffer;

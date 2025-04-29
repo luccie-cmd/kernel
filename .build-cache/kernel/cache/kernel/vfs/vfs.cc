@@ -15726,6 +15726,7 @@ namespace driver{
     bool isInitialized();
     size_t getDevicesCount(driverType type);
     std::vector<Driver*> getDrivers(driverType type);
+    void printInfo();
 };
 # 4 "include/drivers/fs.h" 2
 # 1 "include/kernel/vfs/gpt.h" 1
@@ -15809,6 +15810,8 @@ namespace drivers{
 namespace drivers{
     enum struct FSType{
         FAT32,
+        EXT2,
+        EXT3,
         EXT4,
     };
     class FSDriver : public driver::Driver{
@@ -15823,10 +15826,12 @@ namespace drivers{
             virtual int getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
+            FSType getFsType();
         private:
             vfs::PartitionEntry* __partition_entry;
             std::pair<MSCDriver*, uint8_t> __diskDevice;
-
+        protected:
+            FSType __fs_type;
     };
     FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk);
 };
@@ -15844,6 +15849,7 @@ namespace vfs{
         int mpIdx;
         int fsHandle;
         bool used;
+        const char* pathWithoutMountPoint;
     };
     uint8_t* parseGUID(uint8_t* GUID);
     bool isInitialized();
@@ -18587,6 +18593,7 @@ namespace vfs{
         dbg::addTrace(__PRETTY_FUNCTION__);
         int handle = -1;
         int mpIdx = -1;
+        const char* pathWithoutMountPoint;
         for(size_t i = 0; i < 16; ++i){
             MountPoint* mp = mountPoints[i];
             if(!mp){
@@ -18598,6 +18605,7 @@ namespace vfs{
             if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
                 const char* copyPath = path;
                 copyPath+=std::strlen(mp->mountPath);
+                pathWithoutMountPoint = copyPath;
                 handle = mp->fileSystemDriver->open(task::getCurrentPID(), copyPath, flags);
                 mpIdx = i;
                 break;
@@ -18608,6 +18616,7 @@ namespace vfs{
             std::abort();
         }
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);
+        vfsFile->pathWithoutMountPoint = pathWithoutMountPoint + 1;
         dbg::popTrace();
         return vfsFile->vfsHandle;
     }
@@ -18669,5 +18678,39 @@ namespace vfs{
         int size = mp->fileSystemDriver->getLengthOfFile(vfsFile->fsHandle);
         dbg::popTrace();
         return size;
+    }
+    void printInfo(){
+        dbg::printm("VFS", "INFO\n");
+        for (MountPoint* mp : mountPoints){
+            if (mp == nullptr){
+                continue;
+            }
+            if (mp->mounted){
+                dbg::printm("VFS", "Mount point: %s ", mp->mountPath);
+                switch (mp->fileSystemDriver->getFsType()){
+                    case drivers::FSType::FAT32: {
+                        dbg::print("FAT32\n");
+                    } break;
+                    case drivers::FSType::EXT2: {
+                        dbg::print("EXT2\n");
+                    } break;
+                    case drivers::FSType::EXT3: {
+                        dbg::print("EXT3\n");
+                    } break;
+                    case drivers::FSType::EXT4: {
+                        dbg::print("EXT4\n");
+                    } break;
+                }
+                for (int i = 0; i < 128; ++i){
+                    VFSFile* vfsFile = vfsFiles[i];
+                    if (vfsFile == nullptr){
+                        continue;
+                    }
+                    if(mountPoints[vfsFile->mpIdx] == mp && vfsFile->used){
+                        dbg::printf("\t- `%s`: %d (Size: %lu)\n", vfsFile->pathWithoutMountPoint, vfsFile->fsHandle, getLen(i));
+                    }
+                }
+            }
+        }
     }
 };
