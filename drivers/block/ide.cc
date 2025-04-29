@@ -344,7 +344,7 @@ namespace drivers::block{
         this->writeReg(channel, ATA_REG_COMMAND, (char []) {   (int8_t)ATA_CMD_CACHE_FLUSH,
             (int8_t)ATA_CMD_CACHE_FLUSH,
             (int8_t)ATA_CMD_CACHE_FLUSH_EXT}[lba_mode]);
-        this->poll(channel, true);
+        this->poll(channel, false);
         dbg::popTrace();
         return true;
     }
