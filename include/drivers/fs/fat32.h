@@ -1,7 +1,6 @@
 #if !defined(_DRIVERS_FS_FAT32_H_)
 #define _DRIVERS_FS_FAT32_H_
 #include <drivers/fs.h>
-// #define FAT32_MAX_FILE_HANDLES       10
 #define FAT32_CACHE_SIZE              5
 #define FAT32_ROOT_DIRECTORY_HANDLE   -1
 
@@ -102,24 +101,28 @@ namespace drivers::fs{
             void deinit();
             int open(task::pid_t PID, const char* path, int flags);
             void read(int file, size_t length, void* buffer);
+            void write(int file, size_t length, const void* buffer);
             void close(int file);
             int getLengthOfFile(int file);
         private:
             FAT_BootSector* bootSector;
             FAT_FileData* rootDir;
             std::vector<FAT_FileData*> files;
-            uint8_t cache[FAT32_CACHE_SIZE*SECTOR_SIZE];
-            uint32_t cachePos;
+            // uint8_t cache[FAT32_CACHE_SIZE*SECTOR_SIZE];
+            // uint32_t cachePos;
             uint32_t maxSectors;
             uint32_t sectorsPerFat;
             uint32_t dataSectionLBA;
+            uint32_t writeBytes(FAT_File* file, uint32_t byteCount, const void* dataIn);
             uint32_t clusterToLBA(uint32_t cluster);
             bool findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry);
             FAT_File* openEntry(FAT_DirectoryEntry *entry);
             bool readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry);
             uint32_t nextCluster(uint32_t currentCluster);
             uint32_t readBytes(FAT_File* file, uint32_t byteCount, void* dataOut);
-            void readFat(size_t lbaIdx);
+            uint32_t readFat(size_t lbaIdx, uint32_t offset);
+            void writeFat(size_t lbaIdx, uint32_t offset, uint32_t signature);
+            uint32_t allocateCluster(uint32_t currentCluster);
     };
 };
 

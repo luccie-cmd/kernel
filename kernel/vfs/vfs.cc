@@ -94,6 +94,10 @@ namespace vfs{
             dbg::printm(MODULE, "Failed to read partition table header\n");
             std::abort();
         }
+        if (std::memcmp(PTH->signature, "EFI PART", 8) != 0){
+            dbg::printm(MODULE, "Partition header corrupted got a signature of `%8s`\n", PTH->signature);
+            std::abort();
+        }
         uint8_t* buffer = new uint8_t[15872];
         if(!blockDriver->read(newDisk, 2, 31, buffer)){
             dbg::printm(MODULE, "Failed to read partition entries\n");
@@ -107,6 +111,7 @@ namespace vfs{
             }
             if(entry->endLBA > blockDriver->getDiskSize(newDisk)){
                 dbg::printm(MODULE, "GPT entry more then maximum disk size\n");
+                dbg::printf("NOTE: Got %llx but maximum is %llx\n", entry->endLBA, blockDriver->getDiskSize(newDisk));
                 std::abort();
             }
             uint8_t* newGUID = parseGUID(entry->GUID);
@@ -264,6 +269,25 @@ namespace vfs{
         }
         MountPoint* mp = mountPoints[vfsFile->mpIdx];
         mp->fileSystemDriver->read(vfsFile->fsHandle, size, buffer);
+        dbg::popTrace();
+    }
+    void writeFile(int handle, int size, const void* buffer){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        VFSFile* vfsFile = vfsFiles[handle];
+        if(!vfsFile){
+            dbg::printm(MODULE, "Tried reading non existent entry!!!\n");
+            abort();
+        }
+        if(vfsFile->mpIdx > MAX_MOUNTPOINTS){
+            dbg::printm(MODULE, "No mountpoint available at index 0x%llx\n", vfsFile->mpIdx);
+            abort();
+        }
+        if(vfsFile->used == false){
+            dbg::printm(MODULE, "Invalid use of already closed file\n");
+            abort();
+        }
+        MountPoint* mp = mountPoints[vfsFile->mpIdx];
+        mp->fileSystemDriver->write(vfsFile->fsHandle, size, buffer);
         dbg::popTrace();
     }
     int getLen(int handle){

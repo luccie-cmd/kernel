@@ -1,29 +1,31 @@
-#include <drivers/fs/fat32.h>
-#include <cstring>
-#include <cstdlib>
-#include <cctype>
 #include <algorithm>
-#include <kernel/task/task.h>
-#include <common/dbg/dbg.h>
 #include <cassert>
+#include <cctype>
+#include <common/dbg/dbg.h>
+#include <cstdlib>
+#include <cstring>
+#include <drivers/fs/fat32.h>
+#include <kernel/task/task.h>
 #include <string>
 #define MODULE "FAT32 Driver"
 
-namespace drivers::fs{
-    FAT32Driver::FAT32Driver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) :FSDriver(entry, drvDisk){
+namespace drivers::fs
+{
+    FAT32Driver::FAT32Driver(vfs::PartitionEntry *entry, std::pair<MSCDriver *, uint8_t> drvDisk) : FSDriver(entry, drvDisk)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         this->__fs_type = FSType::FAT32;
         this->bootSector = new FAT_BootSector;
-        if(!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector)){
+        if (!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->bootSector))
+        {
             dbg::printm(MODULE, "Failed to read boot sector!!!\n");
             std::abort();
         }
-        if((this->bootSector->reserved0[420] != 0x55 && this->bootSector->reserved0[421] != 0xaa)){
+        if ((this->bootSector->reserved0[420] != 0x55 && this->bootSector->reserved0[421] != 0xaa))
+        {
             dbg::printm(MODULE, "Failed to get correct bootsector %02x%02x%02x %02x%02x\n", this->bootSector->BootJumpInstruction[0], this->bootSector->BootJumpInstruction[1], this->bootSector->BootJumpInstruction[2], this->bootSector->reserved0[420], this->bootSector->reserved0[421]);
             std::abort();
         }
-        std::memset(cache, 0, sizeof(cache));
-        this->cachePos = 0xFFFFFFFF;
         this->maxSectors = this->bootSector->LargeSectorCount;
         this->sectorsPerFat = this->bootSector->EBR32.SectorsPerFat;
         this->dataSectionLBA = (this->bootSector->ReservedSectors + this->sectorsPerFat * this->bootSector->FatCount);
@@ -38,7 +40,8 @@ namespace drivers::fs{
         this->rootDir->FirstCluster = rootDirLba;
         this->rootDir->CurrentCluster = rootDirLba;
         this->rootDir->CurrentSectorInCluster = 0;
-        if(!drvDisk.first->read(drvDisk.second, rootDirLba+entry->startLBA, 1, this->rootDir->Buffer)){
+        if (!drvDisk.first->read(drvDisk.second, rootDirLba + entry->startLBA, 1, this->rootDir->Buffer))
+        {
             dbg::printm(MODULE, "Failed to read root directory buffer!!!\n");
             std::abort();
         }
@@ -46,40 +49,50 @@ namespace drivers::fs{
         this->files.resize(0);
         dbg::popTrace();
     }
-    FAT32Driver::~FAT32Driver(){
+    FAT32Driver::~FAT32Driver()
+    {
         delete this->rootDir;
-        for(FAT_FileData* data : this->files){
+        for (FAT_FileData *data : this->files)
+        {
             delete data;
         }
     }
-    void FAT32Driver::init(pci::device* dev){
+    void FAT32Driver::init(pci::device *dev)
+    {
         (void)dev;
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "File systems drivers shouldn't be initialized with PCI devices!!!\n");
         std::abort();
         dbg::popTrace();
     }
-    void FAT32Driver::deinit(){
+    void FAT32Driver::deinit()
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         dbg::printm(MODULE, "File systems drivers shouldn't be deinitialized with PCI devices!!!\n");
         std::abort();
         dbg::popTrace();
     }
-    int FAT32Driver::open(task::pid_t PID, const char* path, int flags){
+    int FAT32Driver::open(task::pid_t PID, const char *path, int flags)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(path[0] == '/'){
+        if (path[0] == '/')
+        {
             path++;
         }
         char name[256];
-        FAT_File* current = &this->rootDir->Public;
-        while(*path){
+        FAT_File *current = &this->rootDir->Public;
+        while (*path)
+        {
             bool isLast = false;
-            const char* delim = std::strchr(path, '/');
-            if(delim != nullptr){
+            const char *delim = std::strchr(path, '/');
+            if (delim != nullptr)
+            {
                 std::memcpy(name, path, delim - path);
                 name[delim - path] = '\0';
                 path = delim + 1;
-            } else{
+            }
+            else
+            {
                 size_t len = std::strlen(path);
                 std::memcpy(name, path, len);
                 name[len] = '\0';
@@ -87,8 +100,10 @@ namespace drivers::fs{
                 isLast = true;
             }
             FAT_DirectoryEntry entry;
-            if(this->findFile(current, name, &entry)){
-                if (!isLast && ((entry.Attributes & (uint8_t)FAT_Attributes::DIRECTORY) == 0)){
+            if (this->findFile(current, name, &entry))
+            {
+                if (!isLast && ((entry.Attributes & (uint8_t)FAT_Attributes::DIRECTORY) == 0))
+                {
                     dbg::printm(MODULE, "%s not a directory\r\n", name);
                     this->close(current->Handle);
                     dbg::popTrace();
@@ -96,131 +111,259 @@ namespace drivers::fs{
                 }
                 this->close(current->Handle);
                 current = this->openEntry(&entry);
-            } else{
+            }
+            else
+            {
                 dbg::printm(MODULE, "%s couldn't be found\n", name);
                 this->close(current->Handle);
                 dbg::popTrace();
                 return -1;
             }
         }
-        dbg::popTrace();
         current->Pid = PID;
         current->Flags = flags;
+        dbg::popTrace();
         return current->Handle;
     }
-    void FAT32Driver::read(int file, size_t length, void* buffer){
+    void FAT32Driver::read(int file, size_t length, void *buffer)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_File fatFile = this->files.at(file)->Public;
         size_t readLength = std::min(length, (size_t)fatFile.Size);
         this->readBytes(&fatFile, readLength, buffer);
         dbg::popTrace();
     }
-    void FAT32Driver::close(int file){
+    void FAT32Driver::write(int file, size_t length, const void *buffer)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if(file > (int)this->files.size()){
+        FAT_File fatFile = this->files.at(file)->Public;
+        this->writeBytes(&fatFile, length, buffer);
+        dbg::popTrace();
+    }
+    uint32_t FAT32Driver::writeBytes(FAT_File *file, uint32_t bytesCount, const void *dataIn)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        FAT_FileData *fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
+        const uint8_t *u8DataIn = (const uint8_t *)dataIn;
+        if (u8DataIn == nullptr)
+        {
+            dbg::printm(MODULE, "Unable to write from nullptr\n");
+            std::abort();
+        }
+        while (bytesCount > 0)
+        {
+            uint32_t sectorOffset = fd->Public.Position % SECTOR_SIZE;
+            uint32_t leftInSector = SECTOR_SIZE - sectorOffset;
+            uint32_t take = std::min(bytesCount, leftInSector);
+            if (take != SECTOR_SIZE)
+            {
+                this->getDiskDevice().first->read(
+                    this->getDiskDevice().second,
+                    (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA,
+                    1,
+                    fd->Buffer);
+            }
+            std::memcpy(fd->Buffer + sectorOffset, u8DataIn, take);
+            this->getDiskDevice().first->write(
+                this->getDiskDevice().second,
+                (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA,
+                1,
+                fd->Buffer);
+            u8DataIn += take;
+            fd->Public.Size += take;
+            fd->Public.Position += take;
+            bytesCount -= take;
+            if (++fd->CurrentSectorInCluster >= this->bootSector->SectorsPerCluster)
+            {
+                fd->CurrentSectorInCluster = 0;
+                uint32_t next = this->nextCluster(fd->CurrentCluster);
+
+                if (next >= 0x0FFFFFF8)
+                {
+                    next = this->allocateCluster(fd->CurrentCluster);
+                }
+
+                fd->CurrentCluster = next;
+            }
+        }
+        dbg::popTrace();
+        return (u8DataIn - (uint8_t *)dataIn);
+    }
+    uint32_t FAT32Driver::allocateCluster(uint32_t currentCluster)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        const uint32_t fatEntries = this->maxSectors / this->bootSector->SectorsPerCluster;
+        const uint32_t startCluster = 2;
+        for (uint32_t cluster = startCluster; cluster < fatEntries; ++cluster)
+        {
+            size_t fatByteOffset = cluster * 4;
+            size_t sectorIdx = fatByteOffset / SECTOR_SIZE;
+            size_t offsetInSector = fatByteOffset % SECTOR_SIZE;
+            if (this->readFat(sectorIdx, offsetInSector) == 0)
+            {
+                this->writeFat(sectorIdx, offsetInSector, 0x0FFFFFFF);
+                if (currentCluster != 0)
+                {
+                    size_t prevFatByteOffset = cluster * 4;
+                    size_t prevSectorIdx = prevFatByteOffset / SECTOR_SIZE;
+                    size_t prevOffsetInSector = prevFatByteOffset % SECTOR_SIZE;
+                    this->writeFat(prevSectorIdx, prevOffsetInSector, cluster);
+                }
+                dbg::popTrace();
+                return cluster;
+            }
+        }
+        dbg::printm(MODULE, "Cannot find a free cluster\n");
+        std::abort();
+    }
+    void FAT32Driver::close(int file)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        if (file > (int)this->files.size())
+        {
             dbg::printm(MODULE, "Can't close file which was not opened by FAT (handle=%llu)\n", file);
             std::abort();
         }
-        if(file == FAT32_ROOT_DIRECTORY_HANDLE){
+        if (file == FAT32_ROOT_DIRECTORY_HANDLE)
+        {
             this->rootDir->Public.Position = 0;
             this->rootDir->CurrentCluster = this->rootDir->FirstCluster;
-        } else{
+        }
+        else
+        {
             this->files.at(file)->Opened = false;
         }
         dbg::popTrace();
     }
-    int FAT32Driver::getLengthOfFile(int file){
+    int FAT32Driver::getLengthOfFile(int file)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_File fatFile = this->files.at(file)->Public;
         int size = fatFile.Size;
         dbg::popTrace();
         return size;
     }
-    uint32_t FAT32Driver::clusterToLBA(uint32_t cluster){
+    uint32_t FAT32Driver::clusterToLBA(uint32_t cluster)
+    {
         return (this->dataSectionLBA + (cluster - 2) * this->bootSector->SectorsPerCluster);
     }
-    static void getShortName(char* name, char shortName[12]) {
+    static void getShortName(char *name, char shortName[12])
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         memset(shortName, ' ', 12);
         shortName[11] = '\0';
-        const char* ext = std::strchr(name, '.');
+        const char *ext = std::strchr(name, '.');
         if (ext == NULL)
             ext = name + 11;
 
         for (int i = 0; i < 8 && name[i] && name + i < ext; i++)
             shortName[i] = std::toupper(name[i]);
 
-        if (ext != name + 11){
+        if (ext != name + 11)
+        {
             for (int i = 0; i < 3 && ext[i + 1]; i++)
                 shortName[i + 8] = std::toupper(ext[i + 1]);
         }
+        dbg::popTrace();
     }
-    uint32_t FAT32Driver::readBytes(FAT_File* file, uint32_t bytesCount, void* dataOut) {
+    uint32_t FAT32Driver::readBytes(FAT_File *file, uint32_t bytesCount, void *dataOut)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_FileData* fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
-        uint8_t* u8DataOut = (uint8_t*)dataOut;
-        if(u8DataOut == nullptr){
+        FAT_FileData *fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
+        uint8_t *u8DataOut = (uint8_t *)dataOut;
+        if (u8DataOut == nullptr)
+        {
             dbg::printm(MODULE, "Unable to write to nullptr\n");
             std::abort();
         }
         uint32_t oldBytesCount = bytesCount;
-        if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0)) {
+        if (!fd->Public.IsDirectory || (fd->Public.IsDirectory && fd->Public.Size != 0))
+        {
             bytesCount = std::min(bytesCount, fd->Public.Size - fd->Public.Position);
         }
-        if(bytesCount != oldBytesCount){
+        if (bytesCount != oldBytesCount)
+        {
             dbg::printm(MODULE, "WARNING: Attempted to read more bytes then the file has left, overriding from %llu to %llu\n", oldBytesCount, bytesCount);
         }
-        while (bytesCount > 0) {
+        while (bytesCount > 0)
+        {
             uint32_t leftInBuffer = SECTOR_SIZE - (fd->Public.Position % SECTOR_SIZE);
             uint32_t take = std::min(bytesCount, leftInBuffer);
             std::memcpy(u8DataOut, fd->Buffer + fd->Public.Position % SECTOR_SIZE, take);
             u8DataOut += take;
             fd->Public.Position += take;
             bytesCount -= take;
-            if (leftInBuffer == take){
-                if (fd->Public.Handle == FAT32_ROOT_DIRECTORY_HANDLE) {
+            if (leftInBuffer == take)
+            {
+                if (fd->Public.Handle == FAT32_ROOT_DIRECTORY_HANDLE)
+                {
                     fd->CurrentCluster++;
                     this->getDiskDevice().first->read(this->getDiskDevice().second, fd->CurrentCluster, 1, fd->Buffer);
-                } else {
-                    if (++fd->CurrentSectorInCluster >= this->bootSector->SectorsPerCluster) {
+                }
+                else
+                {
+                    if (++fd->CurrentSectorInCluster >= this->bootSector->SectorsPerCluster)
+                    {
                         fd->CurrentSectorInCluster = 0;
                         fd->CurrentCluster = this->nextCluster(fd->CurrentCluster);
                     }
-                    if (fd->CurrentCluster >= 0xFFFFFFF8) {
+                    if (fd->CurrentCluster >= 0xFFFFFFF8)
+                    {
                         fd->Public.Size = fd->Public.Position;
-                        dbg::printm(MODULE, "End of cluster chain at cluster=%u\n", fd->CurrentCluster);
+                        dbg::printm(MODULE, "End of cluster chain at cluster=%lu\n", fd->CurrentCluster);
                         break;
                     }
-                    this->getDiskDevice().first->read(this->getDiskDevice().second, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
+                    this->getDiskDevice().first->read(this->getDiskDevice().second, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA, 1, fd->Buffer);
                 }
             }
         }
 
         dbg::popTrace();
-        return (u8DataOut - (uint8_t*)dataOut);
+        return (u8DataOut - (uint8_t *)dataOut);
     }
-    void FAT32Driver::readFat(size_t lbaIdx){
-        size_t fatOffset = this->bootSector->ReservedSectors + lbaIdx;
-        dbg::printm(MODULE, "Reading FAT table at LBA=%u\n", fatOffset);
-        this->getDiskDevice().first->read(this->getDiskDevice().second, fatOffset, FAT32_CACHE_SIZE, this->cache);
+    uint32_t FAT32Driver::readFat(size_t lbaIdx, uint32_t offset)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        size_t fatOffset = this->bootSector->ReservedSectors + lbaIdx + this->getPartEntry()->startLBA;
+        uint8_t *temp = new uint8_t[SECTOR_SIZE];
+        this->getDiskDevice().first->read(this->getDiskDevice().second, fatOffset, 1, temp);
+        uint32_t ret = *(uint32_t *)(temp + offset);
+        delete[] temp;
+        dbg::popTrace();
+        return ret;
     }
-    uint32_t FAT32Driver::nextCluster(uint32_t currentCluster) {
-        uint32_t fatIdx = currentCluster * 4;
-        uint32_t fatIdxSector = fatIdx / SECTOR_SIZE;
-        if (fatIdxSector < this->cachePos || fatIdxSector >= this->cachePos + FAT32_CACHE_SIZE) {
-            this->readFat(fatIdxSector);
-            this->cachePos = fatIdxSector;
-        }
-        fatIdx -= (this->cachePos * SECTOR_SIZE);
-        uint32_t nextCluster = *(uint32_t*)(this->cache + fatIdx);
-        dbg::printm(MODULE, "nextCluster: current=%u, next=%u\n", currentCluster, nextCluster);
+    void FAT32Driver::writeFat(size_t lbaIdx, uint32_t offset, uint32_t signature)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        size_t fatOffset = this->bootSector->ReservedSectors + lbaIdx + this->getPartEntry()->startLBA;
+        uint8_t *temp = new uint8_t[SECTOR_SIZE];
+        this->getDiskDevice().first->read(this->getDiskDevice().second, fatOffset, 1, temp);
+        *(uint32_t *)(temp + offset) = signature;
+        this->getDiskDevice().first->write(this->getDiskDevice().second, fatOffset, 1, temp);
+        delete[] temp;
+        dbg::popTrace();
+    }
+    uint32_t FAT32Driver::nextCluster(uint32_t currentCluster)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        uint32_t fatByteOffset = currentCluster * 4;
+        uint32_t fatSectorIndex = fatByteOffset / SECTOR_SIZE;
+        uint32_t sectorOffset = fatByteOffset % SECTOR_SIZE;
+        uint32_t nextCluster = this->readFat(fatSectorIndex, sectorOffset);
+        nextCluster &= 0x0FFFFFFF;
+        dbg::popTrace();
         return nextCluster;
     }
-    bool FAT32Driver::readEntry(FAT_File* file, FAT_DirectoryEntry* dirEntry){
-        return this->readBytes(file, sizeof(FAT_DirectoryEntry), (void*)dirEntry) == sizeof(FAT_DirectoryEntry);
+    bool FAT32Driver::readEntry(FAT_File *file, FAT_DirectoryEntry *dirEntry)
+    {
+        return this->readBytes(file, sizeof(FAT_DirectoryEntry), (void *)dirEntry) == sizeof(FAT_DirectoryEntry);
     }
-    static void appendLFN(FAT_DirectoryEntry* entry, std::vector<uint16_t>& buffer){
-        const FAT_LFNEntry* lfn = reinterpret_cast<const FAT_LFNEntry*>(entry);
-        if (lfn->Attributes != 0x0F) {
+    static void appendLFN(FAT_DirectoryEntry *entry, std::vector<uint16_t> &buffer)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        const FAT_LFNEntry *lfn = reinterpret_cast<const FAT_LFNEntry *>(entry);
+        if (lfn->Attributes != 0x0F)
+        {
             dbg::printm(MODULE, "Not an LFN entry\n");
             return;
         }
@@ -228,20 +371,29 @@ namespace drivers::fs{
         std::memcpy(&namePart[0], lfn->Name1, 5 * sizeof(uint16_t));
         std::memcpy(&namePart[5], lfn->Name2, 6 * sizeof(uint16_t));
         std::memcpy(&namePart[11], lfn->Name3, 2 * sizeof(uint16_t));
-        for (uint16_t c : namePart) {
-            if (c == 0xFFFF || c == 0x0000) break;
+        for (uint16_t c : namePart)
+        {
+            if (c == 0xFFFF || c == 0x0000)
+                break;
             buffer.push_back(c);
         }
+        dbg::popTrace();
     }
-    static std::string decodeLFN(const std::vector<uint16_t>& buffer) {
+    static std::string decodeLFN(const std::vector<uint16_t> &buffer)
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         std::string result;
-        for (uint16_t c : buffer) {
-            if (c == 0xFFFF || c == 0x0000) break;
+        for (uint16_t c : buffer)
+        {
+            if (c == 0xFFFF || c == 0x0000)
+                break;
             result += static_cast<char>(c);
         }
+        dbg::popTrace();
         return result;
     }
-    bool FAT32Driver::findFile(FAT_File* file, char* name, FAT_DirectoryEntry* outEntry){
+    bool FAT32Driver::findFile(FAT_File *file, char *name, FAT_DirectoryEntry *outEntry)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         char shortName[12];
         FAT_DirectoryEntry *entry = new FAT_DirectoryEntry;
@@ -249,18 +401,23 @@ namespace drivers::fs{
         getShortName(name, shortName);
         std::vector<uint16_t> lfnBuffer;
         bool lfnActive = false;
-        while(this->readEntry(file, entry)){
-            if(entry->Name[0] == 0x00){
+        while (this->readEntry(file, entry))
+        {
+            if (entry->Name[0] == 0x00)
+            {
                 break;
             }
-            if(entry->Attributes == (uint8_t)FAT_Attributes::LFN){
+            if (entry->Attributes == (uint8_t)FAT_Attributes::LFN)
+            {
                 lfnActive = true;
                 appendLFN(entry, lfnBuffer);
                 continue;
             }
-            if(lfnActive){
+            if (lfnActive)
+            {
                 std::string lfnName = decodeLFN(lfnBuffer);
-                if(lfnName == name){
+                if (lfnName == name)
+                {
                     *outEntry = *entry;
                     dbg::popTrace();
                     return true;
@@ -268,7 +425,8 @@ namespace drivers::fs{
                 lfnBuffer.clear();
                 lfnActive = false;
             }
-            if(std::memcmp(shortName, entry->Name, 11) == 0){
+            if (std::memcmp(shortName, entry->Name, 11) == 0)
+            {
                 *outEntry = *entry;
                 dbg::popTrace();
                 return true;
@@ -277,48 +435,59 @@ namespace drivers::fs{
         dbg::popTrace();
         return false;
     }
-    FAT_File* FAT32Driver::openEntry(FAT_DirectoryEntry *entry) {
+    FAT_File *FAT32Driver::openEntry(FAT_DirectoryEntry *entry)
+    {
         dbg::addTrace(__PRETTY_FUNCTION__);
         int handle = -1;
-        for (uint64_t i = 0; i < files.size(); ++i) {
-            if(this->files.at(i) == nullptr){
+        for (uint64_t i = 0; i < files.size(); ++i)
+        {
+            if (this->files.at(i) == nullptr)
+            {
                 dbg::printm(MODULE, "File at index %llu deallocated before module release\n", i);
                 std::abort();
             }
-            if (this->files.at(i)->Opened == false) {
+            if (this->files.at(i)->Opened == false)
+            {
                 handle = i;
                 break;
             }
         }
-        if (handle == -1) {
+        if (handle == -1)
+        {
             dbg::printm(MODULE, "WARNING: Ran out of fat file datas, adding new one\n");
-            FAT_FileData* fd = new FAT_FileData;
-            if(fd == nullptr){
+            FAT_FileData *fd = new FAT_FileData;
+            if (fd == nullptr)
+            {
                 dbg::printm(MODULE, "new FAT_FileData returned nullptr");
                 std::abort();
             }
             fd->Opened = false;
             this->files.push_back(fd);
-            for (uint64_t i = 0; i < this->files.size(); ++i) {
-                if(this->files.data() == nullptr){
+            for (uint64_t i = 0; i < this->files.size(); ++i)
+            {
+                if (this->files.data() == nullptr)
+                {
                     dbg::printm(MODULE, "FAT files data integrety comprimised\n");
                     std::abort();
                 }
-                if(this->files.at(i) == nullptr){
+                if (this->files.at(i) == nullptr)
+                {
                     dbg::printm(MODULE, "File at index %llu deallocated before module release\n", i);
                     std::abort();
                 }
-                if (this->files.at(i)->Opened == false) {
+                if (this->files.at(i)->Opened == false)
+                {
                     handle = i;
                     break;
                 }
             }
-            if (handle == -1) {
+            if (handle == -1)
+            {
                 dbg::printm(MODULE, "No available file handles\n");
                 std::abort();
             }
         }
-        FAT_FileData* fd = this->files.at(handle);
+        FAT_FileData *fd = this->files.at(handle);
         fd->Public.Handle = handle;
         fd->Public.IsDirectory = (entry->Attributes & (uint8_t)FAT_Attributes::DIRECTORY) != 0;
         fd->Public.Size = entry->Size;
@@ -328,9 +497,8 @@ namespace drivers::fs{
         fd->FirstCluster = (entry->FirstClusterHigh << 16) | entry->FirstClusterLow;
         fd->CurrentCluster = fd->FirstCluster;
         fd->CurrentSectorInCluster = 0;
-        this->getDiskDevice().first->read(this->getDiskDevice().second, this->clusterToLBA(fd->FirstCluster)+this->getPartEntry()->startLBA, 1, fd->Buffer);
+        this->getDiskDevice().first->read(this->getDiskDevice().second, this->clusterToLBA(fd->FirstCluster) + this->getPartEntry()->startLBA, 1, fd->Buffer);
         dbg::popTrace();
         return &fd->Public;
     }
-
 };

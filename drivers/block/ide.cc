@@ -248,26 +248,105 @@ namespace drivers::block{
                 dbg::popTrace();
                 return false;
             }
-            asm("mov %es, %ax");
-            asm("pushw %ax");
-            asm("mov %%ax, %%es" : : "a"(0x10));
-            asm("rep insw" : : "c"(words), "d"(bus), "D"(buffer));
-            asm("popw %ax");
-            asm("mov %ax, %es");
+            __asm__ volatile ("pushw %ax");
+            __asm__ volatile ("mov %es, %ax");
+            __asm__ volatile ("pushw %ax");
+            __asm__ volatile ("mov %%ax, %%es" : : "a"(0x10));
+            __asm__ volatile ("rep insw" : : "c"(words), "d"(bus), "D"(buffer));
+            __asm__ volatile ("popw %ax");
+            __asm__ volatile ("mov %ax, %es");
+            __asm__ volatile ("popw %ax");
             buffer = (void*)((uint8_t*)buffer + (words * 2));
         }
         dbg::popTrace();
         return true;
     }
     bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer){
-        (void)drive;
-        (void)lba;
-        (void)sectors;
-        (void)buffer;
         dbg::addTrace(__PRETTY_FUNCTION__);
-        dbg::printm(MODULE, "TODO: implement writing of IDE controller\n");
-        std::abort();
+        if(drive+1 > this->drives){
+            dbg::printm(MODULE, "Warning: Cannot access drive %d\n", drive);
+            return false;
+        }
+        uint8_t lba_mode, cmd;
+        uint8_t lba_io[6];
+        uint32_t channel = this->devices[drive].Channel;
+        uint32_t slavebit = this->devices[drive].Drive;
+        uint32_t bus = channels[channel].base;
+        uint32_t words = SECTOR_SIZE/2;
+        uint16_t cyl, i;
+        uint8_t head, sect;
+        this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
+        if (lba >= 0x10000000) {
+           lba_mode  = 2;
+           lba_io[0] = (lba & 0x000000FF) >> 0;
+           lba_io[1] = (lba & 0x0000FF00) >> 8;
+           lba_io[2] = (lba & 0x00FF0000) >> 16;
+           lba_io[3] = (lba & 0xFF000000) >> 24;
+           lba_io[4] = 0;
+           lba_io[5] = 0;
+           head      = 0;
+        } else if (this->devices[drive].Capabilities & 0x200)  {
+            lba_mode  = 1;
+            lba_io[0] = (lba & 0x00000FF) >> 0;
+            lba_io[1] = (lba & 0x000FF00) >> 8;
+            lba_io[2] = (lba & 0x0FF0000) >> 16;
+            lba_io[3] = 0;
+            lba_io[4] = 0;
+            lba_io[5] = 0;
+            head      = (lba & 0xF000000) >> 24;
+        } else {
+            dbg::printm(MODULE, "Using CHS mode instead of LBA!!!\n");
+            lba_mode  = 0;
+            sect      = (lba % 63) + 1;
+            cyl       = (lba + 1  - sect) / (16 * 63);
+            lba_io[0] = sect;
+            lba_io[1] = (cyl >> 0) & 0xFF;
+            lba_io[2] = (cyl >> 8) & 0xFF;
+            lba_io[3] = 0;
+            lba_io[4] = 0;
+            lba_io[5] = 0;
+            head      = (lba + 1  - sect) % (16 * 63) / (63);
+        }
+        while(this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY){}
+        if (lba_mode == 0)
+           this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head);
+        else
+            this->writeReg(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head);
+        if (lba_mode == 2) {
+           this->writeReg(channel, ATA_REG_SECCOUNT1,   0);
+           this->writeReg(channel, ATA_REG_LBA3,   lba_io[3]);
+           this->writeReg(channel, ATA_REG_LBA4,   lba_io[4]);
+           this->writeReg(channel, ATA_REG_LBA5,   lba_io[5]);
+        }
+        this->writeReg(channel, ATA_REG_SECCOUNT0,   (uint8_t)sectors);
+        this->writeReg(channel, ATA_REG_LBA0,   lba_io[0]);
+        this->writeReg(channel, ATA_REG_LBA1,   lba_io[1]);
+        this->writeReg(channel, ATA_REG_LBA2,   lba_io[2]);
+        if (lba_mode == 0) cmd = ATA_CMD_READ_PIO;
+        if (lba_mode == 1) cmd = ATA_CMD_READ_PIO;   
+        if (lba_mode == 2) cmd = ATA_CMD_READ_PIO_EXT;
+        this->writeReg(channel, ATA_REG_COMMAND, cmd);
+        for (i = 0; i < sectors; i++) {
+            if(this->poll(channel, true)){
+                dbg::popTrace();
+                return false;
+            }
+            __asm__ volatile ("pushw %ax");
+            __asm__ volatile ("mov %ds, %ax");
+            __asm__ volatile ("pushw %ax");
+            __asm__ volatile ("mov %%ax, %%ds" : : "a"(0x10));
+            __asm__ volatile ("rep outsw" : : "c"(words), "d"(bus), "S"(buffer));
+            __asm__ volatile ("popw %ax");
+            __asm__ volatile ("mov %ax, %ds");
+            __asm__ volatile ("popw %ax");
+            buffer = (void*)((uint8_t*)buffer + (words * 2));
+        }
+        this->writeReg(channel, ATA_REG_COMMAND, (char []) {   (int8_t)ATA_CMD_CACHE_FLUSH,
+            (int8_t)ATA_CMD_CACHE_FLUSH,
+            (int8_t)ATA_CMD_CACHE_FLUSH_EXT}[lba_mode]);
+        this->poll(channel, true);
         dbg::popTrace();
+        return true;
     }
     IDEDriver* loadIDEController(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -315,7 +394,11 @@ namespace drivers::block{
         if (reg > 0x07 && reg < 0x0C){
             this->writeReg(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
         }
-        __asm__ volatile("push %rax; mov %ds, %rax; mov %rax, %es; pop %rax");
+        __asm__ volatile ("pushw %ax");
+        __asm__ volatile ("mov %es, %ax");
+        __asm__ volatile ("pushw %ax");
+        __asm__ volatile ("mov %ds, %ax");
+        __asm__ volatile ("mov %ax, %es");
         if (reg < 0x08){
             io::insl(channels[channel].base+reg-0x00, buffer, quads);
         }
@@ -328,7 +411,9 @@ namespace drivers::block{
         else if (reg < 0x16){
             io::insl(channels[channel].bmide+reg-0x0E, buffer, quads);
         }
-        asm volatile("mov %ds, %rax; mov %rax, %es");
+        __asm__ volatile ("popw %ax");
+        __asm__ volatile ("mov %ax, %es");
+        __asm__ volatile ("popw %ax");
         if (reg > 0x07 && reg < 0x0C){
             this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
         }

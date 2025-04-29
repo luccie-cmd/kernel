@@ -15,10 +15,20 @@ extern "C" void KernelMain()
     displayDriver = reinterpret_cast<drivers::DisplayDriver *>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
     vfs::mount(0, 0, "/boot");
     int handle = vfs::openFile("/boot/test.txt", 0);
-    dbg::printf("Everything worked %d\n", handle);
     char *buffer = new char[vfs::getLen(handle)];
-    vfs::readFile(handle, vfs::getLen(handle)-1, (void *)buffer);
+    vfs::readFile(handle, vfs::getLen(handle), (void *)buffer);
+    // for (size_t i = 0; i < (size_t)vfs::getLen(handle); ++i){
+        //     if (i % 16 == 0 && i != 0){
+    //         dbg::print("\n");
+    //     }
+    //     dbg::printf("%02.2x ", buffer[i]);
+    // }
+    vfs::writeFile(handle, strlen("Test"), "Test");
+    delete[] buffer;
+    buffer = new char[vfs::getLen(handle)];
+    vfs::readFile(handle, vfs::getLen(handle), (void *)buffer);
     dbg::printf("Test `%.*s`\n", vfs::getLen(handle), buffer);
+    dbg::printf("Everything worked %d\n", handle);
     // vfs::closeFile(handle);
     // vfs::umount("/boot");
     std::abort();

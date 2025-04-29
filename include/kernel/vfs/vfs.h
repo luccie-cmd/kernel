@@ -28,6 +28,7 @@ namespace vfs{
     int openFile(const char* path, int flags);
     void closeFile(int handle);
     void readFile(int handle, int size, void* buffer);
+    void writeFile(int handle, int size, const void* buffer);
     int getLen(int handle);
     void printInfo();
 };
