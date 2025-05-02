@@ -73,7 +73,6 @@ namespace vfs{
             assert(blockDrivers->getDeviceType() == driver::driverType::BLOCK);
             drivers::MSCDriver* blockDriver = reinterpret_cast<drivers::MSCDriver*>(blockDrivers);
             encounteredDisks += blockDriver->getConnectedDrives();
-            dbg::printm(MODULE, "Disk: %hhu encounteredDisk: %hhu\n", disk, encounteredDisks);
             if(encounteredDisks > disk){
                 std::pair<drivers::MSCDriver*, uint8_t> ret;
                 ret.first = blockDriver;
