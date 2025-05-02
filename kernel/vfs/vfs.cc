@@ -86,7 +86,7 @@ namespace vfs{
     }
     void readGPT(uint8_t disk){
         dbg::addTrace(__PRETTY_FUNCTION__); 
-        auto drvDisk = translateVirtualDiskToPhysicalDisk(disk);
+        std::pair<drivers::MSCDriver*, uint8_t> drvDisk = translateVirtualDiskToPhysicalDisk(disk);
         drivers::MSCDriver* blockDriver = drvDisk.first;
         uint8_t newDisk = drvDisk.second;
         PartitionTableHeader *PTH = new PartitionTableHeader;
@@ -228,7 +228,7 @@ namespace vfs{
             std::abort();
         }
         VFSFile* vfsFile = newVFSFile(mpIdx, handle);
-        vfsFile->pathWithoutMountPoint = pathWithoutMountPoint + 1;
+        vfsFile->pathWithoutMountPoint = pathWithoutMountPoint;
         dbg::popTrace();
         return vfsFile->vfsHandle;
     }   
@@ -248,9 +248,31 @@ namespace vfs{
             abort();
         }
         MountPoint* mp = mountPoints[vfsFile->mpIdx];
+        mp->fileSystemDriver->sync();
         mp->fileSystemDriver->close(vfsFile->fsHandle);
         vfsFile->used = false;
         dbg::popTrace();
+    }
+    void createFile(const char* path){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        for(size_t i = 0; i < MAX_MOUNTPOINTS; ++i){
+            MountPoint* mp = mountPoints[i];
+            if(!mp){
+                continue;
+            }
+            if(mp->mounted == false || mp->fileSystemDriver == nullptr || mp->mountPath == nullptr){
+                continue;
+            }
+            if(std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0){
+                const char* copyPath = path;
+                copyPath+=std::strlen(mp->mountPath);
+                mp->fileSystemDriver->create(copyPath);
+                dbg::popTrace();
+                return;
+            }
+        }
+        dbg::printm(MODULE, "Cannot create file %s\n", path);
+        std::abort();
     }
     void readFile(int handle, int size, void* buffer){
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -288,6 +310,7 @@ namespace vfs{
         }
         MountPoint* mp = mountPoints[vfsFile->mpIdx];
         mp->fileSystemDriver->write(vfsFile->fsHandle, size, buffer);
+        mp->fileSystemDriver->sync();
         dbg::popTrace();
     }
     int getLen(int handle){
@@ -321,6 +344,9 @@ namespace vfs{
                 switch (mp->fileSystemDriver->getFsType()){
                     case drivers::FSType::FAT32: {
                         dbg::print("FAT32\n");
+                    } break;
+                    case drivers::FSType::SFS: {
+                        dbg::print("SFS\n");
                     } break;
                     case drivers::FSType::EXT2: {
                         dbg::print("EXT2\n");

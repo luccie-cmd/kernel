@@ -125,6 +125,7 @@ namespace drivers
         {
             displayDriver = nullptr;
             dbg::print("X or Y pos oob");
+            dbg::popTrace();
             return;
         }
         uint64_t offset = (y * buffer->width + x) * (buffer->bpp / 8);

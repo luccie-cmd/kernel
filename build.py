@@ -83,14 +83,14 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-g0', '-nodefaultlibs', '-nostdlib', '-D_LIBCPP_HAS_NO_THREADS']
-CONFIG["CFLAGS"] += ["-O0", '-DNDEBUG', '-fno-lto', '-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wno-shadow']
+CONFIG["CFLAGS"] = ['-c', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] += ['-fno-lto', '-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=x86-64', '-mtune=native', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-nostdlib', '-nodefaultlibs', '-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-lto', '-mcmodel=kernel']
+CONFIG["LDFLAGS"] = ['-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-lto', '-mcmodel=kernel']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -284,6 +284,7 @@ def buildC(file):
     for option in options:
         command += " " + option
     if compiler == "gcc":
+        compiler += "-11"
         print(f"C     {file}")
         command += f" -o {CONFIG['outDir'][0]}/{file}.o"
         return callCmd(command, True)[0]
@@ -332,6 +333,7 @@ def buildCXX(file):
     for option in options:
         command += " " + option
     if compiler == "g++":
+        compiler += "-11"
         print(f"CXX   {file}")
         command += f" -o {CONFIG['outDir'][0]}/{file}.o"
         return callCmd(command, True)[0]
@@ -436,7 +438,7 @@ def buildKernel(kernel_dir: str):
 
 def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
-    command = "clang++"
+    command = "g++-11"
     options = CONFIG["LDFLAGS"]
     for option in options:
         command += " " + option
@@ -447,6 +449,7 @@ def linkDir(kernel_dir, linker_file, static_lib_files=[]):
             continue
         command += " " + file
     command += f" -Wl,-T {linker_file}"
+    command += " -Bstatic"
     command +=  " -Wl,--no-whole-archive"
     command +=  " -Wl,--whole-archive"
     for static_lib in static_lib_files:
@@ -475,6 +478,9 @@ def makePartitionTable(out_file):
     print("> Making EFI partition")
     command = f"parted {out_file} --script mkpart EFI FAT32 2048s 100MB"
     callCmd(command)
+    print("> Making HOME partition")
+    command = f"parted {out_file} --script mkpart HOME FAT32 100MB 100%"
+    callCmd(command)
     print("> Setting EFI partition to be bootable")
     command = f"parted {out_file} --script set 1 boot on"
     callCmd(command)
@@ -493,6 +499,7 @@ def setupLoopDevice(out_file):
 def makeFileSystem(loop_device):
     print("> Formatting file systems")
     callCmd(f"sudo mkfs.fat -F32 {loop_device}p1")
+    callCmd(f"sudo ./mkfs.fs {loop_device}p2")
 
 def mountFs(device, boot, kernel):
     callCmd(f"mkdir -p mnt")
@@ -511,14 +518,15 @@ def mountFs(device, boot, kernel):
 
 
 def buildImage(out_file, boot_file, kernel_file):
-    callCmd(f"rm -f {out_file}")
-    makeImageFile(out_file)
+    if not out_file.startswith("/dev"):
+        callCmd(f"rm -f {out_file}")
+        makeImageFile(out_file)
     makePartitionTable(out_file)
     LOOP_DEVICE=setupLoopDevice(out_file)
     makeFileSystem(LOOP_DEVICE)
     mountFs(LOOP_DEVICE, boot_file, kernel_file)
     if "limine-uefi" in CONFIG["bootloader"]:
-        callCmd(f"./limine/limine bios-install {out_file}")
+        callCmd(f"./limine/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
 
 def buildStaticLib(directory, out_file):
     os.makedirs(CONFIG["outDir"][0]+'/'+directory, exist_ok=True)
@@ -595,6 +603,23 @@ def getInfo():
     callCmd(f"cloc . --exclude-dir=limine,bin,.build-cache,script,.vscode >> info.txt")
     callCmd(f"tree -I 'bin' -I 'limine' -I 'script' -I '.vscode' -I 'tmp.txt' -I 'commands.txt' -I 'info.txt' >> info.txt")
 
+def cleanFiles(dirs: list[str]):
+    for dir_ in dirs:
+        files = glob.glob(dir_+'/**', recursive=True)
+        objFiles = glob.glob(CONFIG['outDir'][0]+'/'+dir_+'/**', recursive=True)
+        newObjFiles = []
+        for objFile in objFiles:
+            if os.path.isfile(objFile) and checkExtension(objFile, ["o"]):
+                newObjFiles.append(objFile)
+        for file in files:
+            if not os.path.isfile(file) or not checkExtension(file, ["c", "cc", "asm"]):
+                continue
+            file = CONFIG["outDir"][0] + '/' + file + '.o'
+            if file not in newObjFiles:
+                print(f"RM    {file}")
+                callCmd(f"rm -f {file}")
+
+
 def main():
     basename = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
     if "clean" in sys.argv:
@@ -628,13 +653,16 @@ def main():
         buildDir("common", True, f"{CONFIG['outDir'][0]}/common.a")
         print("> Building kernel")
         buildDir("kernel", False)
+        print("> Removing unused objects")
+        cleanFiles(["libcxx", "drivers", "common", "kernel"])
         print("> Linking kernel")
         linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
-    # currentUser = os.getlogin()
-    # callCmd(f"chown -R {currentUser}:{currentUser} ./")
+        # buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+    currentUser = os.getlogin()
+    callCmd(f"chown -R {currentUser}:{currentUser} ./")
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

@@ -14,6 +14,7 @@ namespace drivers{
         EXT2,
         EXT3,
         EXT4,
+        SFS,
     };
     class FSDriver : public driver::Driver{
         public:
@@ -25,7 +26,9 @@ namespace drivers{
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void write(int file, size_t length, const void* buffer) = 0;
             virtual void close(int file) = 0;
-            virtual int getLengthOfFile(int file) = 0;
+            virtual void sync() = 0;
+            virtual void create(const char* path) = 0;
+            virtual uint64_t getLengthOfFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
             FSType getFsType();

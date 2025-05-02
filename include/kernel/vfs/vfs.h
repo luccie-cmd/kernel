@@ -30,6 +30,7 @@ namespace vfs{
     void readFile(int handle, int size, void* buffer);
     void writeFile(int handle, int size, const void* buffer);
     int getLen(int handle);
+    void createFile(const char* path);
     void printInfo();
 };
 

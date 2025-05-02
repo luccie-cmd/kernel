@@ -245,8 +245,8 @@ namespace drivers::block{
         this->writeReg(channel, ATA_REG_COMMAND, cmd);
         for (i = 0; i < sectors; i++) {
             if(this->poll(channel, true)){
-                dbg::popTrace();
-                return false;
+                dbg::printm(MODULE, "Read from %hhu: %llu - %llu (%lu sectors) failed\n", drive, lba, lba + sectors, sectors);
+                std::abort();
             }
             __asm__ volatile ("pushw %ax");
             __asm__ volatile ("mov %es, %ax");
@@ -322,14 +322,14 @@ namespace drivers::block{
         this->writeReg(channel, ATA_REG_LBA0,   lba_io[0]);
         this->writeReg(channel, ATA_REG_LBA1,   lba_io[1]);
         this->writeReg(channel, ATA_REG_LBA2,   lba_io[2]);
-        if (lba_mode == 0) cmd = ATA_CMD_READ_PIO;
-        if (lba_mode == 1) cmd = ATA_CMD_READ_PIO;   
-        if (lba_mode == 2) cmd = ATA_CMD_READ_PIO_EXT;
+        if (lba_mode == 0) cmd = ATA_CMD_WRITE_PIO;
+        if (lba_mode == 1) cmd = ATA_CMD_WRITE_PIO;   
+        if (lba_mode == 2) cmd = ATA_CMD_WRITE_PIO_EXT;
         this->writeReg(channel, ATA_REG_COMMAND, cmd);
         for (i = 0; i < sectors; i++) {
             if(this->poll(channel, true)){
-                dbg::popTrace();
-                return false;
+                dbg::printm(MODULE, "Write to %hhu: %llu - %llu (%lu sectors) failed\n", drive, lba, lba + sectors, sectors);
+                std::abort();
             }
             __asm__ volatile ("pushw %ax");
             __asm__ volatile ("mov %ds, %ax");

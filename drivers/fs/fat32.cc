@@ -29,7 +29,7 @@ namespace drivers::fs
         this->maxSectors = this->bootSector->LargeSectorCount;
         this->sectorsPerFat = this->bootSector->EBR32.SectorsPerFat;
         this->dataSectionLBA = (this->bootSector->ReservedSectors + this->sectorsPerFat * this->bootSector->FatCount);
-        uint32_t rootDirLba = clusterToLBA((this->bootSector->EBR32.RootDirectoryCluster == 0 ? 2 : this->bootSector->EBR32.RootDirectoryCluster));
+        uint32_t rootDirLba = this->clusterToLBA((this->bootSector->EBR32.RootDirectoryCluster == 0 ? 2 : this->bootSector->EBR32.RootDirectoryCluster));
         this->rootDir = new FAT_FileData;
         this->rootDir->Public.Handle = FAT32_ROOT_DIRECTORY_HANDLE;
         this->rootDir->Public.IsDirectory = true;
@@ -122,6 +122,7 @@ namespace drivers::fs
         }
         current->Pid = PID;
         current->Flags = flags;
+        current->Name = path;
         dbg::popTrace();
         return current->Handle;
     }
@@ -135,85 +136,11 @@ namespace drivers::fs
     }
     void FAT32Driver::write(int file, size_t length, const void *buffer)
     {
+        (void)file;
+        (void)length;
+        (void)buffer;
         dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_File fatFile = this->files.at(file)->Public;
-        this->writeBytes(&fatFile, length, buffer);
-        dbg::popTrace();
-    }
-    uint32_t FAT32Driver::writeBytes(FAT_File *file, uint32_t bytesCount, const void *dataIn)
-    {
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_FileData *fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
-        const uint8_t *u8DataIn = (const uint8_t *)dataIn;
-        if (u8DataIn == nullptr)
-        {
-            dbg::printm(MODULE, "Unable to write from nullptr\n");
-            std::abort();
-        }
-        while (bytesCount > 0)
-        {
-            uint32_t sectorOffset = fd->Public.Position % SECTOR_SIZE;
-            uint32_t leftInSector = SECTOR_SIZE - sectorOffset;
-            uint32_t take = std::min(bytesCount, leftInSector);
-            if (take != SECTOR_SIZE)
-            {
-                this->getDiskDevice().first->read(
-                    this->getDiskDevice().second,
-                    (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA,
-                    1,
-                    fd->Buffer);
-            }
-            std::memcpy(fd->Buffer + sectorOffset, u8DataIn, take);
-            this->getDiskDevice().first->write(
-                this->getDiskDevice().second,
-                (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA,
-                1,
-                fd->Buffer);
-            u8DataIn += take;
-            fd->Public.Size += take;
-            fd->Public.Position += take;
-            bytesCount -= take;
-            if (++fd->CurrentSectorInCluster >= this->bootSector->SectorsPerCluster)
-            {
-                fd->CurrentSectorInCluster = 0;
-                uint32_t next = this->nextCluster(fd->CurrentCluster);
-
-                if (next >= 0x0FFFFFF8)
-                {
-                    next = this->allocateCluster(fd->CurrentCluster);
-                }
-
-                fd->CurrentCluster = next;
-            }
-        }
-        dbg::popTrace();
-        return (u8DataIn - (uint8_t *)dataIn);
-    }
-    uint32_t FAT32Driver::allocateCluster(uint32_t currentCluster)
-    {
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        const uint32_t fatEntries = this->maxSectors / this->bootSector->SectorsPerCluster;
-        const uint32_t startCluster = 2;
-        for (uint32_t cluster = startCluster; cluster < fatEntries; ++cluster)
-        {
-            size_t fatByteOffset = cluster * 4;
-            size_t sectorIdx = fatByteOffset / SECTOR_SIZE;
-            size_t offsetInSector = fatByteOffset % SECTOR_SIZE;
-            if (this->readFat(sectorIdx, offsetInSector) == 0)
-            {
-                this->writeFat(sectorIdx, offsetInSector, 0x0FFFFFFF);
-                if (currentCluster != 0)
-                {
-                    size_t prevFatByteOffset = cluster * 4;
-                    size_t prevSectorIdx = prevFatByteOffset / SECTOR_SIZE;
-                    size_t prevOffsetInSector = prevFatByteOffset % SECTOR_SIZE;
-                    this->writeFat(prevSectorIdx, prevOffsetInSector, cluster);
-                }
-                dbg::popTrace();
-                return cluster;
-            }
-        }
-        dbg::printm(MODULE, "Cannot find a free cluster\n");
+        dbg::printm(MODULE, "Writing to FAT filesystem not yet supported\n");
         std::abort();
     }
     void FAT32Driver::close(int file)
@@ -235,13 +162,13 @@ namespace drivers::fs
         }
         dbg::popTrace();
     }
-    int FAT32Driver::getLengthOfFile(int file)
+    uint64_t FAT32Driver::getLengthOfFile(int file)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
         FAT_File fatFile = this->files.at(file)->Public;
         int size = fatFile.Size;
         dbg::popTrace();
-        return size;
+        return(uint64_t)size;
     }
     uint32_t FAT32Driver::clusterToLBA(uint32_t cluster)
     {
@@ -266,10 +193,16 @@ namespace drivers::fs
         }
         dbg::popTrace();
     }
+    void FAT32Driver::sync()
+    {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "TODO: Synchronize filesystem\n");
+        std::abort();
+    }
     uint32_t FAT32Driver::readBytes(FAT_File *file, uint32_t bytesCount, void *dataOut)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        FAT_FileData *fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
+        FAT_FileData *&fd = (file->Handle == FAT32_ROOT_DIRECTORY_HANDLE ? this->rootDir : this->files.at(file->Handle));
         uint8_t *u8DataOut = (uint8_t *)dataOut;
         if (u8DataOut == nullptr)
         {
@@ -298,7 +231,7 @@ namespace drivers::fs
                 if (fd->Public.Handle == FAT32_ROOT_DIRECTORY_HANDLE)
                 {
                     fd->CurrentCluster++;
-                    this->getDiskDevice().first->read(this->getDiskDevice().second, fd->CurrentCluster, 1, fd->Buffer);
+                    this->getDiskDevice().first->read(this->getDiskDevice().second, (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) + this->getPartEntry()->startLBA, 1, fd->Buffer);
                 }
                 else
                 {
@@ -317,7 +250,6 @@ namespace drivers::fs
                 }
             }
         }
-
         dbg::popTrace();
         return (u8DataOut - (uint8_t *)dataOut);
     }
@@ -332,17 +264,6 @@ namespace drivers::fs
         dbg::popTrace();
         return ret;
     }
-    void FAT32Driver::writeFat(size_t lbaIdx, uint32_t offset, uint32_t signature)
-    {
-        dbg::addTrace(__PRETTY_FUNCTION__);
-        size_t fatOffset = this->bootSector->ReservedSectors + lbaIdx + this->getPartEntry()->startLBA;
-        uint8_t *temp = new uint8_t[SECTOR_SIZE];
-        this->getDiskDevice().first->read(this->getDiskDevice().second, fatOffset, 1, temp);
-        *(uint32_t *)(temp + offset) = signature;
-        this->getDiskDevice().first->write(this->getDiskDevice().second, fatOffset, 1, temp);
-        delete[] temp;
-        dbg::popTrace();
-    }
     uint32_t FAT32Driver::nextCluster(uint32_t currentCluster)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
@@ -356,7 +277,8 @@ namespace drivers::fs
     }
     bool FAT32Driver::readEntry(FAT_File *file, FAT_DirectoryEntry *dirEntry)
     {
-        return this->readBytes(file, sizeof(FAT_DirectoryEntry), (void *)dirEntry) == sizeof(FAT_DirectoryEntry);
+        bool succes = this->readBytes(file, sizeof(FAT_DirectoryEntry), (void *)dirEntry) == sizeof(FAT_DirectoryEntry);
+        return succes;
     }
     static void appendLFN(FAT_DirectoryEntry *entry, std::vector<uint16_t> &buffer)
     {
