@@ -22,6 +22,7 @@ namespace drivers{
         private:
             StorageType __storage_type;
             const char* __volume_name;
+        protected:
             uint64_t __identifier_index;
     };
     uint64_t getNewIdentIndex();

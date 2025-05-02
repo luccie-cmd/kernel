@@ -68,12 +68,13 @@ namespace vfs{
             dbg::printm(MODULE, "Cannot access disk %u, no disks\n", disk);
             std::abort();
         }
-        uint8_t encounteredDisks = -1;
+        uint8_t encounteredDisks = 0;
         for(auto blockDrivers : driver::getDrivers(driver::driverType::BLOCK)){
             assert(blockDrivers->getDeviceType() == driver::driverType::BLOCK);
             drivers::MSCDriver* blockDriver = reinterpret_cast<drivers::MSCDriver*>(blockDrivers);
             encounteredDisks += blockDriver->getConnectedDrives();
-            if(encounteredDisks >= disk){
+            dbg::printm(MODULE, "Disk: %hhu encounteredDisk: %hhu\n", disk, encounteredDisks);
+            if(encounteredDisks > disk){
                 std::pair<drivers::MSCDriver*, uint8_t> ret;
                 ret.first = blockDriver;
                 ret.second = 0;

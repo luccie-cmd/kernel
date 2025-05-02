@@ -7,8 +7,12 @@ qemu-system-x86_64 \
     -d int,cpu_reset \
     -D qemu.log \
     -M pc \
-    -cpu qemu64,+sse2,-sse4.1,-sse4.2,-avx,-avx2,-x2apic,-aes \
+    -smp 2 \
+    -cpu core2duo,vendor=GenuineIntel,+sse3,+cx16,+hypervisor \
     -drive file="./bin/image.img",if=ide,cache=writethrough,format=raw
+    # -drive id=disk,file="/dev/sda",format=raw,if=none \
+    # -device piix3-ide,id=ide \
+    # -device ide-hd,drive=disk,bus=ide.0
     # -cpu "Penryn" \
     # -drive file="$1/image.img",format=raw \
     # -device nvme,drive=nvme1,serial=deadbeef \

@@ -33,7 +33,7 @@ namespace drivers::fs
         uint64_t nextDirBlock;
         uint64_t nameBlock;
         uint32_t blocksCount;
-        uint64_t blocksLBA[];
+        uint64_t blocksLBA[60];
     };
     static_assert(sizeof(DirectoryBlock) == 512, "DirectoryBlock alignment is messed up");
     struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) FileBlock

@@ -86,7 +86,7 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-fno-lto', '-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=x86-64', '-mtune=native', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=x86-64', '-mtune=nocona', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
@@ -660,7 +660,8 @@ def main():
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
-        # buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+        if os.path.exists("/dev/sda"):
+            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     currentUser = os.getlogin()
     callCmd(f"chown -R {currentUser}:{currentUser} ./")
     if "run" in sys.argv:

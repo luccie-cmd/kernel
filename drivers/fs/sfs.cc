@@ -128,7 +128,7 @@ namespace drivers::fs
         DataBlock *dataBlock = new DataBlock;
         uint64_t readLBA = fileBlock->dataBlock;
         uint64_t bufferCount = 0;
-        uint8_t* u8buffer = (uint8_t*)buffer;
+        uint8_t *u8buffer = (uint8_t *)buffer;
         while (readLBA && length)
         {
             uint16_t count = 0;
@@ -137,12 +137,14 @@ namespace drivers::fs
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
                 std::abort();
             }
-            while(dataBlock->data[count] && count < sizeof(dataBlock->data) && length){
+            while (dataBlock->data[count] && count < sizeof(dataBlock->data) && length)
+            {
                 u8buffer[bufferCount++] = dataBlock->data[count++];
                 length--;
             }
             readLBA = dataBlock->nextData;
         }
+        dbg::popTrace();
     }
     void SFSDriver::write(int file, size_t length, const void *buffer)
     {
@@ -165,16 +167,12 @@ namespace drivers::fs
             }
             writeLBA = dataBlock->nextData;
         }
-        uint64_t c = 0;
-        while (dataBlock->data[c])
-        {
-            c++;
-        }
-        if (c + length > sizeof(dataBlock->data))
+        if (length > sizeof(dataBlock->data))
         {
             dbg::printm(MODULE, "Split write block in 2 or more to fit it\n");
             std::abort();
         }
+        uint64_t c = 0;
         const uint8_t *u8buffer = (const uint8_t *)buffer;
         size_t count = 0;
         while (count < length)
@@ -184,6 +182,7 @@ namespace drivers::fs
             count++;
         }
         this->writeDataBlock(dataBlock);
+        dbg::popTrace();
     }
     void SFSDriver::close(int file)
     {
@@ -220,6 +219,7 @@ namespace drivers::fs
             }
             readLBA = dataBlock->nextData;
         }
+        dbg::popTrace();
         return size;
     }
     void SFSDriver::create(const char *path)
@@ -239,10 +239,11 @@ namespace drivers::fs
 
             std::string dirName = strPath.substr(0, slashPos);
             strPath = strPath.substr(slashPos + 1);
-            lastDirBlock = this->openDir(lastDirBlock, dirName.c_str());
+            DirectoryBlock *oldDir = lastDirBlock;
+            lastDirBlock = this->openDir(oldDir, dirName.c_str());
             if (!lastDirBlock)
             {
-                dbg::printm(MODULE, "Directory not found: %s\n", dirName.c_str());
+                dbg::printm(MODULE, "TODO: Create directories\n");
                 std::abort();
             }
         }
@@ -278,10 +279,12 @@ namespace drivers::fs
         this->writeNameBlock(nameBlock);
         this->writeDataBlock(dataBlock);
         this->writeFileBlock(lastDirBlock, fileBlock);
+        dbg::printm(MODULE, "Created file `%s`\n", path);
         dbg::popTrace();
     }
     void SFSDriver::writeNameBlock(NameBlock *nameBlock)
     {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         size_t writeLBA = nameBlock->header.currentLBA;
         while (writeLBA)
         {
@@ -292,9 +295,11 @@ namespace drivers::fs
             }
             writeLBA = nameBlock->nextName;
         }
+        dbg::popTrace();
     }
     void SFSDriver::writeDataBlock(DataBlock *dataBlock)
     {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         size_t writeLBA = dataBlock->header.currentLBA;
         while (writeLBA)
         {
@@ -305,9 +310,11 @@ namespace drivers::fs
             }
             writeLBA = dataBlock->nextData;
         }
+        dbg::popTrace();
     }
     void SFSDriver::writeFileBlock(DirectoryBlock *lastDirBlock, FileBlock *fileBlock)
     {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         if (!this->getDiskDevice().first->write(this->getDiskDevice().second, fileBlock->header.currentLBA, 1, fileBlock))
         {
             dbg::printm(MODULE, "Failed to write LBA %llu\n", fileBlock->header.currentLBA);
@@ -329,33 +336,37 @@ namespace drivers::fs
             this->writeDirectoryBlock(lastDirBlock);
             lastDirBlock = newDirBlock;
         }
+        dbg::popTrace();
     }
     void SFSDriver::writeDirectoryBlock(DirectoryBlock *dirBlock)
     {
+        dbg::addTrace(__PRETTY_FUNCTION__);
         if (!this->getDiskDevice().first->write(this->getDiskDevice().second, dirBlock->header.currentLBA, 1, dirBlock))
         {
             dbg::printm(MODULE, "Failed to write LBA %llu\n", dirBlock->header.currentLBA);
             std::abort();
         }
+        dbg::popTrace();
     }
     uint64_t SFSDriver::findFreeLBA()
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        size_t LBA = this->rootDir->header.currentLBA + 1;
+        size_t LBA = this->superBlock->header.currentLBA;
         while (LBA < this->getPartEntry()->endLBA - this->getPartEntry()->startLBA)
         {
             uint8_t *buffer = new uint8_t[512];
-            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, LBA, 1, buffer))
+            uint64_t copyLBA = LBA;
+            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, copyLBA, 1, buffer))
             {
-                dbg::printm(MODULE, "Failed to read LBA %llu\n", LBA);
+                dbg::printm(MODULE, "Failed to read LBA %llu\n", copyLBA);
                 std::abort();
             }
             if (buffer[0] == 0)
             {
                 buffer[0] = (uint8_t)SFSBlockTypes::Temp;
-                if (!this->getDiskDevice().first->write(this->getDiskDevice().second, LBA, 1, buffer))
+                if (!this->getDiskDevice().first->write(this->getDiskDevice().second, copyLBA, 1, buffer))
                 {
-                    dbg::printm(MODULE, "Failed to write LBA %llu\n", LBA);
+                    dbg::printm(MODULE, "Failed to write LBA %llu\n", copyLBA);
                     std::abort();
                 }
                 delete[] buffer;
@@ -398,6 +409,7 @@ namespace drivers::fs
                     std::abort();
                 }
                 const char *name = this->collectName(nameBlock);
+                dbg::printm(MODULE, "Checking dir %s for folder %s\n", name, delim);
                 if (strcmp(name, delim) == 0)
                 {
                     dbg::popTrace();

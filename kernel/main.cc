@@ -14,7 +14,17 @@ extern "C" void KernelMain()
     dbg::addTrace(__PRETTY_FUNCTION__);
     displayDriver = reinterpret_cast<drivers::DisplayDriver *>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
     vfs::mount(0, 1, "/");
-    vfs::umount("/");
+    vfs::createFile("/test.txt");
+    int handle = vfs::openFile("/test.txt", 0);
+    vfs::writeFile(handle, std::strlen("Hello, World12\nHello2\0"), "Hello, World12\nHello2\0");
+    vfs::closeFile(handle);
+    handle = vfs::openFile("/test.txt", 0);
+    char *buffer = new char[vfs::getLen(handle)];
+    vfs::readFile(handle, vfs::getLen(handle), buffer);
+    buffer[vfs::getLen(handle)] = '\0';
+    dbg::printf("`%s`\n", buffer);
+    // vfs::closeFile(handle);
+    // vfs::umount("/");
     std::abort();
     for (;;)
         ;

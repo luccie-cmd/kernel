@@ -6,8 +6,9 @@
 #define MODULE "MSC Driver manager"
 
 namespace drivers{
+    uint64_t drives = 0;
     uint64_t getNewIdentIndex(){
-        return 0;
+        return ++drives;
     }
     MSCDriver::MSCDriver(StorageType type) :Driver(driver::driverType::BLOCK), __identifier_index(getNewIdentIndex()) {
         this->__storage_type = type;
