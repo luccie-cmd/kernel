@@ -6,13 +6,18 @@
 #include <kernel/hal/arch/init.h>
 #include <kernel/vfs/vfs.h>
 
-extern drivers::DisplayDriver *displayDriver;
+drivers::DisplayDriver *displayDriver;
 
 extern "C" void KernelMain()
 {
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    displayDriver = reinterpret_cast<drivers::DisplayDriver *>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
+    displayDriver = new drivers::DisplayDriver();
+    drivers::DisplayDriver* temp = reinterpret_cast<drivers::DisplayDriver*>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
+        temp->setScreenX(displayDriver->getScreenX());
+        temp->setScreenY(displayDriver->getScreenY());
+    delete displayDriver;
+    displayDriver = temp;
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);

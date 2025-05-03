@@ -10,6 +10,9 @@ qemu-system-x86_64 \
     -smp 2 \
     -cpu core2duo,vendor=GenuineIntel,+sse3,+cx16,+hypervisor \
     -drive file="./bin/image.img",if=ide,cache=writethrough,format=raw \
+    -device pci-bridge,chassis_nr=1,id=pci_bridge1 \
+    -device e1000,netdev=net0,bus=pci_bridge1,addr=0x1 \
+    -netdev user,id=net0 \
     # -drive id=disk,file="/dev/sda",format=raw,if=ide \
     # -device piix3-ide,id=ide \
     # -device ide-hd,drive=disk,bus=ide.0

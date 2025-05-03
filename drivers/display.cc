@@ -32,6 +32,20 @@ namespace drivers
         dbg::popTrace();
     }
     DisplayDriver::~DisplayDriver() {}
+    size_t DisplayDriver::getScreenX()
+    {
+        return this->screenX;
+    }
+    size_t DisplayDriver::getScreenY()
+    {
+        return this->screenY;
+    }
+    void DisplayDriver::setScreenX(size_t x){
+        this->screenX = x;
+    }
+    void DisplayDriver::setScreenY(size_t y){
+        this->screenY = y;
+    }
     void DisplayDriver::init(pci::device *dev)
     {
         (void)dev;

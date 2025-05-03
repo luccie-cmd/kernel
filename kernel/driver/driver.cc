@@ -102,32 +102,9 @@ namespace driver
     std::vector<Driver *> getDrivers(driverType type)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        if (type == driverType::DISPLAY && !isInitialized())
+        if (!isInitialized())
         {
-            for (pci::device *device : pci::getAllDevices())
-            {
-                if (device->classCode == 0x3)
-                {
-                    Driver *driver = loadDriver(device);
-                    if (driver == nullptr)
-                    {
-                        continue;
-                    }
-                    if(driver->getDeviceType() != driverType::DISPLAY){
-                        dbg::printm(MODULE, "Loaded driver %lu for display device\n", driver->getDeviceType());
-                        std::abort();
-                    }
-                    dbg::popTrace();
-                    return {driver};
-                }
-            }
-        }
-        else
-        {
-            if (!isInitialized())
-            {
-                initialize();
-            }
+            initialize();
         }
         if (getDevicesCount(type) == 0)
         {

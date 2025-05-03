@@ -73,6 +73,23 @@ namespace mmu::heap
         size_t ALIGN_SIZE = getAlignSize(size);
         size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
         node *current = __head;
+        while (current && current->next)
+        {
+            if (current->free && current->next->free)
+            {
+                current->size += sizeof(node) + current->next->size;
+                current->next = current->next->next;
+                if (current->next)
+                {
+                    current->next->prev = current;
+                }
+            }
+            else
+            {
+                current = current->next;
+            }
+        }
+        current = __head;
         while (current)
         {
             if (current->free && current->size == alignedLength)

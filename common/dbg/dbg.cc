@@ -7,7 +7,7 @@
 #include <cstring>
 #include <drivers/display.h>
 #include <kernel/driver/driver.h>
-drivers::DisplayDriver *displayDriver;
+extern drivers::DisplayDriver *displayDriver;
 
 namespace dbg
 {

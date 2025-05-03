@@ -13,6 +13,10 @@ namespace drivers
         void init(pci::device *dev);
         void deinit();
         void drawChar(uint8_t display, char c);
+        size_t getScreenX();
+        size_t getScreenY();
+        void setScreenX(size_t x);
+        void setScreenY(size_t y);
     private:
         void drawCharacter(uint8_t display, char c);
         void scrollBack(uint8_t display, uint64_t lines);
