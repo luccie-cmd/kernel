@@ -292,7 +292,7 @@ namespace drivers::block{
     }
     NVMeDriver* loadNVMeDriver(pci::device* device){
         dbg::addTrace(__PRETTY_FUNCTION__);
-        NVMeDriver* drv = new (std::nothrow) NVMeDriver;
+        NVMeDriver* drv = new (std::nothrow) NVMeDriver();
         assert(drv);
         drv->init(device);
         dbg::popTrace();

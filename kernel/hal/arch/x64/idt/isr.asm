@@ -340,9 +340,7 @@ isrCommon:
     pop rdx
     pop rcx
     pop rbx
-    ; pop rax
-
-    add rsp, 16
-    mov [rsp], rax
     pop rax
+    
+    add rsp, 16
     iretq

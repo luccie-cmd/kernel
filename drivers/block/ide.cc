@@ -3,6 +3,7 @@
 #include <common/io/io.h>
 #include <cstdlib>
 #include <drivers/block/ide.h>
+#include <bitset>
 #define MODULE "IDE Driver"
 #define ATA_REG_DATA 0x00
 #define ATA_REG_ERROR 0x01
@@ -93,6 +94,7 @@ namespace drivers::block
     void IDEDriver::init(pci::device *device)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "ProgIF = %hhx\n", (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
         uint32_t BAR0 = pci::readConfig(device, 0x10);
         uint32_t BAR1 = pci::readConfig(device, 0x14);
         uint32_t BAR2 = pci::readConfig(device, 0x18);
@@ -104,6 +106,12 @@ namespace drivers::block
         this->channels[ATA_SECONDARY].ctrl = (BAR3 & 0xFFFFFFFC) + 0x1F0 * (!BAR3);
         this->channels[ATA_PRIMARY].bmide = (BAR4 & 0xFFFFFFFC) + 0;
         this->channels[ATA_SECONDARY].bmide = (BAR4 & 0xFFFFFFFC) + 8;
+        uint8_t caps = (uint8_t)(pci::readConfigWord(device, 0x08) >> 8);
+        if (caps & (1 << 7)){
+            pci::enableBusmaster(device);
+            dbg::printm(MODULE, "TODO: Enable BMIDE\n");
+            std::abort();
+        }
         this->drives = 0;
         this->writeReg(ATA_PRIMARY, ATA_REG_CONTROL, 2);
         this->writeReg(ATA_SECONDARY, ATA_REG_CONTROL, 2);
@@ -118,7 +126,6 @@ namespace drivers::block
                     continue;
                 uint8_t err = 0;
                 uint32_t k = 0;
-                bool executed = false;
                 while (1)
                 {
                     uint8_t status = this->readReg(i, ATA_REG_STATUS);
@@ -129,17 +136,12 @@ namespace drivers::block
                     }
                     if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ))
                         break;
+
                     k++;
-                    executed = true;
-                    if ((k & 0xFF) == 0)
+                    if ((k & 0xFFFFFF) == 0)
                     {
                         break;
                     }
-                }
-                if (k == 0 && executed)
-                {
-                    dbg::printm(MODULE, "Stuck in a poll loop\n");
-                    std::abort();
                 }
                 uint8_t type = IDE_TYPE_ATA;
                 if (err != 0)
@@ -204,20 +206,13 @@ namespace drivers::block
             this->readReg(channel, ATA_REG_ALTSTATUS);
         }
         uint32_t k = 0;
-        bool executed = false;
         while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
         {
             k++;
-            executed = true;
             if ((k & 0xFFFFFF) == 0)
             {
                 break;
             }
-        }
-        if (k == 0 && executed)
-        {
-            dbg::printm(MODULE, "Stuck in a poll loop\n");
-            std::abort();
         }
         if (advanced)
         {

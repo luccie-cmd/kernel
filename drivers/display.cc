@@ -25,6 +25,7 @@ namespace drivers
         this->infos.reserve(fbRequest.response->framebuffer_count);
         for (uint64_t i = 0; i < fbRequest.response->framebuffer_count; ++i)
         {
+            dbg::printm(MODULE, "Loaded display %lux%lux%lu\n", fbRequest.response->framebuffers[i]->width, fbRequest.response->framebuffers[i]->height, fbRequest.response->framebuffers[i]->bpp);
             this->infos.push_back(fbRequest.response->framebuffers[i]);
         }
         this->setDriverName("Display driver");

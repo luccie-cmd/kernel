@@ -18,7 +18,6 @@ namespace driver
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
         Driver *driver = nullptr;
-        dbg::printm(MODULE, "Loading driver for 0x%04x:0x%04x 0x%02x:0x%02x\n", device->vendorID, device->deviceID, device->classCode, device->subclassCode);
         switch (device->classCode)
         {
         case 0x1:
@@ -28,7 +27,7 @@ namespace driver
         break;
         case 0x2:
         {
-            dbg::printm(MODULE, "TODO: Setup networking (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)pci::readConfigWord(device, 0x09) >> 8);
+            dbg::printm(MODULE, "TODO: Setup networking (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
         }
         break;
         case 0x3:
@@ -43,12 +42,12 @@ namespace driver
         break;
         case 0xc:
         {
-            dbg::printm(MODULE, "TODO: Load Serial Bus controllers (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)pci::readConfigWord(device, 0x09) >> 8);
+            dbg::printm(MODULE, "TODO: Load Serial Bus controllers (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
         }
         break;
         case 0x6:
         {
-            dbg::printm(MODULE, "Not loading bridge drivers\n");
+            dbg::printm(MODULE, "TODO: Load bridge drivers (subclass 0x%02x progIF 0x%02x)\n", device->subclassCode, (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
         }
         break;
         default:
