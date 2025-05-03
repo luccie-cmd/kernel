@@ -13,10 +13,6 @@ extern "C" void KernelMain()
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
     displayDriver = reinterpret_cast<drivers::DisplayDriver *>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
-    displayDriver->drawChar(0, 'E');
-    while(1){
-        __asm__("nop");
-    }
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);

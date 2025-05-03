@@ -72,9 +72,9 @@ namespace pci
     {
         return (uint8_t)((readConfigWord(bus, slot, function, 0xA) & ~0xFF00));
     }
-    static void loopBus(uint16_t endBus)
+    static void loopBus(uint16_t startBus, uint16_t endBus)
     {
-        for (uint16_t bus = 0; bus < endBus; bus++)
+        for (uint16_t bus = startBus; bus <= endBus; bus++)
         {
             for (uint8_t slot = 0; slot < 32; slot++)
             {
@@ -91,9 +91,11 @@ namespace pci
                     if (classCode == 0x06)
                     {
                         if (subClassCode == 0x04){
-                            uint16_t secondaryBus = (uint16_t)(readConfigWord(bus, slot, func, 0x18) >> 8) & 0xFF;
-                            dbg::printm(MODULE, "Found PCI-PCI bridge. Looping from bus %hhu to %hu\n", 0, secondaryBus);
-                            loopBus(secondaryBus);
+                            uint32_t buses = readConfig(bus, slot, func, 0x18);
+                            uint8_t end = (buses >> 8) & 0xFF;
+                            uint8_t start = (buses >> 16) & 0xFF;
+                            dbg::printm(MODULE, "Found PCI-PCI bridge. Looping from bus %hhu to %hu\n", start, end);
+                            loopBus(start, end);
                         }
                     }
                     else
@@ -116,7 +118,7 @@ namespace pci
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
         devices.clear();
-        loopBus(0xff);
+        loopBus(0, 0xff);
         initialized = true;
         dbg::popTrace();
     }
