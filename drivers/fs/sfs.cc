@@ -35,7 +35,11 @@ namespace drivers::fs
         }
         dbg::popTrace();
     }
-    SFSDriver::~SFSDriver() {}
+    SFSDriver::~SFSDriver() {
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "TODO: deinit SFS\n");
+        std::abort();
+    }
     void SFSDriver::init(pci::device *dev)
     {
         (void)dev;
@@ -78,6 +82,11 @@ namespace drivers::fs
         uint64_t readLBA = lastDirBlock->header.currentLBA;
         while (readLBA)
         {
+            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, lastDirBlock))
+            {
+                dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
+                std::abort();
+            }
             for (uint32_t i = 0; i < lastDirBlock->blocksCount; ++i)
             {
                 FileBlock *fileBlock = new FileBlock;
@@ -96,7 +105,9 @@ namespace drivers::fs
                     dbg::printm(MODULE, "Failed to read LBA %llu\n", fileBlock->nameBlock);
                     std::abort();
                 }
+                delete fileBlock;
                 const char *name = this->collectName(nameBlock);
+                delete nameBlock;
                 if (strcmp(strPath.c_str(), name) == 0)
                 {
                     int handle = this->findHandle(lastDirBlock->blocksLBA[i]);
@@ -105,11 +116,6 @@ namespace drivers::fs
                 }
             }
             readLBA = lastDirBlock->nextDirBlock;
-            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, lastDirBlock))
-            {
-                dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
-                std::abort();
-            }
         }
         dbg::printm(MODULE, "No file exists with the name %s\n", strPath.c_str());
         dbg::popTrace();
@@ -127,6 +133,7 @@ namespace drivers::fs
         }
         DataBlock *dataBlock = new DataBlock;
         uint64_t readLBA = fileBlock->dataBlock;
+        delete fileBlock;
         uint64_t bufferCount = 0;
         uint8_t *u8buffer = (uint8_t *)buffer;
         while (readLBA && length)
@@ -144,6 +151,7 @@ namespace drivers::fs
             }
             readLBA = dataBlock->nextData;
         }
+        delete dataBlock;
         dbg::popTrace();
     }
     void SFSDriver::write(int file, size_t length, const void *buffer)
@@ -158,6 +166,7 @@ namespace drivers::fs
         }
         DataBlock *dataBlock = new DataBlock;
         uint64_t writeLBA = fileBlock->dataBlock;
+        delete fileBlock;
         while (writeLBA)
         {
             if (!this->getDiskDevice().first->read(this->getDiskDevice().second, writeLBA, 1, dataBlock))
@@ -182,6 +191,7 @@ namespace drivers::fs
             count++;
         }
         this->writeDataBlock(dataBlock);
+        delete dataBlock;
         dbg::popTrace();
     }
     void SFSDriver::close(int file)
@@ -202,6 +212,7 @@ namespace drivers::fs
             std::abort();
         }
         uint64_t readLBA = fileBlock->dataBlock;
+        delete fileBlock;
         uint64_t size = 0;
         while (readLBA)
         {
@@ -218,6 +229,7 @@ namespace drivers::fs
                 i++;
             }
             readLBA = dataBlock->nextData;
+            delete dataBlock;
         }
         dbg::popTrace();
         return size;
@@ -279,6 +291,9 @@ namespace drivers::fs
         this->writeNameBlock(nameBlock);
         this->writeDataBlock(dataBlock);
         this->writeFileBlock(lastDirBlock, fileBlock);
+        delete dataBlock;
+        delete nameBlock;
+        delete fileBlock;
         dbg::printm(MODULE, "Created file `%s`\n", path);
         dbg::popTrace();
     }
@@ -326,15 +341,8 @@ namespace drivers::fs
 
         if (lastDirBlock->blocksCount >= max_blocks_per_dir)
         {
-            DirectoryBlock *newDirBlock = new DirectoryBlock;
-            newDirBlock->header.type = SFSBlockTypes::Directory;
-            newDirBlock->header.currentLBA = this->findFreeLBA();
-            newDirBlock->blocksCount = 0;
-            newDirBlock->nextDirBlock = 0;
-
-            lastDirBlock->nextDirBlock = newDirBlock->header.currentLBA;
-            this->writeDirectoryBlock(lastDirBlock);
-            lastDirBlock = newDirBlock;
+            dbg::printm(MODULE, "TODO: Write more than %lu directories and files in a single directory\n", max_blocks_per_dir);
+            std::abort();
         }
         dbg::popTrace();
     }
@@ -409,6 +417,7 @@ namespace drivers::fs
                     std::abort();
                 }
                 const char *name = this->collectName(nameBlock);
+                delete nameBlock;
                 dbg::printm(MODULE, "Checking dir %s for folder %s\n", name, delim);
                 if (strcmp(name, delim) == 0)
                 {
@@ -435,17 +444,17 @@ namespace drivers::fs
         uint64_t readLBA = nameBlock->header.currentLBA;
         while (readLBA)
         {
+            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, nameBlock))
+            {
+                dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
+                std::abort();
+            }
             name.reserve(name.size() + nameBlock->length);
             for (uint16_t i = 0; i < nameBlock->length; ++i)
             {
                 name.push_back(nameBlock->characters[i]);
             }
             readLBA = nameBlock->nextName;
-            if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, nameBlock))
-            {
-                dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
-                std::abort();
-            }
         }
         dbg::popTrace();
         return name.c_str();

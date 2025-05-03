@@ -7,15 +7,15 @@ namespace std{
     const std::nothrow_t nothrow;
     void __throw_length_error(char const* str){
         dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, str);
-        abort();
+        std::abort();
     }
     void __throw_bad_alloc(){
         dbg::printf("%s\n", __PRETTY_FUNCTION__);
-        abort();
+        std::abort();
     }
     void __throw_bad_array_new_length(){
         dbg::printf("%s\n", __PRETTY_FUNCTION__);
-        abort();
+        std::abort();
     }
     void __throw_out_of_range_fmt(char const* fmt, ...){
         std::va_list args;
@@ -23,6 +23,6 @@ namespace std{
         dbg::printv(fmt, args);
         va_end(args);
         dbg::print("\n");
-        abort();
+        std::abort();
     }
 };

@@ -12,9 +12,9 @@ namespace vfs{
         bool mounted;
     };
     struct VFSFile{
-        int vfsHandle;
-        int mpIdx;
-        int fsHandle;
+        uint64_t vfsHandle;
+        uint64_t mpIdx;
+        uint64_t fsHandle;
         bool used;
         const char* pathWithoutMountPoint;
     };
@@ -25,11 +25,11 @@ namespace vfs{
     void mount(uint8_t disk, uint8_t partition, const char* mountLoc);
     void mount(const char* file, const char* mountLoc);
     void umount(const char* mountLocation);
-    int openFile(const char* path, int flags);
-    void closeFile(int handle);
-    void readFile(int handle, int size, void* buffer);
-    void writeFile(int handle, int size, const void* buffer);
-    int getLen(int handle);
+    uint64_t openFile(const char* path, uint64_t flags);
+    void closeFile(uint64_t handle);
+    void readFile(uint64_t handle, uint64_t size, void* buffer);
+    void writeFile(uint64_t handle, uint64_t size, const void* buffer);
+    uint64_t getLen(uint64_t handle);
     void createFile(const char* path);
     void printInfo();
 };

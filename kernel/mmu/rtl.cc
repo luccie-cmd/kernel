@@ -17,14 +17,6 @@ void* operator new(size_t size){
     dbg::popTrace();
     return addr;
 }
-void* operator new(size_t size, const std::nothrow_t& nothrow) noexcept{
-    (void)nothrow;
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    void* addr = mmu::heap::allocate(size);
-    std::memset(addr, 0, size);
-    dbg::popTrace();
-    return addr;
-}
 void* operator new(size_t size, std::align_val_t align){
     (void)align;
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -56,12 +48,6 @@ void operator delete(void* ptr, size_t size){
     dbg::popTrace();
 }
 void operator delete(void* ptr){
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    mmu::heap::free(ptr);
-    dbg::popTrace();
-}
-void operator delete(void* ptr, const std::nothrow_t& nothrow){
-    (void)nothrow;
     dbg::addTrace(__PRETTY_FUNCTION__);
     mmu::heap::free(ptr);
     dbg::popTrace();

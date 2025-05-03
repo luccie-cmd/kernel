@@ -90,7 +90,7 @@ CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=x86-64', '-mtune=nocon
 CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-lto', '-mcmodel=kernel']
+CONFIG["LDFLAGS"] = ['-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-lto', '-O2', '-mcmodel=kernel']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -106,11 +106,6 @@ if "x64" in CONFIG.get("arch"):
 
 if "yes" in CONFIG.get("analyzer"):
     CONFIG["CFLAGS"].append("-fanalyzer")
-
-if "debug" in CONFIG.get("config"):
-    CONFIG["LDFLAGS"] += ["-O0"]
-else:
-    CONFIG["LDFLAGS"] += ["-O2"]
 
 if "gcc" in CONFIG.get("compiler"):
     CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=1000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']

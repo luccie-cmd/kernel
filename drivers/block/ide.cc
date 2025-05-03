@@ -431,7 +431,7 @@ namespace drivers::block
     IDEDriver *loadIDEController(pci::device *device)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        IDEDriver *drv = new (std::nothrow) IDEDriver();
+        IDEDriver *drv = new IDEDriver();
         assert(drv);
         drv->init(device);
         dbg::popTrace();

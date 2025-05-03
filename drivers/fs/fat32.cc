@@ -51,11 +51,9 @@ namespace drivers::fs
     }
     FAT32Driver::~FAT32Driver()
     {
-        delete this->rootDir;
-        for (FAT_FileData *data : this->files)
-        {
-            delete data;
-        }
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        dbg::printm(MODULE, "TODO deinit FAT32\n");
+        std::abort();
     }
     void FAT32Driver::init(pci::device *dev)
     {
