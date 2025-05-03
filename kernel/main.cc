@@ -5,6 +5,7 @@
 #include <drivers/display.h>
 #include <kernel/hal/arch/init.h>
 #include <kernel/vfs/vfs.h>
+#include <kernel/acpi/acpi.h>
 
 drivers::DisplayDriver *displayDriver;
 
@@ -18,6 +19,7 @@ extern "C" void KernelMain()
         temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
+    void *madtTable = acpi::getTableBySign((char*)"APIC");
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);
@@ -29,6 +31,7 @@ extern "C" void KernelMain()
     buffer[vfs::getLen(handle)] = '\0';
     dbg::printf("`%s`\n", buffer);
     delete[] buffer;
+    (void)madtTable;
     // vfs::closeFile(handle);
     // vfs::umount("/");
     std::abort();

@@ -5,14 +5,14 @@ extern handleInt
     isrHandler%1:
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
-        jmp [rel isrCommon]
+        jmp isrCommon
 %endmacro
 
 %macro ISR_ERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
         push qword %1 ; interrupt number
-        jmp [rel isrCommon]
+        jmp isrCommon
 %endmacro
 
 section .text
@@ -312,18 +312,18 @@ isrCommon:
     lea rdi, [rsp]   ; Address of the saved registers
     call handleInt
 
-    pop rbx
-    mov cr3, rbx
+    pop rax
+    mov cr3, rax
 
-    xor rbx, rbx
-    pop rbx
-    mov gs, bx
-    pop rbx
-    mov fs, bx
-    pop rbx
-    mov es, bx
-    pop rbx
-    mov ds, bx
+    xor rax, rax
+    pop rax
+    mov gs, ax
+    pop rax
+    mov fs, ax
+    pop rax
+    mov es, ax
+    pop rax
+    mov ds, ax
 
     pop r15
     pop r14

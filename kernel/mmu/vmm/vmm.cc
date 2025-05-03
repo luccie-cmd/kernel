@@ -46,7 +46,7 @@ namespace mmu::vmm{
             std::abort();
         }
         if(pid == KERNEL_PID && __CR3LookupTable[pid] == 0){
-            __CR3LookupTable[pid] = io::rcr3();
+            __CR3LookupTable[pid] = io::rcr3() - __HHDMoffset;
         }
         if(__CR3LookupTable[pid] == 0){
             uint64_t cr3 = pmm::allocate();
@@ -63,8 +63,9 @@ namespace mmu::vmm{
         if(!isInitialized()){
             initialize();
         }
+        uint64_t retAddr = addr + __HHDMoffset;
         dbg::popTrace();
-        return addr+__HHDMoffset;
+        return retAddr;
     }
     uint64_t getHHDM(){
         dbg::addTrace(__PRETTY_FUNCTION__);

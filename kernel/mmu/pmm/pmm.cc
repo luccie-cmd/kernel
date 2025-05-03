@@ -80,7 +80,7 @@ namespace mmu::pmm{
                 }
                 allocatedPages += size / PAGE_SIZE;
                 dbg::popTrace();
-                return addr - vmm::getHHDM();
+                return addr;
             }
             prev = current;
             current = current->next;
