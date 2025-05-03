@@ -10,6 +10,7 @@
 namespace hal{
 namespace arch{
     void earlyInit();
+    void midInit();
 };
 };
 

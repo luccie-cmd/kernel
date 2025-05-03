@@ -7,6 +7,7 @@
 #include <kernel/hal/arch/init.h>
 #include <kernel/hal/arch/x64/gdt/gdt.h>
 #include <kernel/hal/arch/x64/idt/idt.h>
+#include <kernel/hal/arch/x64/irq/irq.h>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <cstring>
@@ -23,5 +24,12 @@ namespace hal::arch{
         x64::gdt::init();
         initX64();
         io::sti();
+    }
+    void midInit(){
+        dbg::addTrace(__PRETTY_FUNCTION__);
+        io::cli();
+        x64::irq::init();
+        io::sti();
+        dbg::popTrace();
     }
 };

@@ -14,12 +14,12 @@ extern "C" void KernelMain()
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
     displayDriver = new drivers::DisplayDriver();
+    hal::arch::midInit();
     drivers::DisplayDriver* temp = reinterpret_cast<drivers::DisplayDriver*>(driver::getDrivers(driver::driverType::DISPLAY).at(0));
         temp->setScreenX(displayDriver->getScreenX());
         temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
-    void *madtTable = acpi::getTableBySign((char*)"APIC");
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);
@@ -31,7 +31,6 @@ extern "C" void KernelMain()
     buffer[vfs::getLen(handle)] = '\0';
     dbg::printf("`%s`\n", buffer);
     delete[] buffer;
-    (void)madtTable;
     // vfs::closeFile(handle);
     // vfs::umount("/");
     std::abort();
