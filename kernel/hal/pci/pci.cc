@@ -91,7 +91,7 @@ namespace pci
                     if (classCode == 0x06)
                     {
                         if (subClassCode == 0x04){
-                            uint16_t secondaryBus = (uint16_t)(readConfigWord(bus, slot, func, 0x18) >> 8) && 0xFF;
+                            uint16_t secondaryBus = (uint16_t)(readConfigWord(bus, slot, func, 0x18) >> 8) & 0xFF;
                             dbg::printm(MODULE, "Found PCI-PCI bridge. Looping from bus %hhu to %hu\n", 0, secondaryBus);
                             loopBus(secondaryBus);
                         }

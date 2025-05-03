@@ -83,14 +83,13 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
-CONFIG["CFLAGS"] += ['-fno-lto', '-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector']
+CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-mno-avx', '-march=x86-64', '-mtune=nocona', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
-CONFIG["CFLAGS"] += ['-mno-movbe', '-mno-bmi', '-mno-bmi2', '-mno-tbm']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--gc-sections', '-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-lto', '-O2', '-mcmodel=kernel']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O2', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -101,6 +100,7 @@ if "debug" in CONFIG.get("config"):
 else:
     CONFIG["CFLAGS"] += ["-O2"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
+
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
 
@@ -122,11 +122,11 @@ def callCmd(command, print_out=False):
 
 callCmd("rm -rf commands.txt")
 
-if not compareFiles('build.py', '.build-cache/build.py'):
-    if not os.path.exists(".build-cache"):
-        callCmd(f"mkdir -p .build-cache")
-    callCmd(f"cp 'build.py' .build-cache/build.py")
-    force_rebuild = True
+# if not compareFiles('build.py', '.build-cache/build.py'):
+#     if not os.path.exists(".build-cache"):
+#         callCmd(f"mkdir -p .build-cache")
+#     callCmd(f"cp 'build.py' .build-cache/build.py")
+#     force_rebuild = True
 
 def removeOptnone(file):
     callCmd(f"sed s/optnone//g {file} > {file}.clean")
@@ -297,11 +297,11 @@ def buildC(file):
         if callCmd(command, True)[0] != 0:
             return 1
         command = f"opt \"{CONFIG['outDir'][0]}/{file}.unopt.ll\" -o \"{CONFIG['outDir'][0]}/{file}.opt.bc\" --strip-debug --strip-named-metadata"
-        command += " -passes="
-        for pass_ in optPasses:
-            command += f"{pass_}"
-            if pass_ != optPasses[-1]:
-                command += ','
+        # command += " -passes="
+        # for pass_ in optPasses:
+        #     command += f"{pass_}"
+        #     if pass_ != optPasses[-1]:
+        #         command += ','
         print(f"OPT   {file}")
         code = callCmd(command, True)[0]
         if code != 0:
@@ -346,11 +346,11 @@ def buildCXX(file):
         if callCmd(command, True)[0] != 0:
             return 1
         command = f"opt \"{CONFIG['outDir'][0]}/{file}.unopt.ll\" -o \"{CONFIG['outDir'][0]}/{file}.opt.bc\" --strip-debug --strip-named-metadata"
-        command += " -passes="
-        for pass_ in optPasses:
-            command += f"{pass_}"
-            if pass_ != optPasses[-1]:
-                command += ','
+        # command += " -passes="
+        # for pass_ in optPasses:
+        #     command += f"{pass_}"
+        #     if pass_ != optPasses[-1]:
+        #         command += ','
         print(f"OPT   {file}")
         code = callCmd(command, True)[0]
         if code != 0:
@@ -433,7 +433,10 @@ def buildKernel(kernel_dir: str):
 
 def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
-    command = "g++-11"
+    if "gcc" in CONFIG["compiler"]:
+        command = "g++-11"
+    else:
+        command = "clang++ -fuse-ld=lld"
     options = CONFIG["LDFLAGS"]
     for option in options:
         command += " " + option
@@ -444,7 +447,6 @@ def linkDir(kernel_dir, linker_file, static_lib_files=[]):
             continue
         command += " " + file
     command += f" -Wl,-T {linker_file}"
-    command += " -Bstatic"
     command +=  " -Wl,--no-whole-archive"
     command +=  " -Wl,--whole-archive"
     for static_lib in static_lib_files:
@@ -604,12 +606,13 @@ def cleanFiles(dirs: list[str]):
         objFiles = glob.glob(CONFIG['outDir'][0]+'/'+dir_+'/**', recursive=True)
         newObjFiles = []
         for objFile in objFiles:
-            if os.path.isfile(objFile) and checkExtension(objFile, ["o"]):
+            if os.path.isfile(objFile) and checkExtension(objFile, ["o", ".bc"]):
+                objFile.removesuffix(getExtension(objFile))
                 newObjFiles.append(objFile)
         for file in files:
             if not os.path.isfile(file) or not checkExtension(file, ["c", "cc", "asm"]):
                 continue
-            file = CONFIG["outDir"][0] + '/' + file + '.o'
+            file = CONFIG["outDir"][0] + '/' + file
             if file not in newObjFiles:
                 print(f"RM    {file}")
                 callCmd(f"rm -f {file}")

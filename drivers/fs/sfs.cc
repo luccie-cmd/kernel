@@ -439,8 +439,8 @@ namespace drivers::fs
     const char *SFSDriver::collectName(NameBlock *nameBlock)
     {
         dbg::addTrace(__PRETTY_FUNCTION__);
-        std::string name;
-        name.clear();
+        char* name = new char[1];
+        size_t nameSize = 0;
         uint64_t readLBA = nameBlock->header.currentLBA;
         while (readLBA)
         {
@@ -449,15 +449,18 @@ namespace drivers::fs
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
                 std::abort();
             }
-            name.reserve(name.size() + nameBlock->length);
+            char* newName = new char[nameSize + nameBlock->length];
+            std::memcpy(newName, name, nameSize);
+            delete[] name;
+            name = newName;
             for (uint16_t i = 0; i < nameBlock->length; ++i)
             {
-                name.push_back(nameBlock->characters[i]);
+                name[nameSize++] = nameBlock->characters[i];
             }
             readLBA = nameBlock->nextName;
         }
         dbg::popTrace();
-        return name.c_str();
+        return (const char*)name;
     }
     int SFSDriver::findHandle(uint64_t lba)
     {

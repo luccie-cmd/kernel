@@ -2,9 +2,9 @@ bits 64
 section .text
 global loadGDT
 loadGDT:
-    mov [GDT.limit], rsi
-    mov [GDT.base], rdi
-    lgdt [GDT]
+    mov [rel GDT.limit], rsi
+    mov [rel GDT.base], rdi
+    lgdt [rel GDT]
     ; Reload segments to kernel cs and ds.
 .reloadSegments:
     push 0x08

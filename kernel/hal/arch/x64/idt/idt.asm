@@ -2,9 +2,9 @@ bits 64
 section .text
 global loadIDT
 loadIDT:
-    mov [IDT.limit], rsi
-    mov [IDT.base], rdi
-    lidt [IDT]
+    mov [rel IDT.limit], rsi
+    mov [rel IDT.base], rdi
+    lidt [rel IDT]
     ret
 
 section .data
