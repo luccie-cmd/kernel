@@ -109,8 +109,6 @@ namespace drivers::block
         uint8_t caps = (uint8_t)(pci::readConfigWord(device, 0x08) >> 8);
         if (caps & (1 << 7)){
             pci::enableBusmaster(device);
-            dbg::printm(MODULE, "TODO: Enable BMIDE\n");
-            std::abort();
         }
         this->drives = 0;
         this->writeReg(ATA_PRIMARY, ATA_REG_CONTROL, 2);
