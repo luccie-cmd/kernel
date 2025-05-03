@@ -12,8 +12,8 @@
 namespace pci{
     struct device{
         uint16_t bus;
-        uint16_t slot;
-        uint16_t function;
+        uint8_t slot;
+        uint8_t function;
         uint16_t vendorID;
         uint16_t deviceID;
         uint8_t classCode;
