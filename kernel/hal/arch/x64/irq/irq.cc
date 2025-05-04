@@ -4,6 +4,7 @@
 #include <kernel/acpi/tables.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/vmm/vmm.h>
+#include <common/io/io.h>
 #define MODULE "IRQ"
 
 #define IA32_APIC_BASE_MSR 0x1B
@@ -85,6 +86,8 @@ void init()
         dbg::printm(MODULE, "TODO: Handle dual PIC\n");
         std::abort();
     }
+    io::outb(0xA0, 0xFF); // Mask PIC master
+    io::outb(0x20, 0xFF); // Mask PIC slave
     lapicAddr = mmu::vmm::makeVirtual(madt->lapic_address);
     ioApicdescs.clear();
     uint8_t* entries_start = reinterpret_cast<uint8_t*>(madt) + sizeof(acpi::MADT);
