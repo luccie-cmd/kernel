@@ -2,6 +2,7 @@
 #define _ASSEMBLER_ORDERED_MAP_H_
 #include <utility>
 #include <vector>
+#include <cstdio>
 
 template <typename Key, typename Value>
 class OrderedMap

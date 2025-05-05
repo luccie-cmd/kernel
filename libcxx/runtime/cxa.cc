@@ -2,9 +2,9 @@
 #include <cstdlib>
 #include <cxxabi.h>
 
-void *__dso_handle = nullptr;
+void* __dso_handle = nullptr;
 
-extern "C" int __cxa_atexit(void (*destructor)(void *), void *arg, void *dso_handle)
+extern "C" int __cxa_atexit(void (*destructor)(void*), void* arg, void* dso_handle)
 {
     (void)destructor;
     (void)arg;
@@ -19,13 +19,13 @@ extern "C" void __cxa_pure_virtual()
     std::abort();
 }
 
-extern "C" int __cxa_guard_acquire(void *guard_object)
+extern "C" int __cxa_guard_acquire(void* guard_object)
 {
     (void)guard_object;
     return 0;
 }
 
-extern "C" void __cxa_guard_release(void *guard_object)
+extern "C" void __cxa_guard_release(void* guard_object)
 {
     (void)guard_object;
 }

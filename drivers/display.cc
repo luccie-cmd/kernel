@@ -21,8 +21,8 @@ DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY)
         dbg::printm(MODULE, "ERROR: Limine failed to set framebuffer response\n");
         std::abort();
     }
-    this->screenX = 2;
-    this->screenY = 2;
+    this->screenX = MARGIN;
+    this->screenY = MARGIN;
     this->infos.reserve(fbRequest.response->framebuffer_count);
     for (uint64_t i = 0; i < fbRequest.response->framebuffer_count; ++i)
     {
@@ -70,17 +70,24 @@ void DisplayDriver::deinit()
 void DisplayDriver::drawCharacter(uint8_t display, char c)
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    for (uint8_t y = 0; y < 8; ++y)
+    for (uint8_t y = 0; y < CHAR_HEIGHT + MARGIN; ++y)
     {
-        for (uint8_t x = 0; x < 8; ++x)
+        for (uint8_t x = 0; x < CHAR_WIDTH + MARGIN; ++x)
         {
-            if (FONT[(uint8_t)c][y] & (1 << x))
+            this->writePixel(display, this->screenX + x, this->screenY + y, 0x00000000);
+        }
+    }
+    for (uint8_t y = 0; y < CHAR_HEIGHT; ++y)
+    {
+        for (uint8_t x = 0; x < CHAR_WIDTH; ++x)
+        {
+            if (FONT[(uint8_t)c][y] & (0x80 >> x))
             {
                 this->writePixel(display, this->screenX + x, this->screenY + y, 0xFFFFFFFF);
             }
         }
     }
-    this->screenX += (10);
+    this->screenX += CHAR_WIDTH + MARGIN;
     dbg::popTrace();
 }
 void DisplayDriver::drawChar(uint8_t display, char c)
@@ -90,39 +97,48 @@ void DisplayDriver::drawChar(uint8_t display, char c)
     {
     case '\n':
     {
-        this->screenY += 10;
-        this->screenX = 2;
+        this->screenY += CHAR_HEIGHT + MARGIN;
+        this->screenX = MARGIN;
     }
     break;
     case '\t':
     {
-        this->screenX += 40;
+        this->screenX += 4 * CHAR_WIDTH;
     }
     break;
     case '\b':
     {
-        if (this->screenX >= 10)
+        if (this->screenX >= CHAR_WIDTH + MARGIN)
         {
-            this->screenX -= 10;
+            this->screenX -= CHAR_WIDTH + MARGIN;
         }
         else
         {
-            if (this->screenY >= 10)
+            if (this->screenY >= CHAR_HEIGHT + MARGIN)
             {
-                this->screenY -= 10;
+                this->screenY -= CHAR_HEIGHT + MARGIN;
                 bool           found        = false;
                 const uint64_t line_start_y = this->screenY;
-                const uint64_t line_end_y   = line_start_y + 10;
-                for (int64_t cell_x = ((buffer->width - 1) / 10) * 10; cell_x >= 0 && !found; cell_x -= 10) {
-                    for (uint64_t y = line_start_y; y < line_end_y && !found; y++) {
-                        for (uint64_t x_offset = 0; x_offset < 10 && !found; x_offset++) {
+                const uint64_t line_end_y   = line_start_y + CHAR_HEIGHT + MARGIN;
+                for (int64_t cell_x =
+                         ((buffer->width - 1) / (CHAR_WIDTH + MARGIN)) * (CHAR_WIDTH + MARGIN);
+                     cell_x >= 0 && !found; cell_x -= CHAR_WIDTH + MARGIN)
+                {
+                    for (uint64_t y = line_start_y; y < line_end_y && !found; y++)
+                    {
+                        for (uint64_t x_offset = 0; x_offset < CHAR_WIDTH + MARGIN && !found;
+                             x_offset++)
+                        {
                             uint64_t x = cell_x + x_offset;
-                            if (x >= buffer->width) continue;
+                            if (x >= buffer->width)
+                                continue;
                             uint8_t r, g, b, a;
                             this->readPixel(display, x, y, &r, &g, &b, &a);
-                            if (r != 0 || g != 0 || b != 0) {
-                                this->screenX = cell_x + 12;
-                                found = true;
+                            if (r != 0 || g != 0 || b != 0)
+                            {
+
+                                this->screenX = cell_x + CHAR_WIDTH + (MARGIN * 2);
+                                found         = true;
                             }
                         }
                     }
@@ -130,7 +146,7 @@ void DisplayDriver::drawChar(uint8_t display, char c)
 
                 if (!found)
                 {
-                    this->screenX = 2;
+                    this->screenX = MARGIN;
                 }
             }
             else
@@ -138,12 +154,14 @@ void DisplayDriver::drawChar(uint8_t display, char c)
                 break;
             }
         }
-        this->screenX = std::clamp(this->screenX, (uint64_t)2, buffer->width - 10);
-        this->screenY = std::clamp(this->screenY, (uint64_t)2, buffer->height - 10);
+        this->screenX =
+            std::clamp(this->screenX, (uint64_t)MARGIN, buffer->width - CHAR_WIDTH + MARGIN);
+        this->screenY =
+            std::clamp(this->screenY, (uint64_t)MARGIN, buffer->height - CHAR_HEIGHT + MARGIN);
 
-        for (uint8_t y = 0; y < 10; ++y)
+        for (uint8_t y = 0; y < CHAR_HEIGHT + MARGIN; ++y)
         {
-            for (uint8_t x = 0; x < 10; ++x)
+            for (uint8_t x = 0; x < CHAR_WIDTH + MARGIN; ++x)
             {
                 this->writePixel(display, this->screenX + x, this->screenY + y, 0x00000000);
             }
@@ -153,16 +171,16 @@ void DisplayDriver::drawChar(uint8_t display, char c)
     default:
         this->drawCharacter(display, c);
     }
-    if (this->screenX + 10 > buffer->width)
+    if (this->screenX + CHAR_WIDTH + MARGIN > buffer->width)
     {
-        this->screenX = 2;
-        this->screenY += 10;
+        this->screenX = MARGIN;
+        this->screenY += CHAR_HEIGHT + MARGIN;
     }
     // Always make sure we have some space
-    while (this->screenY + 10 > buffer->height)
+    while (this->screenY + CHAR_HEIGHT + MARGIN > buffer->height)
     {
-        this->scrollBack(display, 10);
-        this->screenY -= 10;
+        this->scrollBack(display, CHAR_HEIGHT + MARGIN);
+        this->screenY -= CHAR_HEIGHT + MARGIN;
     }
 }
 void DisplayDriver::scrollBack(uint8_t display, uint64_t lines)

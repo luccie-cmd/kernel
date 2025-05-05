@@ -6,6 +6,7 @@
 
 #if !defined(_COMMON_IO_REGS_H_)
 #define _COMMON_IO_REGS_H_
+#include <cstdint>
 
 namespace io{
     struct Registers{

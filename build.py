@@ -85,7 +85,7 @@ if OLD_CONFIG != CONFIG:
     print("Configuration changed, rebuilding...")
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
@@ -238,6 +238,10 @@ def buildKernel(kernel_dir: str):
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
 
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
+
 def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
     if "gcc" in CONFIG["compiler"]:
@@ -374,6 +378,10 @@ def buildStaticLib(directory, out_file):
         if code != 0:
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
+        
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
 
     buildAR(f"{CONFIG["outDir"][0]}/{directory}", out_file)
 
