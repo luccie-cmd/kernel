@@ -10,6 +10,8 @@ namespace io{
     uint16_t inw(uint16_t port);
     uint32_t inl(uint16_t port);
     void insl(uint16_t port, void *buffer, uint32_t count);
+    uint64_t rdmsr(uint32_t msr);
+    void wrmsr(uint32_t msr, uint64_t val);
     void cli();
     void sti();
     void invalpg(void* addr);

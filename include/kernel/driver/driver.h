@@ -22,6 +22,7 @@ namespace driver{
             driverType __driver_type;
             const char* __driver_name;
     };
+    void initPS2Keyboard();
     void initialize();
     bool isInitialized();
     size_t getDevicesCount(driverType type);

@@ -15,7 +15,7 @@ extern "C" void abort(){
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();
     while(1){
-        io::cli();
+        // io::cli();
         __asm__("hlt");
     }
 }

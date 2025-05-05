@@ -14,11 +14,5 @@ qemu-system-x86_64 \
     -device pci-bridge,chassis_nr=1,id=pci_bridge1 \
     -device e1000,netdev=net0,bus=pci_bridge1,addr=0x1 \
     -netdev user,id=net0 \
-    # -drive id=disk,file="/dev/sda",format=raw,if=ide \
-    # -device piix3-ide,id=ide \
-    # -device ide-hd,drive=disk,bus=ide.0
-    # -cpu "Penryn" \
-    # -drive file="$1/image.img",format=raw \
-    # -device nvme,drive=nvme1,serial=deadbeef \
-    # -enable-kvm
+    # -drive id=disk,file="/dev/sda",format=raw,if=ide
 fi

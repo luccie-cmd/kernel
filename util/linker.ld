@@ -19,14 +19,19 @@ SECTIONS
     /* Set the starting virtual address */
     . = 0xffffffff80000000;
 
-    /* .text section, also includes .init_array and .fini_array */
+    /* .text section, also includes .fini_array */
     .text ALIGN(4K) :
     {
         __text_start = .;
         *(.text .text.*)
-        *(.init_array .init_array.*) /* Place .init_array here */
         *(.fini_array .fini_array.*) /* Place .fini_array here */
         __text_end = .;
+    } :text
+
+    .init_array ALIGN(4K) : {
+        __init_array = .;
+        *(.init_array .init_array.*)
+        __init_array_end = .;
     } :text
 
     /* .rodata section */

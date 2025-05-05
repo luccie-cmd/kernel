@@ -1,10 +1,10 @@
 #include <common/dbg/dbg.h>
+#include <common/io/io.h>
 #include <cstdlib>
 #include <kernel/acpi/acpi.h>
 #include <kernel/acpi/tables.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/vmm/vmm.h>
-#include <common/io/io.h>
 #define MODULE "IRQ"
 
 #define IA32_APIC_BASE_MSR 0x1B
@@ -77,6 +77,16 @@ static uint32_t getMaxRedirections(uint32_t addr)
     return ((ioapicRead(addr, 0x01) >> 16) & 0xFF) + 1;
 }
 
+static uint64_t getAPICBase()
+{
+    return io::rdmsr(IA32_APIC_BASE_MSR);
+}
+
+static void setAPICBase(uint64_t base)
+{
+    io::wrmsr(IA32_APIC_BASE_MSR, (base & 0xFFFFF000) | (getAPICBase() & 0xFFF) | (1 << 11));
+}
+
 void init()
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -86,8 +96,8 @@ void init()
         dbg::printm(MODULE, "TODO: Handle dual PIC\n");
         std::abort();
     }
-    io::outb(0xA0, 0xFF); // Mask PIC master
-    io::outb(0x20, 0xFF); // Mask PIC slave
+    io::outb(0x21, 0xFF); // Mask PIC master
+    io::outb(0xA1, 0xFF); // Mask PIC slave
     lapicAddr = mmu::vmm::makeVirtual(madt->lapic_address);
     ioApicdescs.clear();
     uint8_t* entries_start = reinterpret_cast<uint8_t*>(madt) + sizeof(acpi::MADT);
@@ -104,6 +114,7 @@ void init()
             acpi::MADTLAPIC* lapic = reinterpret_cast<acpi::MADTLAPIC*>(entry);
             if ((lapic->flags & 1) ^ ((lapic->flags >> 1) & 1))
             {
+                setAPICBase(getAPICBase());
                 lapicWrite(LAPIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER,
                            lapicRead(LAPIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER) | 0x100);
             }

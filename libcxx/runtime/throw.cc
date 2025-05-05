@@ -17,6 +17,10 @@ namespace std{
         dbg::printf("%s\n", __PRETTY_FUNCTION__);
         std::abort();
     }
+    void __throw_out_of_range(char const* fmt){
+        dbg::printf("%s `%s`\n", __PRETTY_FUNCTION__, fmt);
+        std::abort();
+    }
     void __throw_out_of_range_fmt(char const* fmt, ...){
         std::va_list args;
         va_start(args, fmt);
