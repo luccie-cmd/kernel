@@ -1,5 +1,6 @@
 #include "font.h"
 
+#include <algorithm>
 #include <cassert>
 #include <common/dbg/dbg.h>
 #include <cstdlib>
@@ -69,9 +70,9 @@ void DisplayDriver::deinit()
 void DisplayDriver::drawCharacter(uint8_t display, char c)
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    for (int y = 0; y < 8; ++y)
+    for (uint8_t y = 0; y < 8; ++y)
     {
-        for (int x = 0; x < 8; ++x)
+        for (uint8_t x = 0; x < 8; ++x)
         {
             if (FONT[(uint8_t)c][y] & (1 << x))
             {
@@ -88,22 +89,77 @@ void DisplayDriver::drawChar(uint8_t display, char c)
     switch (c)
     {
     case '\n':
+    {
         this->screenY += 10;
         this->screenX = 2;
-        break;
+    }
+    break;
     case '\t':
+    {
         this->screenX += 40;
-        break;
+    }
+    break;
+    case '\b':
+    {
+        if (this->screenX >= 10)
+        {
+            this->screenX -= 10;
+        }
+        else
+        {
+            if (this->screenY >= 10)
+            {
+                this->screenY -= 10;
+                bool           found        = false;
+                const uint64_t line_start_y = this->screenY;
+                const uint64_t line_end_y   = line_start_y + 10;
+                for (int64_t cell_x = ((buffer->width - 1) / 10) * 10; cell_x >= 0 && !found; cell_x -= 10) {
+                    for (uint64_t y = line_start_y; y < line_end_y && !found; y++) {
+                        for (uint64_t x_offset = 0; x_offset < 10 && !found; x_offset++) {
+                            uint64_t x = cell_x + x_offset;
+                            if (x >= buffer->width) continue;
+                            uint8_t r, g, b, a;
+                            this->readPixel(display, x, y, &r, &g, &b, &a);
+                            if (r != 0 || g != 0 || b != 0) {
+                                this->screenX = cell_x + 12;
+                                found = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!found)
+                {
+                    this->screenX = 2;
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+        this->screenX = std::clamp(this->screenX, (uint64_t)2, buffer->width - 10);
+        this->screenY = std::clamp(this->screenY, (uint64_t)2, buffer->height - 10);
+
+        for (uint8_t y = 0; y < 10; ++y)
+        {
+            for (uint8_t x = 0; x < 10; ++x)
+            {
+                this->writePixel(display, this->screenX + x, this->screenY + y, 0x00000000);
+            }
+        }
+    }
+    break;
     default:
         this->drawCharacter(display, c);
     }
-    if (this->screenX >= buffer->width)
+    if (this->screenX + 10 > buffer->width)
     {
-        this->screenX = 0;
+        this->screenX = 2;
         this->screenY += 10;
     }
     // Always make sure we have some space
-    while (this->screenY >= buffer->height)
+    while (this->screenY + 10 > buffer->height)
     {
         this->scrollBack(display, 10);
         this->screenY -= 10;
@@ -113,17 +169,19 @@ void DisplayDriver::scrollBack(uint8_t display, uint64_t lines)
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
     limine_framebuffer* buffer = this->infos.at(display);
-    if (!buffer || lines == 0 || buffer->height == 0) {
+    if (!buffer || lines == 0 || buffer->height == 0)
+    {
         dbg::popTrace();
         return;
     }
-    if (lines >= buffer->height) {
+    if (lines >= buffer->height)
+    {
         std::memset(buffer->address, 0, buffer->pitch * buffer->height);
         dbg::popTrace();
         return;
     }
-    uint8_t* fb = static_cast<uint8_t*>(buffer->address);
-    uint32_t pitch = buffer->pitch;
+    uint8_t* fb     = static_cast<uint8_t*>(buffer->address);
+    uint32_t pitch  = buffer->pitch;
     uint64_t height = buffer->height;
     for (uint64_t y = 0; y < height - lines; ++y)
     {
@@ -149,8 +207,10 @@ void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint8_t 
     limine_framebuffer* buffer = this->infos.at(display);
     if (x > buffer->width || y > buffer->height)
     {
-        displayDriver = nullptr;
-        dbg::print("X or Y pos oob");
+        DisplayDriver* temp = displayDriver;
+        displayDriver       = nullptr;
+        dbg::printf("X %llu or Y %llu pos oob", x, y);
+        displayDriver = temp;
         dbg::popTrace();
         return;
     }
@@ -178,20 +238,33 @@ void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint32_t*
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint8_t r, g, b, a;
     this->readPixel(display, x, y, &r, &g, &b, &a);
-    *(uint8_t*)(rgba + 0) = r;
-    *(uint8_t*)(rgba + 1) = g;
-    *(uint8_t*)(rgba + 2) = b;
-    *(uint8_t*)(rgba + 3) = a;
+    *(uint8_t*)((uint8_t*)rgba + 0) = r;
+    *(uint8_t*)((uint8_t*)rgba + 1) = g;
+    *(uint8_t*)((uint8_t*)rgba + 2) = b;
+    *(uint8_t*)((uint8_t*)rgba + 3) = a;
     dbg::popTrace();
 }
 void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint8_t* r, uint8_t* g,
                               uint8_t* b, uint8_t* a)
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* buffer       = this->infos.at(display);
-    uint64_t            offset       = (y * buffer->width + x) * (buffer->bpp / 8);
-    volatile uint8_t*   pixelAddress = (volatile uint8_t*)(buffer->address) + offset;
-    uint32_t            pixelValue   = 0;
+    limine_framebuffer* buffer = this->infos.at(display);
+    if (x > buffer->width || y > buffer->height)
+    {
+        *r                  = 0;
+        *g                  = 0;
+        *b                  = 0;
+        *a                  = 0;
+        DisplayDriver* temp = displayDriver;
+        displayDriver       = nullptr;
+        dbg::printf("X %llu or Y %llu pos oob", x, y);
+        displayDriver = temp;
+        dbg::popTrace();
+        return;
+    }
+    uint64_t          offset       = (y * buffer->width + x) * (buffer->bpp / 8);
+    volatile uint8_t* pixelAddress = (volatile uint8_t*)(buffer->address) + offset;
+    uint32_t          pixelValue   = 0;
     for (uint64_t i = 0; i < buffer->bpp / 8; ++i)
     {
         pixelValue |= pixelAddress[i] << (i * 8);
