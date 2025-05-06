@@ -98,8 +98,14 @@ bool isInitialized()
 void printInfo()
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    dbg::printm(MODULE, "TODO\n");
-    std::abort();
+    dbg::printm(MODULE, "Tables:\n");
+    for (size_t i = 0; i < numEntries; ++i)
+    {
+        ACPISDTHeader* sdtHeader =
+            reinterpret_cast<ACPISDTHeader*>(mmu::vmm::makeVirtual(xsdt->Entries[i]));
+        dbg::printm(MODULE, "\t- %4.4s 0x%016llx %06x\n", sdtHeader->Signature, &xsdt->Entries[i],
+                    sdtHeader->Length);
+    }
     dbg::popTrace();
 }
 }; // namespace acpi

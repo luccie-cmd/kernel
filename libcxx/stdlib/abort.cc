@@ -1,6 +1,7 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <cstdlib>
+#include <kernel/acpi/acpi.h>
 #include <kernel/driver/driver.h>
 #include <kernel/mmu/mmu.h>
 #include <kernel/vfs/vfs.h>
@@ -12,6 +13,7 @@ extern "C" void abort()
     vfs::printInfo();
     mmu::printInfo();
     driver::printInfo();
+    acpi::printInfo();
     dbg::print("ABORTING KERNEL\n");
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();
