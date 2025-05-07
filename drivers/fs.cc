@@ -80,7 +80,7 @@ FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t
                 entry->GUID[5], entry->GUID[6], entry->GUID[7], entry->GUID[8], entry->GUID[9],
                 entry->GUID[10], entry->GUID[11], entry->GUID[12], entry->GUID[13], entry->GUID[14],
                 entry->GUID[15]);
-    // std::abort();
+    std::abort();
     return nullptr;
 }
 }; // namespace drivers

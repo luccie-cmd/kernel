@@ -201,10 +201,14 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2)
     // 0x64 = status, command;
     io::outb(0x64, 0xAD);
     io::outb(0x64, 0xA7);
-    (void)io::inb(0x60);
+    while (io::inb(0x64) & 0x01)
+    {
+        (void)io::inb(0x60);
+    }
     io::outb(0x64, 0x20);
     uint8_t cc = io::inb(0x60);
-    cc         = 0b00100101;
+    cc &= ~(1 << 6);
+    cc |= (1 << 0);
     io::outb(0x64, 0x60);
     io::outb(0x60, cc);
     io::outb(0x64, 0xAA);
@@ -213,8 +217,7 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2)
     if (io::inb(0x60) != 0x55)
     {
         dbg::printm(MODULE, "No PS/2 keyboard present\n");
-        dbg::popTrace();
-        return;
+        std::abort();
     }
     io::outb(0x64, 0xAB);
     while ((io::inb(0x64) & 1) == 0)
@@ -222,20 +225,27 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2)
     if (io::inb(0x60) != 0x00)
     {
         dbg::printm(MODULE, "No PS/2 keyboard present\n");
-        dbg::popTrace();
-        return;
+        std::abort();
     }
     io::outb(0x64, 0xAE);
     io::outb(0x60, 0xF0);
-    io::outb(0x60, 0);
-    while ((io::inb(0x64) & 1) == 0)
+    while ((io::inb(0x64) & 0x01) == 0)
         ;
-    uint8_t resp = io::inb(0x60);
-    if (resp != 0xFA)
+    if (io::inb(0x60) != 0xFA)
     {
-        dbg::printm(MODULE, "PS/2 keyboard failed to ACK command\n");
+        dbg::printm(MODULE, "Keyboard did not ACK scan code query\n");
         std::abort();
     }
+    io::outb(0x60, 0x00);
+    while ((io::inb(0x64) & 0x01) == 0)
+        ;
+    if (io::inb(0x60) != 0xFA)
+    {
+        dbg::printm(MODULE, "Keyboard did not ACK scan code set request\n");
+        std::abort();
+    }
+    while ((io::inb(0x64) & 0x01) == 0)
+        ;
     uint8_t scancodeSet = io::inb(0x60);
     dbg::printm(MODULE, "Using PS/2 scancode set 0x%hhx\n", scancodeSet);
     if (scancodeSet != 0x02)
@@ -271,27 +281,27 @@ PS2Driver* loadPS2Driver()
 {
     dbg::addTrace(__PRETTY_FUNCTION__);
     PS2Driver* ps2Driver = new PS2Driver();
-    // while (1)
-    // {
-    //     while ((io::inb(0x64) & 1) == 0)
-    //         ;
-    //     uint8_t byte    = io::inb(0x60);
-    //     bool    pressed = true;
-    //     bool    normal  = true;
-    //     if (byte == 0xE0)
-    //     {
-    //         byte   = io::inb(0x60);
-    //         normal = false;
-    //     }
-    //     if (byte == 0xF0)
-    //     {
-    //         byte    = io::inb(0x60);
-    //         pressed = false;
-    //     }
-    //     dbg::printf("%c", translateScancode(byte, pressed, !normal));
-    //     // dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
-    //     // pressed ? "pressed" : "released", normal ? "" : " multimedia");
-    // }
+    while (1)
+    {
+        while ((io::inb(0x64) & 1) == 0)
+            ;
+        uint8_t byte    = io::inb(0x60);
+        bool    pressed = true;
+        bool    normal  = true;
+        if (byte == 0xE0)
+        {
+            byte   = io::inb(0x60);
+            normal = false;
+        }
+        if (byte == 0xF0)
+        {
+            byte    = io::inb(0x60);
+            pressed = false;
+        }
+        dbg::printf("%c", translateScancode(byte, pressed, !normal));
+        // dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
+        // pressed ? "pressed" : "released", normal ? "" : " multimedia");
+    }
     dbg::printm(MODULE, "Added PS/2 keyboard\n");
     dbg::popTrace();
     return ps2Driver;

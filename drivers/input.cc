@@ -26,10 +26,10 @@ std::vector<InputDriver*> loadInputDrivers()
         if (device->subclassCode != 0x03)
         {
             dbg::printm(MODULE, "TODO: Support non USB SBC devices\n");
-            std::abort();
+            // std::abort();
         }
         dbg::printm(MODULE, "TODO: Support USB SBC devices\n");
-        std::abort();
+        // std::abort();
     }
     if (!kbdFound)
     {
