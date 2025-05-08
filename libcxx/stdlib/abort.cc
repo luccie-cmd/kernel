@@ -9,8 +9,7 @@
 #include <vector>
 extern drivers::DisplayDriver* displayDriver;
 
-extern "C" void abort()
-{
+extern "C" void abort() {
     dbg::print("ABORTING KERNEL ¯\\_(ツ)_/¯\n");
     drivers::DisplayDriver* temp = displayDriver;
     displayDriver                = nullptr;
@@ -22,8 +21,7 @@ extern "C" void abort()
     displayDriver = temp;
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();
-    while (1)
-    {
+    while (1) {
         // io::cli();
         __asm__("hlt");
     }

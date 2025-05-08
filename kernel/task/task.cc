@@ -2,26 +2,21 @@
 #include <kernel/task/task.h>
 #define MODULE "Task manager"
 
-namespace task
-{
+namespace task {
 pid_t currentPID  = 0;
 bool  initialized = false;
-void  initialize()
-{
+void  initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     initialized = true;
     currentPID  = KERNEL_PID;
     dbg::popTrace();
 }
-bool isInitialized()
-{
+bool isInitialized() {
     return initialized;
 }
-pid_t getCurrentPID()
-{
+pid_t getCurrentPID() {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized())
-    {
+    if (!isInitialized()) {
         initialize();
     }
     dbg::popTrace();

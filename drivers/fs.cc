@@ -11,65 +11,50 @@
 #include <utility>
 #define MODULE "File System driver"
 
-namespace drivers
-{
+namespace drivers {
 FSDriver::FSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk)
-    : Driver(driver::driverType::FILESYSTEM)
-{
+    : Driver(driver::driverType::FILESYSTEM) {
     this->__diskDevice      = drvDisk;
     this->__partition_entry = entry;
 }
 FSDriver::~FSDriver() {}
-std::pair<MSCDriver*, uint8_t> FSDriver::getDiskDevice()
-{
+std::pair<MSCDriver*, uint8_t> FSDriver::getDiskDevice() {
     return this->__diskDevice;
 }
-vfs::PartitionEntry* FSDriver::getPartEntry()
-{
+vfs::PartitionEntry* FSDriver::getPartEntry() {
     return this->__partition_entry;
 }
-FSType FSDriver::getFsType()
-{
+FSType FSDriver::getFsType() {
     return this->__fs_type;
 }
 static std::array<std::pair<uint32_t, FSType>, 3> GUIDEntries;
-FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk)
-{
+FSDriver* loadFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> drvDisk) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     GUIDEntries[0] = std::pair<uint32_t, FSType>(0xaf3dc60f, FSType::EXT4);
     GUIDEntries[1] = std::pair<uint32_t, FSType>(0x28732ac1, FSType::FAT32);
     GUIDEntries[2] = std::pair<uint32_t, FSType>(0xa2a0d0eb, FSType::SFS);
     assert(entry);
     FSDriver* drv = nullptr;
-    for (auto guidEntry : GUIDEntries)
-    {
-        if (std::memcmp((void*)(uintptr_t)(&guidEntry.first), entry->GUID, sizeof(uint32_t)) == 0)
-        {
-            switch (guidEntry.second)
-            {
+    for (auto guidEntry : GUIDEntries) {
+        if (std::memcmp((void*)(uintptr_t)(&guidEntry.first), entry->GUID, sizeof(uint32_t)) == 0) {
+            switch (guidEntry.second) {
             case FSType::EXT2:
             case FSType::EXT3:
-            case FSType::EXT4:
-            {
+            case FSType::EXT4: {
                 dbg::printm(MODULE, "TODO: load EXT FS driver\n");
                 dbg::popTrace();
                 return nullptr;
             }
-            case FSType::FAT32:
-            {
+            case FSType::FAT32: {
                 drv = new fs::FAT32Driver(entry, drvDisk);
-            }
-            break;
-            case FSType::SFS:
-            {
+            } break;
+            case FSType::SFS: {
                 drv = new fs::SFSDriver(entry, drvDisk);
-            }
-            break;
+            } break;
             }
         }
     }
-    if (drv)
-    {
+    if (drv) {
         dbg::popTrace();
         return drv;
     }

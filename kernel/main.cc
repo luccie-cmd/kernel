@@ -11,16 +11,13 @@ drivers::DisplayDriver* displayDriver;
 extern void (*__init_array[])();
 extern void (*__init_array_end[])();
 
-void AbiCallCtors()
-{
-    for (std::size_t i = 0; &__init_array[i] != __init_array_end; i++)
-    {
+void AbiCallCtors() {
+    for (std::size_t i = 0; &__init_array[i] != __init_array_end; i++) {
         __init_array[i]();
     }
 }
 
-extern "C" void KernelMain()
-{
+extern "C" void KernelMain() {
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
     AbiCallCtors();
@@ -47,6 +44,5 @@ extern "C" void KernelMain()
     // vfs::closeFile(handle);
     // vfs::umount("/");
     std::abort();
-    for (;;)
-        ;
+    for (;;);
 }

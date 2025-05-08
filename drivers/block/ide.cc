@@ -73,26 +73,21 @@
 #define IDE_TYPE_ATA 0x00
 #define IDE_TYPE_ATAPI 0x01
 
-namespace drivers::block
-{
+namespace drivers::block {
 uint8_t ide_buf[2048] = {0};
-IDEDriver::IDEDriver() : MSCDriver(StorageType::IDE)
-{
+IDEDriver::IDEDriver() : MSCDriver(StorageType::IDE) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     this->setDriverName("IDE Controller");
     dbg::popTrace();
 }
 IDEDriver::~IDEDriver() {}
-uint8_t IDEDriver::getConnectedDrives()
-{
+uint8_t IDEDriver::getConnectedDrives() {
     return this->drives;
 }
-uint64_t IDEDriver::getDiskSize(uint8_t disk)
-{
+uint64_t IDEDriver::getDiskSize(uint8_t disk) {
     return (uint64_t)this->devices[disk].Size;
 }
-void IDEDriver::init(pci::device* device)
-{
+void IDEDriver::init(pci::device* device) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::printm(MODULE, "ProgIF = %hhx\n", (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
     uint32_t BAR0                       = pci::readConfig(device, 0x10);
@@ -107,44 +102,35 @@ void IDEDriver::init(pci::device* device)
     this->channels[ATA_PRIMARY].bmide   = (BAR4 & 0xFFFFFFFC) + 0;
     this->channels[ATA_SECONDARY].bmide = (BAR4 & 0xFFFFFFFC) + 8;
     uint8_t caps                        = (uint8_t)(pci::readConfigWord(device, 0x08) >> 8);
-    if (caps & (1 << 7))
-    {
+    if (caps & (1 << 7)) {
         pci::enableBusmaster(device);
     }
     this->drives = 0;
     this->writeReg(ATA_PRIMARY, ATA_REG_CONTROL, 2);
     this->writeReg(ATA_SECONDARY, ATA_REG_CONTROL, 2);
-    for (uint8_t i = 0; i < 2; ++i)
-    {
-        for (uint8_t j = 0; j < 2; ++j)
-        {
+    for (uint8_t i = 0; i < 2; ++i) {
+        for (uint8_t j = 0; j < 2; ++j) {
             this->devices[this->drives].Reserved = 0;
             this->writeReg(i, ATA_REG_HDDEVSEL, 0xA0 | (j << 4));
             this->writeReg(i, ATA_REG_COMMAND, ATA_CMD_IDENTIFY);
-            if (this->readReg(i, ATA_REG_STATUS) == 0)
-                continue;
+            if (this->readReg(i, ATA_REG_STATUS) == 0) continue;
             uint8_t  err = 0;
             uint32_t k   = 0;
-            while (1)
-            {
+            while (1) {
                 uint8_t status = this->readReg(i, ATA_REG_STATUS);
-                if (status & ATA_SR_ERR)
-                {
+                if (status & ATA_SR_ERR) {
                     err = 1;
                     break;
                 }
-                if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ))
-                    break;
+                if (!(status & ATA_SR_BSY) && (status & ATA_SR_DRQ)) break;
 
                 k++;
-                if ((k & 0xFFFFFF) == 0)
-                {
+                if ((k & 0xFFFFFF) == 0) {
                     break;
                 }
             }
             uint8_t type = IDE_TYPE_ATA;
-            if (err != 0)
-            {
+            if (err != 0) {
                 uint8_t cl = this->readReg(i, ATA_REG_LBA1);
                 uint8_t ch = this->readReg(i, ATA_REG_LBA2);
 
@@ -167,21 +153,16 @@ void IDEDriver::init(pci::device* device)
                 *((uint16_t*)(ide_buf + ATA_IDENT_CAPABILITIES));
             this->devices[this->drives].CommandSets =
                 *((uint32_t*)(ide_buf + ATA_IDENT_COMMANDSETS));
-            if (this->devices[this->drives].CommandSets & (1 << 26))
-            {
+            if (this->devices[this->drives].CommandSets & (1 << 26)) {
                 this->devices[this->drives].Size = *((uint32_t*)(ide_buf + ATA_IDENT_MAX_LBA_EXT));
-            }
-            else
-            {
+            } else {
                 this->devices[this->drives].Size = *((uint32_t*)(ide_buf + ATA_IDENT_MAX_LBA));
             }
-            if (this->devices[this->drives].Size == 0)
-            {
+            if (this->devices[this->drives].Size == 0) {
                 dbg::printm(MODULE, "Got 0 size, not adding drive\n");
                 continue;
             }
-            for (uint8_t l = 0; l < 40; l += 2)
-            {
+            for (uint8_t l = 0; l < 40; l += 2) {
                 this->devices[this->drives].Model[l]     = ide_buf[ATA_IDENT_MODEL + l + 1];
                 this->devices[this->drives].Model[l + 1] = ide_buf[ATA_IDENT_MODEL + l];
             }
@@ -189,55 +170,42 @@ void IDEDriver::init(pci::device* device)
             this->drives++;
         }
     }
-    if (this->drives == 0)
-    {
+    if (this->drives == 0) {
         dbg::printm(MODULE, "Warning: No drives could be found!!!\n");
-    }
-    else
-    {
+    } else {
         dbg::printm(MODULE, "Found %hd drives\n", this->drives);
     }
     dbg::popTrace();
 }
 void IDEDriver::deinit() {}
-int  IDEDriver::poll(uint8_t channel, bool advanced)
-{
-    for (uint8_t i = 0; i < 4; ++i)
-    {
+int  IDEDriver::poll(uint8_t channel, bool advanced) {
+    for (uint8_t i = 0; i < 4; ++i) {
         this->readReg(channel, ATA_REG_ALTSTATUS);
     }
     uint32_t k = 0;
-    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
-    {
+    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY) {
         k++;
-        if ((k & 0xFFFFFF) == 0)
-        {
+        if ((k & 0xFFFFFF) == 0) {
             break;
         }
     }
-    if (advanced)
-    {
+    if (advanced) {
         uint8_t status = this->readReg(channel, ATA_REG_STATUS);
-        if (status & ATA_SR_ERR)
-        {
+        if (status & ATA_SR_ERR) {
             return 2;
         }
-        if (status & ATA_SR_DF)
-        {
+        if (status & ATA_SR_DF) {
             return 1;
         }
-        if ((status & ATA_SR_DRQ) == 0)
-        {
+        if ((status & ATA_SR_DRQ) == 0) {
             return 3;
         }
     }
     return 0;
 }
-bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer)
-{
+bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (drive + 1 > this->drives)
-    {
+    if (drive + 1 > this->drives) {
         dbg::printm(MODULE, "Warning: Cannot access drive %d (Max allowed: %llu)\n", drive,
                     this->drives);
         return false;
@@ -251,8 +219,7 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
     uint16_t cyl, i;
     uint8_t  head, sect;
     this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
-    if (lba >= 0x10000000)
-    {
+    if (lba >= 0x10000000) {
         lba_mode  = 2;
         lba_io[0] = (lba & 0x000000FF) >> 0;
         lba_io[1] = (lba & 0x0000FF00) >> 8;
@@ -261,9 +228,7 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
         lba_io[4] = 0;
         lba_io[5] = 0;
         head      = 0;
-    }
-    else if (this->devices[drive].Capabilities & 0x200)
-    {
+    } else if (this->devices[drive].Capabilities & 0x200) {
         lba_mode  = 1;
         lba_io[0] = (lba & 0x00000FF) >> 0;
         lba_io[1] = (lba & 0x000FF00) >> 8;
@@ -272,9 +237,7 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
         lba_io[4] = 0;
         lba_io[5] = 0;
         head      = (lba & 0xF000000) >> 24;
-    }
-    else
-    {
+    } else {
         dbg::printm(MODULE, "Using CHS mode instead of LBA!!!\n");
         lba_mode  = 0;
         sect      = (lba % 63) + 1;
@@ -287,15 +250,12 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
         lba_io[5] = 0;
         head      = (lba + 1 - sect) % (16 * 63) / (63);
     }
-    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
-    {
-    }
+    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY) {}
     if (lba_mode == 0)
         this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head);
     else
         this->writeReg(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head);
-    if (lba_mode == 2)
-    {
+    if (lba_mode == 2) {
         this->writeReg(channel, ATA_REG_SECCOUNT1, 0);
         this->writeReg(channel, ATA_REG_LBA3, lba_io[3]);
         this->writeReg(channel, ATA_REG_LBA4, lba_io[4]);
@@ -305,17 +265,12 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
     this->writeReg(channel, ATA_REG_LBA0, lba_io[0]);
     this->writeReg(channel, ATA_REG_LBA1, lba_io[1]);
     this->writeReg(channel, ATA_REG_LBA2, lba_io[2]);
-    if (lba_mode == 0)
-        cmd = ATA_CMD_READ_PIO;
-    if (lba_mode == 1)
-        cmd = ATA_CMD_READ_PIO;
-    if (lba_mode == 2)
-        cmd = ATA_CMD_READ_PIO_EXT;
+    if (lba_mode == 0) cmd = ATA_CMD_READ_PIO;
+    if (lba_mode == 1) cmd = ATA_CMD_READ_PIO;
+    if (lba_mode == 2) cmd = ATA_CMD_READ_PIO_EXT;
     this->writeReg(channel, ATA_REG_COMMAND, cmd);
-    for (i = 0; i < sectors; i++)
-    {
-        if (this->poll(channel, true))
-        {
+    for (i = 0; i < sectors; i++) {
+        if (this->poll(channel, true)) {
             dbg::printm(MODULE, "Read from %hhu: %llu - %llu (%lu sectors) failed\n", drive, lba,
                         lba + sectors, sectors);
             std::abort();
@@ -333,11 +288,9 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
     dbg::popTrace();
     return true;
 }
-bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer)
-{
+bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (drive + 1 > this->drives)
-    {
+    if (drive + 1 > this->drives) {
         dbg::printm(MODULE, "Warning: Cannot access drive %d (Max allowed: %llu)\n", drive,
                     this->drives);
         return false;
@@ -351,8 +304,7 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
     uint16_t cyl, i;
     uint8_t  head, sect;
     this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
-    if (lba >= 0x10000000)
-    {
+    if (lba >= 0x10000000) {
         lba_mode  = 2;
         lba_io[0] = (lba & 0x000000FF) >> 0;
         lba_io[1] = (lba & 0x0000FF00) >> 8;
@@ -361,9 +313,7 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
         lba_io[4] = 0;
         lba_io[5] = 0;
         head      = 0;
-    }
-    else if (this->devices[drive].Capabilities & 0x200)
-    {
+    } else if (this->devices[drive].Capabilities & 0x200) {
         lba_mode  = 1;
         lba_io[0] = (lba & 0x00000FF) >> 0;
         lba_io[1] = (lba & 0x000FF00) >> 8;
@@ -372,9 +322,7 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
         lba_io[4] = 0;
         lba_io[5] = 0;
         head      = (lba & 0xF000000) >> 24;
-    }
-    else
-    {
+    } else {
         dbg::printm(MODULE, "Using CHS mode instead of LBA!!!\n");
         lba_mode  = 0;
         sect      = (lba % 63) + 1;
@@ -387,15 +335,12 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
         lba_io[5] = 0;
         head      = (lba + 1 - sect) % (16 * 63) / (63);
     }
-    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY)
-    {
-    }
+    while (this->readReg(channel, ATA_REG_STATUS) & ATA_SR_BSY) {}
     if (lba_mode == 0)
         this->writeReg(channel, ATA_REG_HDDEVSEL, 0xA0 | (slavebit << 4) | head);
     else
         this->writeReg(channel, ATA_REG_HDDEVSEL, 0xE0 | (slavebit << 4) | head);
-    if (lba_mode == 2)
-    {
+    if (lba_mode == 2) {
         this->writeReg(channel, ATA_REG_SECCOUNT1, 0);
         this->writeReg(channel, ATA_REG_LBA3, lba_io[3]);
         this->writeReg(channel, ATA_REG_LBA4, lba_io[4]);
@@ -405,17 +350,12 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
     this->writeReg(channel, ATA_REG_LBA0, lba_io[0]);
     this->writeReg(channel, ATA_REG_LBA1, lba_io[1]);
     this->writeReg(channel, ATA_REG_LBA2, lba_io[2]);
-    if (lba_mode == 0)
-        cmd = ATA_CMD_WRITE_PIO;
-    if (lba_mode == 1)
-        cmd = ATA_CMD_WRITE_PIO;
-    if (lba_mode == 2)
-        cmd = ATA_CMD_WRITE_PIO_EXT;
+    if (lba_mode == 0) cmd = ATA_CMD_WRITE_PIO;
+    if (lba_mode == 1) cmd = ATA_CMD_WRITE_PIO;
+    if (lba_mode == 2) cmd = ATA_CMD_WRITE_PIO_EXT;
     this->writeReg(channel, ATA_REG_COMMAND, cmd);
-    for (i = 0; i < sectors; i++)
-    {
-        if (this->poll(channel, true))
-        {
+    for (i = 0; i < sectors; i++) {
+        if (this->poll(channel, true)) {
             dbg::printm(MODULE, "Write to %hhu: %llu - %llu (%lu sectors) failed\n", drive, lba,
                         lba + sectors, sectors);
             std::abort();
@@ -437,8 +377,7 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
     dbg::popTrace();
     return true;
 }
-IDEDriver* loadIDEController(pci::device* device)
-{
+IDEDriver* loadIDEController(pci::device* device) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     IDEDriver* drv = new IDEDriver();
     assert(drv);
@@ -446,66 +385,44 @@ IDEDriver* loadIDEController(pci::device* device)
     dbg::popTrace();
     return drv;
 }
-uint8_t IDEDriver::readReg(uint8_t channel, uint8_t reg)
-{
+uint8_t IDEDriver::readReg(uint8_t channel, uint8_t reg) {
     uint8_t result = 0;
-    if (reg > 0x07 && reg < 0x0C)
-    {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
-    if (reg < 0x08)
-    {
+    if (reg < 0x08) {
         result = io::inb(channels[channel].base + reg - 0x00);
-    }
-    else if (reg < 0x0C)
-    {
+    } else if (reg < 0x0C) {
         result = io::inb(channels[channel].base + reg - 0x06);
-    }
-    else if (reg < 0x0E)
-    {
+    } else if (reg < 0x0E) {
         result = io::inb(channels[channel].ctrl + reg - 0x0A);
-    }
-    else if (reg < 0x16)
-    {
+    } else if (reg < 0x16) {
         result = io::inb(channels[channel].bmide + reg - 0x0E);
     }
-    if (reg > 0x07 && reg < 0x0C)
-    {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
     }
     return result;
 }
-void IDEDriver::writeReg(uint8_t channel, uint8_t reg, uint8_t data)
-{
-    if (reg > 0x07 && reg < 0x0C)
-    {
+void IDEDriver::writeReg(uint8_t channel, uint8_t reg, uint8_t data) {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
-    if (reg < 0x08)
-    {
+    if (reg < 0x08) {
         io::outb(channels[channel].base + reg - 0x00, data);
-    }
-    else if (reg < 0x0C)
-    {
+    } else if (reg < 0x0C) {
         io::outb(channels[channel].base + reg - 0x06, data);
-    }
-    else if (reg < 0x0E)
-    {
+    } else if (reg < 0x0E) {
         io::outb(channels[channel].ctrl + reg - 0x0A, data);
-    }
-    else if (reg < 0x16)
-    {
+    } else if (reg < 0x16) {
         io::outb(channels[channel].bmide + reg - 0x0E, data);
     }
-    if (reg > 0x07 && reg < 0x0C)
-    {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
     }
 }
-void IDEDriver::readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t quads)
-{
-    if (reg > 0x07 && reg < 0x0C)
-    {
+void IDEDriver::readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t quads) {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
     __asm__ volatile("pushw %ax");
@@ -513,27 +430,19 @@ void IDEDriver::readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t 
     __asm__ volatile("pushw %ax");
     __asm__ volatile("mov %ds, %ax");
     __asm__ volatile("mov %ax, %es");
-    if (reg < 0x08)
-    {
+    if (reg < 0x08) {
         io::insl(channels[channel].base + reg - 0x00, buffer, quads);
-    }
-    else if (reg < 0x0C)
-    {
+    } else if (reg < 0x0C) {
         io::insl(channels[channel].base + reg - 0x06, buffer, quads);
-    }
-    else if (reg < 0x0E)
-    {
+    } else if (reg < 0x0E) {
         io::insl(channels[channel].ctrl + reg - 0x0A, buffer, quads);
-    }
-    else if (reg < 0x16)
-    {
+    } else if (reg < 0x16) {
         io::insl(channels[channel].bmide + reg - 0x0E, buffer, quads);
     }
     __asm__ volatile("popw %ax");
     __asm__ volatile("mov %ax, %es");
     __asm__ volatile("popw %ax");
-    if (reg > 0x07 && reg < 0x0C)
-    {
+    if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
     }
 }

@@ -1,9 +1,7 @@
 #include <kernel/mmu/mmu.h>
 
-namespace mmu
-{
-void printInfo()
-{
+namespace mmu {
+void printInfo() {
     pmm::printInfo();
     heap::printInfo();
 }

@@ -15,11 +15,9 @@
 extern uint64_t* __bss_start;
 extern uint64_t* __bss_end;
 
-namespace hal::arch
-{
+namespace hal::arch {
 extern "C" void initX64();
-void            earlyInit()
-{
+void            earlyInit() {
     io::cli();
     std::memset(__bss_start, 0, (uint64_t)(__bss_end) - (uint64_t)(__bss_start));
     x64::idt::init();
@@ -27,8 +25,7 @@ void            earlyInit()
     initX64();
     io::sti();
 }
-void midInit()
-{
+void midInit() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     io::cli();
     x64::irq::init();

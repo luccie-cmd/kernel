@@ -17,13 +17,11 @@
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX 2 * MEGABYTE
 
-namespace mmu::heap
-{
+namespace mmu::heap {
 static bool     __initialized = false;
 static node*    __head        = nullptr;
 static uint64_t __pmmSize, __vmmMax;
-void            initialize(uint64_t pmm_size, uint64_t vmm_max)
-{
+void            initialize(uint64_t pmm_size, uint64_t vmm_max) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     __pmmSize         = pmm_size;
     __vmmMax          = vmm_max;
@@ -38,64 +36,48 @@ void            initialize(uint64_t pmm_size, uint64_t vmm_max)
     __initialized     = true;
     dbg::popTrace();
 }
-bool isInitialized()
-{
+bool isInitialized() {
     return __initialized;
 }
-size_t getNextPowerOfTwo(size_t size)
-{
-    if (size <= 1)
-        return 1;
+size_t getNextPowerOfTwo(size_t size) {
+    if (size <= 1) return 1;
     size_t power = 1;
-    while (power < size)
-    {
+    while (power < size) {
         power <<= 1;
     }
     return power;
 }
-size_t getAlignSize(size_t size)
-{
+size_t getAlignSize(size_t size) {
     const size_t CACHE_LINE_SIZE = 64;
     size_t       alignedSize     = getNextPowerOfTwo(size);
-    if (alignedSize < CACHE_LINE_SIZE)
-    {
+    if (alignedSize < CACHE_LINE_SIZE) {
         alignedSize = CACHE_LINE_SIZE;
     }
     return alignedSize;
 }
-void* allocate(size_t size)
-{
+void* allocate(size_t size) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized())
-    {
+    if (!isInitialized()) {
         initialize(PMM_SIZE, VMM_MAX);
     }
     size_t ALIGN_SIZE    = getAlignSize(size);
     size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
     node*  current       = __head;
-    while (current && current->next)
-    {
-        if (current->free && current->next->free)
-        {
+    while (current && current->next) {
+        if (current->free && current->next->free) {
             current->size += sizeof(node) + current->next->size;
             current->next = current->next->next;
-            if (current->next)
-            {
+            if (current->next) {
                 current->next->prev = current;
             }
-        }
-        else
-        {
+        } else {
             current = current->next;
         }
     }
     current = __head;
-    while (current)
-    {
-        if (current->free && current->size == alignedLength)
-        {
-            if (current->size > alignedLength + sizeof(node))
-            {
+    while (current) {
+        if (current->free && current->size == alignedLength) {
+            if (current->size > alignedLength + sizeof(node)) {
                 node* newNode      = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current) +
                                                              sizeof(node) + alignedLength);
                 newNode->size      = current->size - alignedLength - sizeof(node);
@@ -104,8 +86,7 @@ void* allocate(size_t size)
                 newNode->prev      = current;
                 newNode->freedSize = 0;
                 newNode->allocSize = current->size - alignedLength - sizeof(node);
-                if (current->next)
-                {
+                if (current->next) {
                     current->next->prev = newNode;
                 }
                 current->next = newNode;
@@ -122,12 +103,9 @@ void* allocate(size_t size)
         current = current->next;
     }
     current = __head;
-    while (current)
-    {
-        if (current->free && current->size >= alignedLength)
-        {
-            if (current->size > alignedLength + sizeof(node))
-            {
+    while (current) {
+        if (current->free && current->size >= alignedLength) {
+            if (current->size > alignedLength + sizeof(node)) {
                 node* newNode      = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current) +
                                                              sizeof(node) + alignedLength);
                 newNode->size      = current->size - alignedLength - sizeof(node);
@@ -136,8 +114,7 @@ void* allocate(size_t size)
                 newNode->prev      = current;
                 newNode->freedSize = 0;
                 newNode->allocSize = current->size - alignedLength - sizeof(node);
-                if (current->next)
-                {
+                if (current->next) {
                     current->next->prev = newNode;
                 }
                 current->next = newNode;
@@ -157,31 +134,25 @@ void* allocate(size_t size)
     dbg::printm(MODULE, "TODO: Extending of heap\n");
     std::abort();
 }
-void free(void* ptr, size_t size)
-{
+void free(void* ptr, size_t size) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized())
-    {
+    if (!isInitialized()) {
         dbg::printm(MODULE, "Called free before initialized\n");
         std::abort();
     }
     bool  found   = false;
     node* current = __head;
-    while (current)
-    {
-        if (current->freedSize == current->allocSize)
-        {
+    while (current) {
+        if (current->freedSize == current->allocSize) {
             current->freedSize = current->allocSize;
             current->free      = true;
         }
-        if (current == (node*)((uint64_t)ptr - sizeof(node)))
-        {
+        if (current == (node*)((uint64_t)ptr - sizeof(node))) {
             found = true;
         }
         current = current->next;
     }
-    if (!found)
-    {
+    if (!found) {
         dbg::printm(MODULE,
                     "Tried freeing a node that was allocated elsewhere (ptr: 0x%llx ptr2: 0x%llx "
                     "size: 0x%llx)\n",
@@ -191,13 +162,11 @@ void free(void* ptr, size_t size)
     size_t ALIGN_SIZE    = getAlignSize(size);
     size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
     node*  freeNode      = reinterpret_cast<node*>((uintptr_t)ptr - sizeof(node));
-    if (freeNode->free)
-    {
+    if (freeNode->free) {
         dbg::printm(MODULE, "Called free on an already free node\n");
         std::abort();
     }
-    if (freeNode->allocSize < alignedLength + freeNode->freedSize)
-    {
+    if (freeNode->allocSize < alignedLength + freeNode->freedSize) {
         dbg::printm(MODULE, "Called free with larger then supposed to size\n");
         dbg::printm(
             MODULE,
@@ -205,67 +174,50 @@ void free(void* ptr, size_t size)
             freeNode->allocSize, freeNode->freedSize, freeNode->size, size);
         std::abort();
     }
-    if (alignedLength == freeNode->size || alignedLength == 0)
-    {
+    if (alignedLength == freeNode->size || alignedLength == 0) {
         freeNode->freedSize = freeNode->allocSize;
-    }
-    else
-    {
+    } else {
         freeNode->freedSize += alignedLength;
     }
     current = __head;
-    while (current)
-    {
-        if (current->freedSize == current->allocSize)
-        {
+    while (current) {
+        if (current->freedSize == current->allocSize) {
             current->freedSize = current->allocSize;
             current->free      = true;
         }
         current = current->next;
     }
     current = __head;
-    while (current && current->next)
-    {
-        if (current->free && current->next->free)
-        {
+    while (current && current->next) {
+        if (current->free && current->next->free) {
             current->size += sizeof(node) + current->next->size;
             current->next = current->next->next;
-            if (current->next)
-            {
+            if (current->next) {
                 current->next->prev = current;
             }
-        }
-        else
-        {
+        } else {
             current = current->next;
         }
     }
     dbg::popTrace();
 }
-void free(void* ptr)
-{
+void free(void* ptr) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized())
-    {
+    if (!isInitialized()) {
         dbg::printm(MODULE, "Called free before initialized\n");
         std::abort();
     }
     free(ptr, 0);
     dbg::popTrace();
 }
-void printInfo()
-{
+void printInfo() {
     dbg::printm(MODULE, "INFO\n");
     uint64_t freeMemory = 0, allocatedMemory = 0, blocks = 0;
     node*    current = __head;
-    while (current)
-    {
-        if (current->free)
-        {
+    while (current) {
+        if (current->free) {
             freeMemory += current->size;
-        }
-        else
-        {
+        } else {
             allocatedMemory += current->size;
         }
         blocks++;

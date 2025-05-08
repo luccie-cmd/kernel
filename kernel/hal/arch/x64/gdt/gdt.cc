@@ -37,8 +37,7 @@
         0       /* base2 */                                                                        \
     }
 
-namespace hal::arch::x64::gdt
-{
+namespace hal::arch::x64::gdt {
 static GDTEntry entries[] = {
     GDT_ENTRY(0, 0),
     GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
@@ -53,8 +52,7 @@ static GDTEntry entries[] = {
               GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // User 64 bit data
 };
 extern "C" void loadGDT(uint64_t base, uint16_t limit);
-void            init()
-{
+void            init() {
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
 }
 }; // namespace hal::arch::x64::gdt

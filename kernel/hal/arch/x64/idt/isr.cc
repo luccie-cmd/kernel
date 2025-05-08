@@ -264,10 +264,8 @@ extern "C" void isrHandler252(io::Registers* regs);
 extern "C" void isrHandler253(io::Registers* regs);
 extern "C" void isrHandler254(io::Registers* regs);
 extern "C" void isrHandler255(io::Registers* regs);
-namespace hal::arch::x64::idt
-{
-void initGates()
-{
+namespace hal::arch::x64::idt {
+void initGates() {
     registerHandler(0, (void*)isrHandler0, IDT_GATE_TYPE_INTERRUPT);
     registerHandler(1, (void*)isrHandler1, IDT_GATE_TYPE_INTERRUPT);
     registerHandler(2, (void*)isrHandler2, IDT_GATE_TYPE_INTERRUPT);
