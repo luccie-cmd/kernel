@@ -3,6 +3,7 @@ extern handleInt
 %macro ISR_NOERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        cli
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
         jmp isrCommon
@@ -11,6 +12,7 @@ extern handleInt
 %macro ISR_ERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        cli
         push qword %1 ; interrupt number
         jmp isrCommon
 %endmacro
@@ -279,7 +281,6 @@ isrCommon:
     push rbx
     push rcx
     push rdx
-    push rsp
     push rbp
     push rsi
     push rdi
@@ -309,7 +310,7 @@ isrCommon:
     cld
 
     ; Push the address of the structure onto the stack
-    lea rdi, [rsp]   ; Address of the saved registers
+    mov rdi, rsp   ; Address of the saved registers
     call handleInt
 
     pop rax
@@ -336,11 +337,11 @@ isrCommon:
     pop rdi
     pop rsi
     pop rbp
-    pop rsp
     pop rdx
     pop rcx
     pop rbx
     pop rax
     
     add rsp, 16
+    sti
     iretq

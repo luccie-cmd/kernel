@@ -2,6 +2,7 @@
 #include <common/io/io.h>
 #include <common/ordered_map.h>
 #include <drivers/input/kbd/ps2.h>
+#include <kernel/hal/arch/x64/irq/irq.h>
 #define MODULE "PS2 Keyboard driver"
 
 // TODO: Keypad specific stuff. For now we just map them to their numbers and things
@@ -185,6 +186,12 @@ static char translateScancode(uint8_t scancode, bool pressed, bool special) {
     return '\0';
 }
 
+static void keyboardPress(io::Registers* regs) {
+    (void)regs;
+    dbg::printm(MODULE, "TODO: Handle PS/2 keyboard press\n");
+    std::abort();
+}
+
 namespace drivers::input::kbd {
 PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -294,6 +301,7 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     }
     dbg::printm(MODULE, "Using PS/2 scancode set 0x%hhx\n", scancodeSet);
     dbg::printm(MODULE, "TODO: Add IRQ for keypress\n");
+    hal::arch::x64::irq::overrideIrq(1, keyboardPress);
     dbg::printm(MODULE, "Initialized PS/2 keyboard\n");
     dbg::popTrace();
 }
@@ -317,23 +325,23 @@ std::vector<uint8_t> PS2Driver::getKeyPresses(size_t number) {
 PS2Driver* loadPS2Driver() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     PS2Driver* ps2Driver = new PS2Driver();
-    while (1) {
-        while ((io::inb(0x64) & 1) == 0);
-        uint8_t byte    = io::inb(0x60);
-        bool    pressed = true;
-        bool    normal  = true;
-        if (byte == 0xE0) {
-            byte   = io::inb(0x60);
-            normal = false;
-        }
-        if (byte == 0xF0) {
-            byte    = io::inb(0x60);
-            pressed = false;
-        }
-        dbg::printf("%c", translateScancode(byte, pressed, !normal));
-        // dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
-        // pressed ? "pressed" : "released", normal ? "" : " multimedia");
-    }
+    // while (1) {
+    //     while ((io::inb(0x64) & 1) == 0);
+    //     uint8_t byte    = io::inb(0x60);
+    //     bool    pressed = true;
+    //     bool    normal  = true;
+    //     if (byte == 0xE0) {
+    //         byte   = io::inb(0x60);
+    //         normal = false;
+    //     }
+    //     if (byte == 0xF0) {
+    //         byte    = io::inb(0x60);
+    //         pressed = false;
+    //     }
+    //     dbg::printf("%c", translateScancode(byte, pressed, !normal));
+    //     // dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
+    //     // pressed ? "pressed" : "released", normal ? "" : " multimedia");
+    // }
     dbg::printm(MODULE, "Added PS/2 keyboard\n");
     dbg::popTrace();
     return ps2Driver;

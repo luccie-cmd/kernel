@@ -12,7 +12,7 @@
 #include <kernel/hal/arch/x64/idt/isr.h>
 #include <kernel/mmu/mmu.h>
 #define KERNEL_ADDRESS 0xffffffff80000000
-#define PAGE_MASK 0xFFFFFFFFFFFFF000ULL
+#define PAGE_MASK 0xfffffffffffff000
 
 static const char* const exceptions[] = {"Divide by zero error",
                                          "Debug",
@@ -47,14 +47,14 @@ static const char* const exceptions[] = {"Divide by zero error",
                                          "Security Exception",
                                          ""};
 
+typedef uint64_t (*ExceptionHandler)(io::Registers* regs);
+ExceptionHandler exceptionHandlers[32];
 namespace hal::arch::x64::idt {
 static IDTEntry entries[256];
 extern "C" void loadIDT(uint64_t base, uint16_t limit);
-typedef uint64_t (*ExceptionHandler)(io::Registers* regs);
-ExceptionHandler exceptionHandlers[32];
-uint64_t         handlePF(io::Registers*);
-uint64_t         handleUD(io::Registers*);
-void             init() {
+uint64_t        handlePF(io::Registers*);
+uint64_t        handleUD(io::Registers*);
+void            init() {
     loadIDT((uint64_t)entries, sizeof(entries) - 1);
     initGates();
     for (uint8_t i = 0; i < 255; ++i) {
@@ -112,33 +112,32 @@ void printRegs(io::Registers* regs) {
                 regs->r13, regs->r14, regs->r15);
     dbg::printf("RIP=0x%016.16llx RFL=", regs->rip);
     printRfl(regs->rflags);
-    dbg::printf("ES =0x%02.2llx\n", regs->es);
     dbg::printf("CS =0x%02.2llx\n", regs->cs);
-    dbg::printf("SS =0x%02.2llx\n", regs->ss);
+    dbg::printf("ES =0x%02.2llx\n", regs->es);
     dbg::printf("DS =0x%02.2llx\n", regs->ds);
     dbg::printf("FS =0x%02.2llx\n", regs->fs);
     dbg::printf("GS =0x%02.2llx\n", regs->gs);
+    dbg::printf("SS =0x%02.2llx\n", regs->ss);
     dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
 }
-extern "C" uint64_t handleInt(io::Registers* regs) {
-    io::cli();
+extern "C" __attribute__((interrupt)) void handleInt(io::Registers* regs) {
+    printRegs(regs);
     if (regs->rip >= KERNEL_ADDRESS) {
         if (regs->interrupt_number < 0x20) {
             dbg::printf("Interrupt type: %s\n", exceptions[regs->interrupt_number]);
         }
-        printRegs(regs);
         if (exceptionHandlers[regs->interrupt_number]) {
-            return exceptionHandlers[regs->interrupt_number](regs);
+            exceptionHandlers[regs->interrupt_number](regs);
+            return;
         }
         dbg::printf(
             "TODO: Handle kernel interrupts (exit or throw a BSOD type) (rip = %016.16llx)\n",
             regs->rip);
-        std::abort();
     } else {
         dbg::printf("TODO: Handle userland interrupts (send SIGSEGV) (rip = %016.16llx)\n",
                     regs->rip);
-        std::abort();
     }
+    std::abort();
 }
 void disablePageFaultProtection() {
     exceptionHandlers[0xE] = nullptr;

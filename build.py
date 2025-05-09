@@ -86,7 +86,7 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs', '-mgeneral-regs-only']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
 CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O2', '-mcmodel=kernel', '-fno-lto']

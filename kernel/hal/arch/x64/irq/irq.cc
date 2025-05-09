@@ -1,6 +1,8 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/ordered_map.h>
 #include <cstdlib>
+#include <cstring>
 #include <kernel/acpi/acpi.h>
 #include <kernel/acpi/tables.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
@@ -35,6 +37,8 @@
 #define LAPIC_CURRENT_COUNT_TIMER_REGISTER 0x390
 #define LAPIC_DIVIDE_CONFIGURATION_REGISTER_TIMER_REGISTER 0x3E0
 
+#define IOAPIC_REGISTER_REDIRECTION_BASE 0x10
+
 namespace hal::arch::x64::irq {
 uint64_t lapicAddr = 0;
 
@@ -59,11 +63,18 @@ static uint32_t lapicRead(uint32_t offset) {
     return *(volatile uint32_t*)(lapicAddr + offset);
 }
 
-static uint32_t ioapicRead(uint32_t base, uint32_t offset) {
+static uint32_t ioapicRead(uint64_t base, uint32_t offset) {
     volatile uint32_t* ioapic_index = reinterpret_cast<volatile uint32_t*>(base);
     volatile uint32_t* ioapic_data  = reinterpret_cast<volatile uint32_t*>(base + 0x10);
     *ioapic_index                   = offset;
     return *ioapic_data;
+}
+
+static void ioapicWrite(uint64_t base, uint32_t offset, uint32_t value) {
+    volatile uint32_t* ioapic_index = reinterpret_cast<volatile uint32_t*>(base);
+    volatile uint32_t* ioapic_data  = reinterpret_cast<volatile uint32_t*>(base + 0x10);
+    *ioapic_index                   = offset;
+    *ioapic_data                    = value;
 }
 
 static uint32_t getMaxRedirections(uint32_t addr) {
@@ -76,6 +87,67 @@ static uint64_t getAPICBase() {
 
 static void setAPICBase(uint64_t base) {
     io::wrmsr(IA32_APIC_BASE_MSR, (base & 0xFFFFF000) | (getAPICBase() & 0xFFF) | (1 << 11));
+}
+
+static uint8_t findFreeISR() {
+    static bool freeIsrEntries[0xff];
+    static bool firstRun = true;
+    if (firstRun) {
+        std::memset(freeIsrEntries, 1, sizeof(freeIsrEntries));
+    }
+    for (uint8_t i = 0x20; i < sizeof(freeIsrEntries); ++i) {
+        if (freeIsrEntries[i]) {
+            freeIsrEntries[i] = false;
+            return i;
+        }
+    }
+    dbg::printm(MODULE, "Cannot find a free ISR entry\n");
+    std::abort();
+}
+
+static uint32_t getOverride(uint32_t IRQ) {
+    for (ISODesc* desc : ioApicIsodescs) {
+        if (desc->source == static_cast<uint8_t>(IRQ)) {
+            return desc->gsi;
+        }
+    }
+    return IRQ;
+}
+
+static uint32_t getIRQEntry(uint32_t IRQ) {
+    static OrderedMap<uint32_t, bool> usedIRQs;
+    uint32_t                          retIrq;
+    if (IRQ == static_cast<uint32_t>(-1)) {
+        retIrq = usedIRQs.size();
+    } else {
+        retIrq = getOverride(IRQ);
+    }
+    if (usedIRQs.contains(IRQ)) {
+        dbg::printm(MODULE, "Attempted to add same IRQ %u twice\n", IRQ);
+    }
+    usedIRQs.insert_or_assign(retIrq, true);
+    return retIrq;
+}
+
+void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
+    (void)func;
+    uint32_t newIRQ = getIRQEntry(IRQ);
+    uint8_t  vector = findFreeISR();
+    dbg::printm(MODULE, "New IRQ allocation on %u %hhu\n", newIRQ, vector);
+    for (IOApicDesc* e : ioApicdescs) {
+        if (e->minGSI <= newIRQ && e->maxGSI >= newIRQ) {
+            uint32_t low_index   = IOAPIC_REGISTER_REDIRECTION_BASE + (newIRQ * 2);
+            uint32_t high_index  = IOAPIC_REGISTER_REDIRECTION_BASE + (newIRQ * 2) + 1;
+            uint64_t redirection = static_cast<uint64_t>(vector);
+            ioapicWrite(e->base, high_index, static_cast<uint32_t>(redirection >> 32));
+            ioapicWrite(e->base, low_index, static_cast<uint32_t>(redirection & 0xFFFFFFFF));
+        }
+    }
+}
+
+uint8_t requestIrq(std::function<void(io::Registers*)> func) {
+    (void)func;
+    return 0;
 }
 
 void init() {
