@@ -10,6 +10,7 @@ void init();
 void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func);
 // Requests an  IRQ and returns its vector
 uint8_t requestIrq(std::function<void(io::Registers*)> func);
+void handleInt(io::Registers* regs);
 };
 
 #endif // _KERNEL_HAL_ARCH_X64_IRQ_IRQ_H_

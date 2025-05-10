@@ -94,6 +94,7 @@ static uint8_t findFreeISR() {
     static bool firstRun = true;
     if (firstRun) {
         std::memset(freeIsrEntries, 1, sizeof(freeIsrEntries));
+        firstRun = false;
     }
     for (uint8_t i = 0x20; i < sizeof(freeIsrEntries); ++i) {
         if (freeIsrEntries[i]) {
@@ -108,6 +109,7 @@ static uint8_t findFreeISR() {
 static uint32_t getOverride(uint32_t IRQ) {
     for (ISODesc* desc : ioApicIsodescs) {
         if (desc->source == static_cast<uint8_t>(IRQ)) {
+            dbg::printm(MODULE, "Override of IRQ %lu to %lu\n", IRQ, desc->gsi);
             return desc->gsi;
         }
     }
@@ -129,8 +131,9 @@ static uint32_t getIRQEntry(uint32_t IRQ) {
     return retIrq;
 }
 
+static OrderedMap<uint64_t, std::function<void(io::Registers*)>> IRQFunctions;
+
 void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
-    (void)func;
     uint32_t newIRQ = getIRQEntry(IRQ);
     uint8_t  vector = findFreeISR();
     dbg::printm(MODULE, "New IRQ allocation on %u %hhu\n", newIRQ, vector);
@@ -143,11 +146,26 @@ void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
             ioapicWrite(e->base, low_index, static_cast<uint32_t>(redirection & 0xFFFFFFFF));
         }
     }
+    IRQFunctions.insert_or_assign(static_cast<uint64_t>(vector), func);
 }
 
 uint8_t requestIrq(std::function<void(io::Registers*)> func) {
     (void)func;
     return 0;
+}
+
+static void lapicSendEOI() {
+    lapicWrite(LAPIC_EOI_REGISTER, 0);
+}
+
+void handleInt(io::Registers* regs) {
+    if (IRQFunctions.contains(regs->interrupt_number)) {
+        IRQFunctions.at(regs->interrupt_number)(regs);
+    } else {
+        dbg::printm(MODULE, "No IRQ handler present for IRQ %llu\n", regs->interrupt_number);
+        std::abort();
+    }
+    irq::lapicSendEOI();
 }
 
 void init() {

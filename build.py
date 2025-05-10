@@ -86,10 +86,10 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs', '-mgeneral-regs-only']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O2', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -98,7 +98,7 @@ if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O0"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
-    CONFIG["CFLAGS"] += ["-O2"]
+    CONFIG["CFLAGS"] += ["-O3"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
 if "x64" in CONFIG.get("arch"):

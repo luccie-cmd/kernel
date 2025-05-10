@@ -29,9 +29,6 @@ class OrderedMap {
         std::puts("Out of range error\n");
         std::abort();
     }
-    std::pair<Key, Value> at(size_t index) {
-        return _M_values.at(index);
-    }
     size_t size() {
         return _M_values.size();
     }

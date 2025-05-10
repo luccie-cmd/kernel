@@ -18,11 +18,11 @@ extern uint64_t* __bss_end;
 namespace hal::arch {
 extern "C" void initX64();
 void            earlyInit() {
+    initX64();
     io::cli();
     std::memset(__bss_start, 0, (uint64_t)(__bss_end) - (uint64_t)(__bss_start));
     x64::idt::init();
     x64::gdt::init();
-    initX64();
     io::sti();
 }
 void midInit() {

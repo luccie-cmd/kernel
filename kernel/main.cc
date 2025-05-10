@@ -1,10 +1,12 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/io/regs.h>
 #include <cstdlib>
 #include <cstring>
 #include <drivers/display.h>
 #include <kernel/acpi/acpi.h>
 #include <kernel/hal/arch/init.h>
+#include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/vfs/vfs.h>
 
 drivers::DisplayDriver* displayDriver;
@@ -29,7 +31,6 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
-    // driver::initPS2Keyboard();
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);

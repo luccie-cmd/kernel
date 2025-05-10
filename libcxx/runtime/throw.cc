@@ -16,11 +16,15 @@ void __throw_bad_array_new_length() {
     dbg::printf("%s\n", __PRETTY_FUNCTION__);
     std::abort();
 }
-void __throw_out_of_range(char const* fmt) {
-    dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, fmt);
+void __throw_bad_function_call() {
+    dbg::printf("%s\n", __PRETTY_FUNCTION__);
     std::abort();
 }
 void __throw_logic_error(char const* fmt) {
+    dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, fmt);
+    std::abort();
+}
+void __throw_out_of_range(char const* fmt) {
     dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, fmt);
     std::abort();
 }
