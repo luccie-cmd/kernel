@@ -11,7 +11,7 @@ class PS2Driver : public KeyboardDriver
     ~PS2Driver();
     void init(pci::device* dev);
     void deinit();
-    std::vector<uint8_t> getKeyPresses(size_t number);
+    std::vector<KeyboardInputPair> getKeyPresses(size_t number);
 };
 PS2Driver* loadPS2Driver();
 

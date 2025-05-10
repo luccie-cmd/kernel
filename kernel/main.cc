@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <drivers/display.h>
+#include <drivers/input/kbd.h>
 #include <kernel/acpi/acpi.h>
 #include <kernel/hal/arch/init.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
@@ -43,6 +44,14 @@ extern "C" void KernelMain() {
     buffer[vfs::getLen(handle)] = '\0';
     dbg::printf("`%s`\n", buffer);
     delete[] buffer;
+    drivers::input::kbd::KeyboardDriver* kbdDriver =
+        reinterpret_cast<drivers::input::kbd::KeyboardDriver*>(
+            driver::getDrivers(driver::driverType::INPUT).at(0));
+    std::vector<drivers::input::kbd::KeyboardInputPair> buffer2 = kbdDriver->getKeyPresses(20);
+    for (drivers::input::kbd::KeyboardInputPair b : buffer2) {
+        dbg::printf("%s %s %s\n", b.data.c_str(), b.release ? "Released" : "Pressed",
+                    b.special ? "Special" : "Normal");
+    }
     // vfs::closeFile(handle);
     // vfs::umount("/");
     std::abort();

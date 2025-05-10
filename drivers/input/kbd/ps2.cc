@@ -166,10 +166,6 @@ static char translateScancode(uint8_t scancode, bool pressed, bool special) {
         return '\0';
     } break;
     }
-    if (!pressed) {
-        dbg::popTrace();
-        return '\0';
-    }
     if (!special) {
         auto map = shift ? shiftScancodes : normalScancodes;
         if (!map.contains(scancode)) {
@@ -186,8 +182,11 @@ static char translateScancode(uint8_t scancode, bool pressed, bool special) {
     return '\0';
 }
 
-static bool pressed = true;
-static bool normal  = true;
+namespace drivers::input::kbd {
+
+static bool                           pressed = true;
+static bool                           normal  = true;
+static std::vector<KeyboardInputPair> buffer;
 
 static void keyboardPress(io::Registers* regs) {
     (void)regs;
@@ -197,13 +196,12 @@ static void keyboardPress(io::Registers* regs) {
     } else if (byte == 0xF0) {
         pressed = false;
     } else {
-        dbg::printf("%c", translateScancode(byte, pressed, !normal));
+        char translated = translateScancode(byte, pressed, !normal);
+        buffer.push_back(KeyboardInputPair(std::string(1, translated), !normal, !pressed));
         pressed = true;
         normal  = true;
     }
 }
-
-namespace drivers::input::kbd {
 PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::printm(MODULE, "Initializing PS/2 Keyboard\n");
@@ -351,7 +349,6 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
         }
     }
     dbg::printm(MODULE, "Using PS/2 scancode set 0x%hhx\n", scancodeSet);
-    dbg::printm(MODULE, "TODO: Add IRQ for keypress\n");
     hal::arch::x64::irq::overrideIrq(1, keyboardPress);
     dbg::printm(MODULE, "Initialized PS/2 keyboard\n");
     dbg::popTrace();
@@ -368,10 +365,22 @@ void PS2Driver::deinit() {
     dbg::printm(MODULE, "PS/2 keyboard shouldn't be deinitialized with PCI device!!!\n");
     std::abort();
 }
-std::vector<uint8_t> PS2Driver::getKeyPresses(size_t number) {
+std::vector<KeyboardInputPair> PS2Driver::getKeyPresses(size_t number) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    dbg::printm(MODULE, "TODO: Get %llu number of keypresses\n", number);
-    std::abort();
+    std::vector<KeyboardInputPair> retBuffer;
+    while (buffer.size() < number) {
+        __builtin_ia32_pause();
+    }
+    for (KeyboardInputPair b : buffer) {
+        if (number == 0) {
+            dbg::popTrace();
+            buffer.clear();
+            return retBuffer;
+        }
+        number--;
+        retBuffer.push_back(b);
+    }
+    __builtin_unreachable();
 }
 PS2Driver* loadPS2Driver() {
     dbg::addTrace(__PRETTY_FUNCTION__);
