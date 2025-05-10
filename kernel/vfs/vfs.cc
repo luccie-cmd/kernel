@@ -188,8 +188,15 @@ void mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
     std::pair<MountPoint*, size_t> mp = findMountpoint();
     mp.first->fileSystemDriver        = fileSystemdriver;
     mp.first->mountPath               = mountLocation;
-    mp.first->mounted                 = true;
-    mountPoints.at(mp.second)         = mp.first;
+    if (mp.first->mountPath[std::strlen(mp.first->mountPath) - 1] != '/') {
+        char* newMountPath = new char[strlen(mountLocation) + 2];
+        std::memcpy(newMountPath, mountLocation, std::strlen(mountLocation));
+        newMountPath[std::strlen(mountLocation)] = '/';
+        newMountPath[strlen(mountLocation) + 1]  = '\0';
+        mp.first->mountPath                      = newMountPath;
+    }
+    mp.first->mounted         = true;
+    mountPoints.at(mp.second) = mp.first;
     dbg::printm(MODULE, "Successfully mounted %hhu:%hhu to %s\n", disk, partition, mountLocation);
     dbg::popTrace();
 }

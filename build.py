@@ -5,6 +5,7 @@ import sys
 import subprocess
 import threading
 from script.util import parseSize, compareFiles
+import atexit
 
 def readConfig(path: str) -> dict[str, list[str]]:
     """Reads a configuration file and returns a dictionary of lists of strings."""
@@ -432,9 +433,13 @@ def cleanFiles(dirs: list[str]):
                 print(f"RM    {file}")
                 callCmd(f"rm -f {file}")
 
+def atExitFunc():
+    currentUser = os.getlogin()
+    callCmd(f"chown -R {currentUser}:{currentUser} ./")
 
 def main():
     basename = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+    atexit.register(atExitFunc)
     if "clean" in sys.argv:
         callCmd(f"rm -rf ./.build-cache/{basename}")
         callCmd(f"rm -rf {CONFIG['outDir'][0]}")
@@ -475,8 +480,6 @@ def main():
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
         if os.path.exists("/dev/sda"):
             buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
-    currentUser = os.getlogin()
-    callCmd(f"chown -R {currentUser}:{currentUser} ./")
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

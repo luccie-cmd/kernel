@@ -31,6 +31,7 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
+    vfs::mount(0, 0, "/boot");
     vfs::mount(0, 1, "/");
     vfs::createFile("/test.txt");
     int handle = vfs::openFile("/test.txt", 0);
