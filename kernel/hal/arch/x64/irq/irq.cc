@@ -142,8 +142,8 @@ void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
             uint32_t low_index   = IOAPIC_REGISTER_REDIRECTION_BASE + (newIRQ * 2);
             uint32_t high_index  = IOAPIC_REGISTER_REDIRECTION_BASE + (newIRQ * 2) + 1;
             uint64_t redirection = static_cast<uint64_t>(vector);
-            ioapicWrite(e->base, high_index, static_cast<uint32_t>(redirection >> 32));
             ioapicWrite(e->base, low_index, static_cast<uint32_t>(redirection & 0xFFFFFFFF));
+            ioapicWrite(e->base, high_index, static_cast<uint32_t>(redirection >> 32));
         }
     }
     IRQFunctions.insert_or_assign(static_cast<uint64_t>(vector), func);
@@ -158,11 +158,14 @@ static void lapicSendEOI() {
     lapicWrite(LAPIC_EOI_REGISTER, 0);
 }
 
+extern "C" void printRegs(io::Registers*);
+
 void handleInt(io::Registers* regs) {
     if (IRQFunctions.contains(regs->interrupt_number)) {
         IRQFunctions.at(regs->interrupt_number)(regs);
     } else {
         dbg::printm(MODULE, "No IRQ handler present for IRQ %llu\n", regs->interrupt_number);
+        printRegs(regs);
         std::abort();
     }
     irq::lapicSendEOI();

@@ -186,10 +186,21 @@ static char translateScancode(uint8_t scancode, bool pressed, bool special) {
     return '\0';
 }
 
+static bool pressed = true;
+static bool normal  = true;
+
 static void keyboardPress(io::Registers* regs) {
     (void)regs;
-    dbg::printm(MODULE, "TODO: Handle PS/2 keyboard press\n");
-    std::abort();
+    uint8_t byte = io::inb(0x60);
+    if (byte == 0xE0) {
+        normal = false;
+    } else if (byte == 0xF0) {
+        pressed = false;
+    } else {
+        dbg::printf("%c", translateScancode(byte, pressed, !normal));
+        pressed = true;
+        normal  = true;
+    }
 }
 
 namespace drivers::input::kbd {
@@ -198,16 +209,22 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     dbg::printm(MODULE, "Initializing PS/2 Keyboard\n");
     // 0x60 = data;
     // 0x64 = status, command;
+    // Disable ports
     io::outb(0x64, 0xAD);
     io::outb(0x64, 0xA7);
+    // Clear buffer
     while (io::inb(0x64) & 0x01) {
         (void)io::inb(0x60);
     }
+    // Reset controller
+    io::outb(0x64, 0xFF);
+    // Write new config
     while (io::inb(0x64) & 0x02);
     uint8_t cc = 0b00100101;
     io::outb(0x64, 0x60);
     while (io::inb(0x64) & 0x02);
     io::outb(0x60, cc);
+    // Read new confing and test
     while (io::inb(0x64) & 0x02);
     io::outb(0x64, 0x20);
     while ((io::inb(0x64) & 0x01) == 0);
@@ -219,24 +236,47 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
             cc, current_config);
         std::abort();
     }
+    dbg::printm(MODULE, "Current config: 0b%08hhb\n", current_config);
+    // Self test
     io::outb(0x64, 0xAA);
     while ((io::inb(0x64) & 1) == 0);
     if (io::inb(0x60) != 0x55) {
         dbg::printm(MODULE, "No PS/2 keyboard present\n");
         std::abort();
     }
+    // Test first port
     io::outb(0x64, 0xAB);
     while ((io::inb(0x64) & 1) == 0);
     if (io::inb(0x60) != 0x00) {
         dbg::printm(MODULE, "No PS/2 keyboard present\n");
         std::abort();
     }
+    // Enable
     io::outb(0x64, 0xAE);
+    // Check echo result
+    io::outb(0x60, 0xEE);
+    while ((io::inb(0x64) & 0x01) == 0);
+    uint8_t echo = io::inb(0x60);
+    dbg::printm(MODULE, "Echo result: 0x%hhx\n", echo);
+    // Check config
+    while (io::inb(0x64) & 0x02);
+    io::outb(0x64, 0x20);
+    while ((io::inb(0x64) & 0x01) == 0);
+    current_config = io::inb(0x60);
+    if (current_config != cc) {
+        dbg::printm(MODULE,
+                    "PS/2 Keyboard failed to accept new configuration (second check) (expected: "
+                    "0x%hhx current: 0x%hhx)\n",
+                    cc, current_config);
+        std::abort();
+    }
+    // Read scancode set
     io::outb(0x60, 0xF0);
     while ((io::inb(0x64) & 0x01) == 0);
     uint8_t resp = io::inb(0x60);
     if (resp != 0xFA) {
-        dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+        dbg::printm(MODULE,
+                    "Keyboard did not ACK scan code get command request (response: 0x%hhx)\n",
                     resp);
         std::abort();
     }
@@ -244,18 +284,25 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     while ((io::inb(0x64) & 0x01) == 0);
     resp = io::inb(0x60);
     if (resp != 0xFA) {
-        dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+        dbg::printm(MODULE,
+                    "Keyboard did not ACK scan code get operand request (response: 0x%hhx)\n",
                     resp);
         std::abort();
     }
     uint8_t scancodeSet = io::inb(0x60);
+    // Check and set scancodeset
     if (scancodeSet != 0x02) {
-        dbg::printm(MODULE, "Controller isn't initialized to scancodeset 2 so we'll force it\n");
+        dbg::printm(
+            MODULE,
+            "Controller isn't initialized to scancodeset 2 so we'll force it (Current is 0x%hhx)\n",
+            scancodeSet);
+        // Set scancodeset 2
         io::outb(0x60, 0xF0);
         while ((io::inb(0x64) & 0x01) == 0);
         resp = io::inb(0x60);
         if (resp != 0xFA) {
-            dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+            dbg::printm(MODULE,
+                        "Keyboard did not ACK scan code set command request (response: 0x%hhx)\n",
                         resp);
             std::abort();
         }
@@ -263,15 +310,18 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
         while ((io::inb(0x64) & 0x01) == 0);
         resp = io::inb(0x60);
         if (resp != 0xFA) {
-            dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+            dbg::printm(MODULE,
+                        "Keyboard did not ACK scan code set operand request (response: 0x%hhx)\n",
                         resp);
             std::abort();
         }
+        // Check new scancodeset
         io::outb(0x60, 0xF0);
         while ((io::inb(0x64) & 0x01) == 0);
         resp = io::inb(0x60);
         if (resp != 0xFA) {
-            dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+            dbg::printm(MODULE,
+                        "Keyboard did not ACK scan code get command request (response: 0x%hhx)\n",
                         resp);
             std::abort();
         }
@@ -279,7 +329,8 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
         while ((io::inb(0x64) & 0x01) == 0);
         resp = io::inb(0x60);
         if (resp != 0xFA) {
-            dbg::printm(MODULE, "Keyboard did not ACK scan code set request (response: 0x%hhx)\n",
+            dbg::printm(MODULE,
+                        "Keyboard did not ACK scan code get operand request (response: 0x%hhx)\n",
                         resp);
             std::abort();
         }

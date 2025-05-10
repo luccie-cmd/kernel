@@ -124,9 +124,9 @@ extern "C" void printRegs(io::Registers* regs) {
     dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
 }
 extern "C" void handleInt(io::Registers* regs) {
-    printRegs(regs);
     if (regs->interrupt_number < 0x20) {
         dbg::printf("Interrupt type: %s\n", exceptions[regs->interrupt_number]);
+        printRegs(regs);
         if (exceptionHandlers[regs->interrupt_number]) {
             exceptionHandlers[regs->interrupt_number](regs);
         } else {

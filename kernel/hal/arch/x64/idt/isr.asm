@@ -4,6 +4,7 @@ extern printRegs
 %macro ISR_NOERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        cli
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
         jmp isrCommon
@@ -12,6 +13,7 @@ extern printRegs
 %macro ISR_ERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        cli
         push qword %1 ; interrupt number
         jmp isrCommon
 %endmacro
