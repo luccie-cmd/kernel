@@ -54,6 +54,5 @@ static GDTEntry entries[] = {
 extern "C" void loadGDT(uint64_t base, uint16_t limit);
 void            init() {
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
-    24
 }
 }; // namespace hal::arch::x64::gdt

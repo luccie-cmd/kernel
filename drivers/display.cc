@@ -64,7 +64,7 @@ void DisplayDriver::drawCharacter(uint8_t display, char c) {
     }
     for (uint8_t y = 0; y < CHAR_HEIGHT; ++y) {
         for (uint8_t x = 0; x < CHAR_WIDTH; ++x) {
-            if (FONT[(uint8_t)c][y] & (0x80 >> x)) {
+            if (CHECK_PIXEL(c, x, y)) {
                 this->writePixel(display, this->screenX + x, this->screenY + y, 0xFFFFFFFF);
             }
         }
@@ -80,7 +80,7 @@ void DisplayDriver::drawChar(uint8_t display, char c) {
         this->screenX = MARGIN;
     } break;
     case '\t': {
-        this->screenX += 4 * CHAR_WIDTH;
+        this->screenX += 4 * (CHAR_WIDTH + MARGIN);
     } break;
     case '\b': {
         if (this->screenX >= CHAR_WIDTH + MARGIN) {

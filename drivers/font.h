@@ -4,6 +4,7 @@
 #define CHAR_WIDTH 8
 #define CHAR_HEIGHT 16
 #define MARGIN 2
+#define CHECK_PIXEL(c, x, y) (FONT[(uint8_t)c][y] & (0x80 >> x))
 
 const uint8_t FONT[128][16] = {
     {
