@@ -228,10 +228,10 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     while ((io::inb(0x64) & 0x01) == 0);
     uint8_t current_config = io::inb(0x60);
     if (current_config != cc) {
-        dbg::printm(
-            MODULE,
-            "PS/2 Keyboard failed to accept new configuration (expected: 0x%hhx current: 0x%hhx)\n",
-            cc, current_config);
+        dbg::printm(MODULE,
+                    "PS/2 Keyboard failed to accept new configuration (expected: 0b%08hhb current: "
+                    "0b%08hhb)\n",
+                    cc, current_config);
         std::abort();
     }
     dbg::printm(MODULE, "Current config: 0b%08hhb\n", current_config);
@@ -263,10 +263,9 @@ PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
     current_config = io::inb(0x60);
     if (current_config != cc) {
         dbg::printm(MODULE,
-                    "PS/2 Keyboard failed to accept new configuration (second check) (expected: "
-                    "0x%hhx current: 0x%hhx)\n",
+                    "PS/2 Keyboard failed to accept new configuration (expected: 0b%08hhb current: "
+                    "0b%08hhb)\n",
                     cc, current_config);
-        std::abort();
     }
     // Read scancode set
     io::outb(0x60, 0xF0);

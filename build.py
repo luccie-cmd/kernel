@@ -428,7 +428,7 @@ def cleanFiles(dirs: list[str]):
         for file in files:
             if not os.path.isfile(file) or not checkExtension(file, ["c", "cc", "asm"]):
                 continue
-            file = CONFIG["outDir"][0] + '/' + file
+            file = CONFIG["outDir"][0] + '/' + file + '.o'
             if file not in newObjFiles:
                 print(f"RM    {file}")
                 callCmd(f"rm -f {file}")
