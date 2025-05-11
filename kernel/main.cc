@@ -32,28 +32,11 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
-    vfs::mount(0, 0, "/boot");
-    vfs::mount(0, 1, "/");
-    vfs::createFile("/test.txt");
-    int handle = vfs::openFile("/test.txt", 0);
-    vfs::writeFile(handle, std::strlen("Hello, World12\nHello2\0"), "Hello, World12\nHello2\0");
-    vfs::closeFile(handle);
-    handle       = vfs::openFile("/test.txt", 0);
-    char* buffer = new char[vfs::getLen(handle)];
-    vfs::readFile(handle, vfs::getLen(handle), buffer);
-    buffer[vfs::getLen(handle)] = '\0';
-    dbg::printf("`%s`\n", buffer);
-    delete[] buffer;
-    drivers::input::kbd::KeyboardDriver* kbdDriver =
-        reinterpret_cast<drivers::input::kbd::KeyboardDriver*>(
-            driver::getDrivers(driver::driverType::INPUT).at(0));
-    std::vector<drivers::input::kbd::KeyboardInputPair> buffer2 = kbdDriver->getKeyPresses(20);
-    for (drivers::input::kbd::KeyboardInputPair b : buffer2) {
-        dbg::printf("%s %s %s\n", b.data.c_str(), b.release ? "Released" : "Pressed",
-                    b.special ? "Special" : "Normal");
-    }
-    // vfs::closeFile(handle);
-    // vfs::umount("/");
+    vfs::mount(0, 0, "/tmpboot");
+    int      handle = vfs::openFile("/tmpboot/init", 0);
+    uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
+    dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
+    vfs::umount("/tmpboot");
     std::abort();
     for (;;);
 }

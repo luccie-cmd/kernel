@@ -9,7 +9,7 @@ qemu-system-x86_64 \
     -D qemu.log \
     -M pc \
     -smp 2 \
-    -cpu core2duo,vendor=GenuineIntel,+sse,+sse2,+sse3,+hypervisor \
+    -cpu core2duo,vendor=GenuineIntel,+sse,+sse2,+sse3,+hypervisor,-ht \
     -drive file="./bin/image.img",if=ide,cache=writethrough,format=raw \
     -device pci-bridge,chassis_nr=1,id=pci_bridge1 \
     -device e1000,netdev=net0,bus=pci_bridge1,addr=0x1 \

@@ -13,6 +13,7 @@
 #include <kernel/hal/arch/x64/idt/isr.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/mmu.h>
+#include <kernel/task/task.h>
 #define KERNEL_ADDRESS 0xffffffff80000000
 #define PAGE_MASK 0xfffffffffffff000
 
@@ -49,13 +50,13 @@ static const char* const exceptions[] = {"Divide by zero error",
                                          "Security Exception",
                                          ""};
 
-typedef uint64_t (*ExceptionHandler)(io::Registers* regs);
+typedef void (*ExceptionHandler)(io::Registers* regs);
 ExceptionHandler exceptionHandlers[32];
 namespace hal::arch::x64::idt {
 static IDTEntry entries[256];
 extern "C" void loadIDT(uint64_t base, uint16_t limit);
-uint64_t        handlePF(io::Registers*);
-uint64_t        handleUD(io::Registers*);
+void            handlePF(io::Registers*);
+void            handleUD(io::Registers*);
 void            init() {
     loadIDT((uint64_t)entries, sizeof(entries) - 1);
     initGates();
@@ -150,7 +151,7 @@ void disableUDProtection() {
 void enableUDProtection() {
     exceptionHandlers[0x6] = handleUD;
 }
-uint64_t handlePF(io::Registers* regs) {
+void handlePF(io::Registers* regs) {
     io::cli();
     disablePageFaultProtection();
     PageFaultError err = *(PageFaultError*)(&regs->error_code);
@@ -160,7 +161,10 @@ uint64_t handlePF(io::Registers* regs) {
             dbg::print("Cannot map a page at NULL\n");
             std::abort();
         }
-        mmu::vmm::mapPage(io::rcr2() & PAGE_MASK);
+        mmu::vmm::mapPage(
+            mmu::vmm::getPML4(task::getCurrentPID()), mmu::pmm::allocate(), io::rcr2() & PAGE_MASK,
+            PROTECTION_RW | (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0),
+            MAP_GLOBAL | MAP_PRESENT);
     } else {
         printRegs(regs);
         dbg::printf("TODO: Handle other types of page faults!!!\n");
@@ -169,9 +173,8 @@ uint64_t handlePF(io::Registers* regs) {
     dbg::printf("Handled pagefault for address 0x%llx\n", io::rcr2() & PAGE_MASK);
     enablePageFaultProtection();
     io::sti();
-    return regs->rip;
 }
-uint64_t handleUD(io::Registers* regs) {
+void handleUD(io::Registers* regs) {
     disableUDProtection();
     uint8_t* instructionPtr = (uint8_t*)regs->rip;
     uint8_t  opcode         = *instructionPtr;
