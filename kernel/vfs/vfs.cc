@@ -285,6 +285,9 @@ void readFile(uint64_t handle, uint64_t size, void* buffer) {
         dbg::printm(MODULE, "Invalid use of already closed file\n");
         std::abort();
     }
+    if (size == 0) {
+        size = vfs::getLen(handle);
+    }
     MountPoint* mp = mountPoints.at(vfsFile->mpIdx);
     mp->fileSystemDriver->read(vfsFile->fsHandle, size, buffer);
     dbg::popTrace();
@@ -298,6 +301,10 @@ void writeFile(uint64_t handle, uint64_t size, const void* buffer) {
     }
     if (vfsFile->used == false) {
         dbg::printm(MODULE, "Invalid use of already closed file\n");
+        std::abort();
+    }
+    if (size == 0) {
+        dbg::printm(MODULE, "Attempted 0 size write\n");
         std::abort();
     }
     MountPoint* mp = mountPoints.at(vfsFile->mpIdx);

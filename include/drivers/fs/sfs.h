@@ -83,6 +83,8 @@ class SFSDriver : public FSDriver {
     SuperBlockBlock*      superBlock;
     DirectoryBlock*       rootDir;
     std::vector<SFSFile*> files;
+
+    void ls(const char* path);
 };
 }; // namespace drivers::fs
 

@@ -50,11 +50,11 @@ void SFSDriver::deinit() {
 void SFSDriver::createDir(const char* basePath, const char* dirName) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (strcmp(basePath, "/") == 0) {
-        DirectoryBlock* newDir    = new DirectoryBlock;
-        newDir->header.type       = SFSBlockTypes::Directory;
-        newDir->header.currentLBA = this->findFreeLBA();
-        newDir->nextDirBlock      = 0;
-        newDir->blocksCount       = 0;
+        DirectoryBlock* newDir       = new DirectoryBlock;
+        newDir->header.type          = SFSBlockTypes::Directory;
+        newDir->header.currentLBA    = this->findFreeLBA();
+        newDir->nextDirBlock         = 0;
+        newDir->blocksCount          = 0;
         NameBlock* nameBlock         = new NameBlock;
         nameBlock->header.type       = SFSBlockTypes::Name;
         nameBlock->header.currentLBA = this->findFreeLBA();
@@ -95,11 +95,11 @@ void SFSDriver::createDir(const char* basePath, const char* dirName) {
         }
         lastDirBlock = nextDir;
     }
-    DirectoryBlock* newDir    = new DirectoryBlock;
-    newDir->header.type       = SFSBlockTypes::Directory;
-    newDir->header.currentLBA = this->findFreeLBA();
-    newDir->nextDirBlock      = 0;
-    newDir->blocksCount       = 0;
+    DirectoryBlock* newDir       = new DirectoryBlock;
+    newDir->header.type          = SFSBlockTypes::Directory;
+    newDir->header.currentLBA    = this->findFreeLBA();
+    newDir->nextDirBlock         = 0;
+    newDir->blocksCount          = 0;
     NameBlock* nameBlock         = new NameBlock;
     nameBlock->header.type       = SFSBlockTypes::Name;
     nameBlock->header.currentLBA = this->findFreeLBA();
@@ -282,7 +282,7 @@ void SFSDriver::create(const char* path) {
     }
     std::string     strPath(path);
     DirectoryBlock* lastDirBlock = this->rootDir;
-    std::string currentPath = "/";
+    std::string     currentPath  = "/";
     while (true) {
         size_t slashPos = strPath.find('/');
         if (slashPos == std::string::npos) break;
@@ -312,7 +312,7 @@ void SFSDriver::create(const char* path) {
     nameBlock->header.type       = SFSBlockTypes::Name;
     nameBlock->header.currentLBA = this->findFreeLBA();
     nameBlock->nextName          = 0;
-    uint64_t copyStrPathLen = 0;
+    uint64_t copyStrPathLen      = 0;
     while (copyStrPathLen < strPath.size()) {
         nameBlock->characters[nameBlock->length++] = strPath[copyStrPathLen++];
         if (nameBlock->length >= sizeof(nameBlock->characters)) {
