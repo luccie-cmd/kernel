@@ -20,6 +20,11 @@ void AbiCallCtors() {
     }
 }
 
+uint8_t buffer[] = {
+    0xF0,
+    0x05,
+};
+
 extern "C" void KernelMain() {
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -32,11 +37,12 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
-    vfs::mount(0, 0, "/tmpboot");
-    int      handle = vfs::openFile("/tmpboot/init", 0);
-    uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
-    dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
-    vfs::umount("/tmpboot");
+    // vfs::mount(0, 0, "/tmpboot");
+    // int      handle = vfs::openFile("/tmpboot/init", 0);
+    // uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
+    // dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
+    // vfs::umount("/tmpboot");
+
     std::abort();
     for (;;);
 }

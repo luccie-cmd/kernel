@@ -50,9 +50,88 @@ static GDTEntry entries[] = {
               GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY), // User 64 bit code
     GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
               GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // User 64 bit data
+    {0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0},
 };
+static TSS tss __attribute__((aligned(4096)));
+void       initTSS() {
+    uint32_t tss_limit = sizeof(TSS) - 1;
+    uint64_t tss_base  = reinterpret_cast<uint64_t>(&tss);
+    entries[5]         = {
+                      .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
+                      .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
+                      .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
+                      .access       = 0x89,
+                      .limit_middle = 0,
+                      .flags        = 0,
+                      .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
+    };
+    entries[6] = {
+              .limit_low    = static_cast<uint16_t>(tss_base >> 32),
+              .base_low     = static_cast<uint16_t>(tss_base >> 48),
+              .base_middle  = 0,
+              .access       = 0,
+              .limit_middle = 0,
+              .flags        = 0,
+              .base_high    = 0,
+    };
+    tss.iomap_base = sizeof(TSS);
+}
 extern "C" void loadGDT(uint64_t base, uint16_t limit);
 void            init() {
+    initTSS();
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
 }
 }; // namespace hal::arch::x64::gdt
+
+// global halTssInit
+// extern GDT
+// extern abort
+// section .text
+// halTssInit:
+//     push rdi
+//     push rsi
+//     lea rax, [tssEntry]
+//     mov rdi, TSS_END
+//     mov rsi, TSS
+//     sub rdi, rsi
+//     dec rdi
+//     mov [rax+0], di
+//     mov [rax+2], si
+//     shr rsi, 16
+//     mov [rax+4], sil
+//     mov BYTE [rax+5], 0x89
+//     mov BYTE [rax+6], 0
+//     shr rsi, 8
+//     mov [rax+7], si
+//     shr rsi, 8
+//     mov [rax+8], esi
+//     mov DWORD [rax+12], 0
+//     mov rax, [tssEntry]
+//     mov [GDT+0x28], rax
+//     mov rax, [tssEntry+8]
+//     mov [GDT+0x30], rax
+//     pop rsi
+//     pop rdi
+//     ret
+
+// section .data
+// global TSS
+// TSS:
+//     .reserved1: dd 0
+//     .rsp0:      dq 0
+//     .rsp1:      dq 0
+//     .rsp2:      dq 0
+//     .reserved2: dq 0
+//     .ist1:      dq 0
+//     .ist2:      dq 0
+//     .ist3:      dq 0
+//     .ist4:      dq 0
+//     .ist5:      dq 0
+//     .ist6:      dq 0
+//     .ist7:      dq 0
+//     .reserved3: dq 0
+//     .reserved4: dw 0
+//     .iopb:      dw 104
+// TSS_END:
+// tssEntry: times 2 dq 0
