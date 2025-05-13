@@ -47,6 +47,106 @@ void SFSDriver::deinit() {
     dbg::printm(MODULE, "File systems drivers shouldn't be deinitialized with PCI devices!!!\n");
     std::abort();
 }
+void SFSDriver::createDir(const char* basePath, const char* dirName) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+
+    // Handle root directory case
+    if (strcmp(basePath, "/") == 0) {
+        // Create directory in root
+        DirectoryBlock* newDir    = new DirectoryBlock;
+        newDir->header.type       = SFSBlockTypes::Directory;
+        newDir->header.currentLBA = this->findFreeLBA();
+        newDir->nextDirBlock      = 0;
+        newDir->blocksCount       = 0;
+
+        // Create name block for the directory
+        NameBlock* nameBlock         = new NameBlock;
+        nameBlock->header.type       = SFSBlockTypes::Name;
+        nameBlock->header.currentLBA = this->findFreeLBA();
+        nameBlock->nextName          = 0;
+        nameBlock->length            = strlen(dirName);
+
+        // Copy directory name
+        for (uint16_t i = 0; i < nameBlock->length; ++i) {
+            nameBlock->characters[i] = dirName[i];
+        }
+
+        newDir->nameBlock = nameBlock->header.currentLBA;
+
+        // Write the blocks
+        this->writeNameBlock(nameBlock);
+        this->writeDirectoryBlock(newDir);
+
+        // Add to root directory
+        this->rootDir->blocksLBA[this->rootDir->blocksCount++] = newDir->header.currentLBA;
+        this->writeDirectoryBlock(this->rootDir);
+
+        delete nameBlock;
+        delete newDir;
+        dbg::popTrace();
+        return;
+    }
+
+    // For non-root paths
+    std::string strPath(basePath);
+    if (strPath[0] == '/') {
+        strPath = strPath.substr(1);
+    }
+
+    DirectoryBlock* lastDirBlock = this->rootDir;
+    while (!strPath.empty()) {
+        size_t      slashPos = strPath.find('/');
+        std::string currentDir;
+
+        if (slashPos == std::string::npos) {
+            currentDir = strPath;
+            strPath.clear();
+        } else {
+            currentDir = strPath.substr(0, slashPos);
+            strPath    = strPath.substr(slashPos + 1);
+        }
+
+        DirectoryBlock* nextDir = this->openDir(lastDirBlock, currentDir.c_str());
+        if (!nextDir) {
+            dbg::printm(MODULE, "Parent directory not found: %s\n", currentDir.c_str());
+            std::abort();
+        }
+        lastDirBlock = nextDir;
+    }
+
+    // Now create the new directory in lastDirBlock
+    DirectoryBlock* newDir    = new DirectoryBlock;
+    newDir->header.type       = SFSBlockTypes::Directory;
+    newDir->header.currentLBA = this->findFreeLBA();
+    newDir->nextDirBlock      = 0;
+    newDir->blocksCount       = 0;
+
+    // Create name block for the directory
+    NameBlock* nameBlock         = new NameBlock;
+    nameBlock->header.type       = SFSBlockTypes::Name;
+    nameBlock->header.currentLBA = this->findFreeLBA();
+    nameBlock->nextName          = 0;
+    nameBlock->length            = strlen(dirName);
+
+    // Copy directory name
+    for (uint16_t i = 0; i < nameBlock->length; ++i) {
+        nameBlock->characters[i] = dirName[i];
+    }
+
+    newDir->nameBlock = nameBlock->header.currentLBA;
+
+    // Write the blocks
+    this->writeNameBlock(nameBlock);
+    this->writeDirectoryBlock(newDir);
+
+    // Add to parent directory
+    lastDirBlock->blocksLBA[lastDirBlock->blocksCount++] = newDir->header.currentLBA;
+    this->writeDirectoryBlock(lastDirBlock);
+
+    delete nameBlock;
+    delete newDir;
+    dbg::popTrace();
+}
 int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
     (void)PID;
     (void)flags;
@@ -212,28 +312,52 @@ void SFSDriver::create(const char* path) {
     }
     std::string     strPath(path);
     DirectoryBlock* lastDirBlock = this->rootDir;
+
+    // Track the current path we're building
+    std::string currentPath = "/";
+
     while (true) {
         size_t slashPos = strPath.find('/');
         if (slashPos == std::string::npos) break;
 
-        std::string dirName    = strPath.substr(0, slashPos);
-        strPath                = strPath.substr(slashPos + 1);
+        std::string dirName = strPath.substr(0, slashPos);
+        strPath             = strPath.substr(slashPos + 1);
+
+        // Update the current path we're building
+        if (currentPath.back() != '/') {
+            currentPath += "/";
+        }
+        currentPath += dirName;
+
         DirectoryBlock* oldDir = lastDirBlock;
         lastDirBlock           = this->openDir(oldDir, dirName.c_str());
+
         if (!lastDirBlock) {
-            dbg::printm(MODULE, "TODO: Create directories\n");
-            std::abort();
+            // Directory doesn't exist, create it
+            dbg::printm(MODULE, "Creating missing directory: %s\n", currentPath.c_str());
+            this->createDir(currentPath.c_str(), dirName.c_str());
+
+            // Now try opening it again
+            lastDirBlock = this->openDir(oldDir, dirName.c_str());
+            if (!lastDirBlock) {
+                dbg::printm(MODULE, "Failed to create directory: %s\n", dirName.c_str());
+                std::abort();
+            }
         }
     }
+
+    // Now create the file in the last directory
     FileBlock* fileBlock         = new FileBlock;
     fileBlock->header.type       = SFSBlockTypes::File;
     fileBlock->header.currentLBA = this->findFreeLBA();
     fileBlock->permissions       = 0;
+
     NameBlock* nameBlock         = new NameBlock;
     nameBlock->header.type       = SFSBlockTypes::Name;
     nameBlock->header.currentLBA = this->findFreeLBA();
     nameBlock->nextName          = 0;
-    uint64_t copyStrPathLen      = 0;
+
+    uint64_t copyStrPathLen = 0;
     while (copyStrPathLen < strPath.size()) {
         nameBlock->characters[nameBlock->length++] = strPath[copyStrPathLen++];
         if (nameBlock->length >= sizeof(nameBlock->characters)) {
@@ -245,21 +369,35 @@ void SFSDriver::create(const char* path) {
             nameBlock                    = nextBlock;
         }
     }
+
     DataBlock* dataBlock         = new DataBlock;
     dataBlock->header.currentLBA = this->findFreeLBA();
     dataBlock->header.type       = SFSBlockTypes::Data;
     dataBlock->nextData          = 0;
     std::memset(dataBlock->data, 0, sizeof(dataBlock->data));
+
     fileBlock->nameBlock = nameBlock->header.currentLBA;
     fileBlock->dataBlock = dataBlock->header.currentLBA;
+
     this->writeNameBlock(nameBlock);
     this->writeDataBlock(dataBlock);
     this->writeFileBlock(lastDirBlock, fileBlock);
+
     delete dataBlock;
     delete nameBlock;
     delete fileBlock;
+
     dbg::printm(MODULE, "Created file `%s`\n", path);
     dbg::popTrace();
+}
+NameBlock* SFSDriver::readNameBlock(uint64_t nameBlockLBA) {
+    NameBlock* nameBlock = new NameBlock;
+    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, nameBlockLBA, 1,
+                                           nameBlock)) {
+        dbg::printm(MODULE, "Failed to read LBA %llu\n", nameBlockLBA);
+        std::abort();
+    }
+    return nameBlock;
 }
 void SFSDriver::writeNameBlock(NameBlock* nameBlock) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -346,6 +484,10 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t readLBA = current->header.currentLBA;
     while (readLBA) {
+        if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, current)) {
+            dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
+            std::abort();
+        }
         for (uint32_t i = 0; i < current->blocksCount; ++i) {
             if (current->blocksLBA[i] == 0) {
                 continue;
@@ -368,7 +510,7 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
             }
             const char* name = this->collectName(nameBlock);
             delete nameBlock;
-            dbg::printm(MODULE, "Checking dir %s for folder %s\n", name, delim);
+            dbg::printm(MODULE, "Checking dir `%s` for folder `%s`\n", name, delim);
             if (strcmp(name, delim) == 0) {
                 dbg::popTrace();
                 return dirBlock;
@@ -376,10 +518,6 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
             delete dirBlock;
         }
         readLBA = current->nextDirBlock;
-        if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, current)) {
-            dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
-            std::abort();
-        }
     }
     dbg::popTrace();
     return nullptr;

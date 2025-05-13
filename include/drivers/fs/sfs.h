@@ -76,9 +76,11 @@ namespace drivers::fs
         void close(int file);
         void sync();
         uint64_t getLengthOfFile(int file);
+        void createDir(const char* basePath, const char* dirName);
         void create(const char *path);
 
     private:
+        NameBlock* readNameBlock(uint64_t nameBlock);
         void writeNameBlock(NameBlock* nameBlock);
         void writeDataBlock(DataBlock* dataBlock);
         void writeDirectoryBlock(DirectoryBlock* dirBlock);
