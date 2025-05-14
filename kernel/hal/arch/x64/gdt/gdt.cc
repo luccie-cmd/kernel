@@ -41,11 +41,11 @@ static GDTEntry __attribute__((section(".trampoline.data"))) entries[] = {
               GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY), // Kernel 64 bit code
     GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(0),
               GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // Kernel 64 bit data
+    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
+              GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // User 64 bit data
     GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
                   GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(3),
               GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY), // User 64 bit code
-    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
-              GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // User 64 bit data
     {0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0},
 };
@@ -76,18 +76,6 @@ extern "C" void loadGDT(uint64_t base, uint16_t limit);
 void            init() {
     initTSS();
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
-    dbg::printf("0b%llb 0b%llb 0b%llb 0b%llb\n",
-                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
-                               GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(0),
-                           GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY,
-                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(0),
-                           GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE);
-    dbg::printf("0b%llb 0b%llb 0b%llb 0b%llb\n",
-                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
-                               GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(3),
-                           GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY,
-                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
-                           GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE);
 }
 void setRSP0(task::pid_t pid) {
     uint64_t stackPhysical    = mmu::pmm::allocate();

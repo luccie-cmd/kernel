@@ -23,7 +23,7 @@ void AbiCallCtors() {
     }
 }
 
-uint8_t buffer[] = {0xCC, 0x48, 0x0F, 0x05, 0xEB, 0xFE};
+uint8_t buffer[] = {0xCC, 0xCC, 0xEB, 0xFE};
 
 extern "C" void     switchProc(uint64_t rsp, uint64_t rip, uint64_t cr3);
 extern "C" uint64_t __trampoline_text_start;

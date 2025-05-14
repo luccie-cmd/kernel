@@ -12,10 +12,10 @@ switchProc:
 
     mov rcx, 0xc0000081
 	rdmsr
-	mov edx, 0x00180008
+	mov edx, 0x00100008
 	wrmsr
 
-    mov rax, 0x23
+    mov rax, 0x1B
     mov ds, ax
     mov es, ax
     mov fs, ax
@@ -24,7 +24,7 @@ switchProc:
     mov rsp, rbx
     mov rbp, rbx
     mov rcx, r12
-    mov r11, 0x2
+    mov r11, 0x202
     mov cr3, r13
 
     xor rax, rax
