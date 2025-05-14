@@ -7,6 +7,7 @@
 #if !defined(_KERNEL_HAL_ARCH_X64_GDT_GDT_H_)
 #define _KERNEL_HAL_ARCH_X64_GDT_GDT_H_
 #include <cstdint>
+#include <kernel/task/types.h>
 
 namespace hal::arch::x64::gdt {
 struct TSS {
@@ -36,6 +37,7 @@ struct GDTEntry {
     uint8_t  base_high : 8;
 } __attribute__((packed));
 void init();
+void setRSP0(task::pid_t pid);
 }; // namespace hal::arch::x64::gdt
 
 #endif // _KERNEL_HAL_ARCH_X64_GDT_GDT_H_

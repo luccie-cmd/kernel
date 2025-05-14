@@ -7,7 +7,7 @@ loadIDT:
     lidt [rel IDT]
     ret
 
-section .data
+section .trampoline.data
 global IDT
 IDT:
     .limit: dw 0

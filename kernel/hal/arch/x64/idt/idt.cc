@@ -53,11 +53,11 @@ static const char* const exceptions[] = {"Divide by zero error",
 typedef void (*ExceptionHandler)(io::Registers* regs);
 ExceptionHandler exceptionHandlers[32];
 namespace hal::arch::x64::idt {
-static IDTEntry entries[256];
-extern "C" void loadIDT(uint64_t base, uint16_t limit);
-void            handlePF(io::Registers*);
-void            handleUD(io::Registers*);
-void            init() {
+static IDTEntry __attribute__((section(".trampoline.data"))) entries[256];
+extern "C" void                                              loadIDT(uint64_t base, uint16_t limit);
+void                                                         handlePF(io::Registers*);
+void                                                         handleUD(io::Registers*);
+void                                                         init() {
     loadIDT((uint64_t)entries, sizeof(entries) - 1);
     initGates();
     for (uint8_t i = 0; i < 255; ++i) {
@@ -68,7 +68,7 @@ void            init() {
     std::memset(exceptionHandlers, 0, sizeof(exceptionHandlers) / sizeof(exceptionHandlers[0]));
 }
 void registerHandler(uint8_t gate, void* function, uint8_t type) {
-    entries[gate] = IDT_ENTRY((uint64_t)function, 0x8, type, 0, 0);
+    entries[gate] = IDT_ENTRY((uint64_t)function, 0x8, type, 3, 1);
 }
 void enableGate(uint8_t gate) {
     entries[gate].present = 1;
@@ -122,7 +122,8 @@ extern "C" void printRegs(io::Registers* regs) {
     dbg::printf("FS =0x%02.2llx\n", regs->fs);
     dbg::printf("GS =0x%02.2llx\n", regs->gs);
     dbg::printf("SS =0x%02.2llx\n", regs->ss);
-    dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
+    dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx USERCR3=0x%016.16llx\n", io::rcr2(), regs->cr3,
+                regs->userCr3);
 }
 extern "C" void handleInt(io::Registers* regs) {
     if (regs->interrupt_number < 0x20) {
@@ -132,6 +133,7 @@ extern "C" void handleInt(io::Registers* regs) {
             exceptionHandlers[regs->interrupt_number](regs);
         } else {
             dbg::printf("TODO: Add exception handler for %llu\n", regs->interrupt_number);
+            // std::abort();
         }
         return;
     }

@@ -14,6 +14,7 @@
 #include <kernel/task/task.h>
 #define MODULE "MMU VMM"
 
+uint64_t __attribute__((section(".trampoline.data"))) kernelCR3;
 namespace mmu::vmm {
 static uint64_t                                                  __HHDMoffset;
 static bool                                                      __initialized;
@@ -46,9 +47,11 @@ PML4* getPML4(task::pid_t pid) {
         std::abort();
     }
     if (pid == KERNEL_PID && __CR3LookupTable[pid] == 0) {
-        __CR3LookupTable[pid] = io::rcr3() - __HHDMoffset;
+        __CR3LookupTable[pid] = io::rcr3();
+        kernelCR3             = io::rcr3();
     }
     if (__CR3LookupTable[pid] == 0) {
+        dbg::printm(MODULE, "Allocating new CR3 for PID %llu\n", pid);
         uint64_t cr3          = pmm::allocate();
         __CR3LookupTable[pid] = cr3;
     }

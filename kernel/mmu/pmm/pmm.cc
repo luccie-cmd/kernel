@@ -79,7 +79,7 @@ uint64_t allocVirtual(uint64_t size) {
             }
             allocatedPages += size / PAGE_SIZE;
             dbg::popTrace();
-            return addr;
+            return addr - vmm::getHHDM();
         }
         prev    = current;
         current = current->next;

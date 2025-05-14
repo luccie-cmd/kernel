@@ -1,5 +1,10 @@
 extern handleInt
 extern printRegs
+extern kernelCR3
+
+extern dbgPrintf
+section .trampoline.data
+str0: db "%llx %llx %llx %llx %llx", 0x0a, 0
 
 %macro ISR_NOERRORCODE 1
     global isrHandler%1:
@@ -7,7 +12,18 @@ extern printRegs
         cli
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
-        jmp isrCommon
+        push rax
+        mov rax, cr3
+        push rax
+        mov rax, [kernelCR3]
+        mov cr3, rax
+        call isrCommon
+        pop rax
+        mov cr3, rax
+        pop rax
+        add rsp, 16
+        sti
+        iretq
 %endmacro
 
 %macro ISR_ERRORCODE 1
@@ -15,10 +31,21 @@ extern printRegs
     isrHandler%1:
         cli
         push qword %1 ; interrupt number
-        jmp isrCommon
+        push rax
+        mov rax, cr3
+        push rax
+        mov rax, [kernelCR3]
+        mov cr3, rax
+        call isrCommon
+        pop rax
+        mov cr3, rax
+        pop rax
+        add rsp, 16
+        sti
+        iretq
 %endmacro
 
-section .text
+section .trampoline.text
 ISR_NOERRORCODE 0
 ISR_NOERRORCODE 1
 ISR_NOERRORCODE 2
@@ -276,6 +303,8 @@ ISR_NOERRORCODE 253
 ISR_NOERRORCODE 254
 ISR_NOERRORCODE 255
 
+section .text
+
 global isrCommon
 isrCommon:
     push rax
@@ -342,6 +371,4 @@ isrCommon:
     pop rcx
     pop rbx
     pop rax
-    add rsp, 16
-    sti
-    iretq
+    ret

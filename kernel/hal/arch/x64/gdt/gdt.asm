@@ -22,7 +22,7 @@ loadGDT:
     ltr ax
     ret
 
-section .data
+section .trampoline.data
 global GDT
 GDT:
     .limit: dw 0

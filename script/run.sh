@@ -5,7 +5,7 @@ qemu-system-x86_64 \
     -debugcon file:debug.log \
     -global isa-debugcon.iobase=0xe9 \
     -no-reboot \
-    -d int,cpu_reset \
+    -d int,cpu_reset,in_asm \
     -D qemu.log \
     -M pc \
     -smp 2 \

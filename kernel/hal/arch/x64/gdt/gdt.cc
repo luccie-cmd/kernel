@@ -6,6 +6,7 @@
 
 #include <common/dbg/dbg.h>
 #include <kernel/hal/arch/x64/gdt/gdt.h>
+#include <kernel/mmu/mmu.h>
 #define GDT_ACCESS_ACCESSED 1 << 0
 #define GDT_ACCESS_RW 1 << 1
 #define GDT_ACCESS_DIRECTION 1 << 2
@@ -20,12 +21,6 @@
 
 #define SEGMENT(level) (level * 8)
 
-#define DPL0_CS SEGMENT(1)
-#define DPL0_DS SEGMENT(2)
-
-#define DPL3_CS SEGMENT(7)
-#define DPL3_DS SEGMENT(8)
-
 #define GDT_ENTRY(access, flags)                                                                   \
     {                                                                                              \
         0,      /* limit0 */                                                                       \
@@ -37,8 +32,9 @@
         0       /* base2 */                                                                        \
     }
 
+hal::arch::x64::gdt::TSS tss __attribute__((aligned(4096), section(".trampoline.data")));
 namespace hal::arch::x64::gdt {
-static GDTEntry entries[] = {
+static GDTEntry __attribute__((section(".trampoline.data"))) entries[] = {
     GDT_ENTRY(0, 0),
     GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
                   GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(0),
@@ -53,27 +49,26 @@ static GDTEntry entries[] = {
     {0, 0, 0, 0, 0, 0, 0},
     {0, 0, 0, 0, 0, 0, 0},
 };
-static TSS tss __attribute__((aligned(4096)));
-void       initTSS() {
+void initTSS() {
     uint32_t tss_limit = sizeof(TSS) - 1;
     uint64_t tss_base  = reinterpret_cast<uint64_t>(&tss);
     entries[5]         = {
-                      .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
-                      .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
-                      .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
-                      .access       = 0x89,
-                      .limit_middle = 0,
-                      .flags        = 0,
-                      .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
+                .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
+                .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
+                .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
+                .access       = 0x89,
+                .limit_middle = 0,
+                .flags        = 0,
+                .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
     };
     entries[6] = {
-              .limit_low    = static_cast<uint16_t>(tss_base >> 32),
-              .base_low     = static_cast<uint16_t>(tss_base >> 48),
-              .base_middle  = 0,
-              .access       = 0,
-              .limit_middle = 0,
-              .flags        = 0,
-              .base_high    = 0,
+        .limit_low    = static_cast<uint16_t>(tss_base >> 32),
+        .base_low     = static_cast<uint16_t>(tss_base >> 48),
+        .base_middle  = 0,
+        .access       = 0,
+        .limit_middle = 0,
+        .flags        = 0,
+        .base_high    = 0,
     };
     tss.iomap_base = sizeof(TSS);
 }
@@ -81,6 +76,31 @@ extern "C" void loadGDT(uint64_t base, uint16_t limit);
 void            init() {
     initTSS();
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
+    dbg::printf("0b%llb 0b%llb 0b%llb 0b%llb\n",
+                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
+                               GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(0),
+                           GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY,
+                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(0),
+                           GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE);
+    dbg::printf("0b%llb 0b%llb 0b%llb 0b%llb\n",
+                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
+                               GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(3),
+                           GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY,
+                           GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
+                           GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE);
+}
+void setRSP0(task::pid_t pid) {
+    uint64_t stackPhysical    = mmu::pmm::allocate();
+    uint64_t ISTstackPhysical = mmu::pmm::allocate();
+    dbg::printf("Set TSS.RSP0 to physical address 0x%llx\n", tss.rsp0);
+    dbg::printf("Set TSS.IST1 to physical address 0x%llx\n", tss.ist1);
+    tss.rsp0 = stackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+    tss.ist1 = ISTstackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhysical, stackPhysical + mmu::vmm::getHHDM(),
+                      PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ISTstackPhysical,
+                      ISTstackPhysical + mmu::vmm::getHHDM(), PROTECTION_RW,
+                      MAP_GLOBAL | MAP_PRESENT);
 }
 }; // namespace hal::arch::x64::gdt
 

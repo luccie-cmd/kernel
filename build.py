@@ -263,15 +263,14 @@ def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     command +=  " -Wl,--whole-archive"
     for static_lib in static_lib_files:
         command += f" {static_lib}"
-    if "debug" in CONFIG.get("config"):
-        command += f" -Wl,-Map={CONFIG['outDir'][0]}/kernel.map"
+    command += f" -Wl,-Map={CONFIG['outDir'][0]}/kernel.map"
     command += f" -o {CONFIG['outDir'][0]}/kernel.elf"
     file = f"{CONFIG['outDir'][0]}/kernel.elf"
     print(f"LD   {file}")
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"objdump -C -d -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
+    callCmd(f"objdump -C -D -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])

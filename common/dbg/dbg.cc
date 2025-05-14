@@ -56,6 +56,12 @@ void printf(const char* fmt, ...) {
     printv(fmt, args);
     va_end(args);
 }
+extern "C" void dbgPrintf(const char* fmt, ...) {
+    std::va_list args;
+    va_start(args, fmt);
+    printv(fmt, args);
+    va_end(args);
+}
 void printm(const char* module, const char* fmt, ...) {
     const char* fmtString = "%s: %s";
     char        outStr[8192];

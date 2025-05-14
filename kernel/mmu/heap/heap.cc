@@ -25,7 +25,7 @@ void            initialize(uint64_t pmm_size, uint64_t vmm_max) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     __pmmSize         = pmm_size;
     __vmmMax          = vmm_max;
-    uint64_t base     = pmm::allocVirtual(__pmmSize);
+    uint64_t base     = pmm::allocVirtual(__pmmSize) + vmm::getHHDM();
     __head            = (node*)base;
     __head->free      = true;
     __head->freedSize = 0;

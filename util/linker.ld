@@ -28,6 +28,12 @@ SECTIONS
         __text_end = .;
     } :text
 
+    .trampoline.text ALIGN(4K) : {
+        __trampoline_text_start = .;
+        *(.trampoline.text)
+        __trampoline_text_end = .;
+    } :text
+
     .init_array ALIGN(4K) : {
         __init_array = .;
         *(.init_array .init_array.*)
@@ -49,6 +55,12 @@ SECTIONS
         *(.data .data.*)
         KEEP(*(.gnu.linkonce.t.*)) /* Ensure vtable sections are kept */
         __data_end = .;
+    } :data
+
+    .trampoline.data ALIGN(4K) : {
+        __trampoline_data_start = .;
+        *(.trampoline.data)
+        __trampoline_data_end = .;
     } :data
 
     /* .bss section in RW segment */
