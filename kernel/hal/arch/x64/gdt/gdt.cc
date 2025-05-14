@@ -56,7 +56,7 @@ void initTSS() {
                 .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
                 .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
                 .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
-                .access       = 0x8B,
+                .access       = 0x89,
                 .limit_middle = 0,
                 .flags        = 0,
                 .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
