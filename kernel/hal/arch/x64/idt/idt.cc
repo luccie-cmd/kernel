@@ -163,17 +163,19 @@ void handlePF(io::Registers* regs) {
             dbg::print("Cannot map a page at NULL\n");
             std::abort();
         }
-        if (io::rcr2() == 0xDEADBEEF) {
+        uint64_t physicalCR2 =
+            mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), io::rcr2(), false);
+        if (physicalCR2 == 0xDEADB000) {
             dbg::printf("On demand mapping of 0x%llx\n", io::rcr2());
             mmu::vmm::mapPage(mmu::vmm::getPML4(task::getCurrentPID()), mmu::pmm::allocate(),
                               io::rcr2() & PAGE_MASK,
                               PROTECTION_RW |
                                   (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0),
-                              MAP_GLOBAL | MAP_PRESENT);
+                              MAP_PRESENT);
         } else {
             printRegs(regs);
             dbg::printf("TODO: Exit program as it has attempted to use an invalid address 0x%llx",
-                        io::rcr2());
+                        physicalCR2);
             std::abort();
         }
     } else {

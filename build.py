@@ -86,7 +86,7 @@ if OLD_CONFIG != CONFIG:
     print("Configuration changed, rebuilding...")
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function', '-Wno-aggressive-loop-optimizations']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mno-avx512f', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
@@ -141,6 +141,7 @@ def getExtension(file):
 
 def buildC(file):
     compiler = CONFIG.get("compiler")[0]
+    compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     if "main.c" in file and "yes" in CONFIG.get("analyzer"):
         options.remove("-fanalyzer")
@@ -148,28 +149,25 @@ def buildC(file):
     command = compiler + " " + file
     for option in options:
         command += " " + option
-    if compiler == "gcc":
-        compiler += "-11"
-        print(f"C     {file}")
-        command += f" -o {CONFIG['outDir'][0]}/{file}.o"
-        return callCmd(command, True)[0]
+    print(f"C     {file}")
+    command += f" -o {CONFIG['outDir'][0]}/{file}.o"
+    return callCmd(command, True)[0]
     
 def buildCXX(file):
     compiler = CONFIG.get("compiler")[0]
     if compiler == "gcc":
         compiler = "g"
     compiler += "++"
+    compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
     options.append("-std=c++23")
     command = compiler + " " + file
     for option in options:
         command += " " + option
-    if compiler == "g++":
-        compiler += "-11"
-        print(f"CXX   {file}")
-        command += f" -o {CONFIG['outDir'][0]}/{file}.o"
-        return callCmd(command, True)[0]
+    print(f"CXX   {file}")
+    command += f" -o {CONFIG['outDir'][0]}/{file}.o"
+    return callCmd(command, True)[0]
 
 def buildASM(file):
     compiler = "nasm"

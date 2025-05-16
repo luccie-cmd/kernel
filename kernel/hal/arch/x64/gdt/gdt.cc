@@ -33,6 +33,7 @@
     }
 
 hal::arch::x64::gdt::TSS tss __attribute__((aligned(4096), section(".trampoline.data")));
+uint64_t __attribute__((section(".trampoline.data"))) tssRSP0;
 namespace hal::arch::x64::gdt {
 static GDTEntry __attribute__((section(".trampoline.data"))) entries[] = {
     GDT_ENTRY(0, 0),
@@ -74,21 +75,24 @@ void initTSS() {
 }
 extern "C" void loadGDT(uint64_t base, uint16_t limit);
 void            init() {
+    tssRSP0 = 0;
     initTSS();
     loadGDT((uint64_t)entries, sizeof(entries) - 1);
 }
 void setRSP0(task::pid_t pid) {
-    uint64_t stackPhysical    = mmu::pmm::allocate();
-    uint64_t ISTstackPhysical = mmu::pmm::allocate();
-    dbg::printf("Set TSS.RSP0 to physical address 0x%llx\n", tss.rsp0);
-    dbg::printf("Set TSS.IST1 to physical address 0x%llx\n", tss.ist1);
-    tss.rsp0 = stackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
-    tss.ist1 = ISTstackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhysical, stackPhysical + mmu::vmm::getHHDM(),
-                      PROTECTION_RW, MAP_GLOBAL | MAP_PRESENT);
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ISTstackPhysical,
-                      ISTstackPhysical + mmu::vmm::getHHDM(), PROTECTION_RW,
-                      MAP_GLOBAL | MAP_PRESENT);
+    if (tssRSP0 == 0) {
+        uint64_t stackPhysical    = mmu::pmm::allocate();
+        uint64_t ISTstackPhysical = mmu::pmm::allocate();
+        tss.rsp0                  = stackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+        tssRSP0                   = tss.rsp0;
+        tss.ist1                  = ISTstackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+        dbg::printf("Set TSS.RSP0 to physical address 0x%llx\n", tss.rsp0);
+        dbg::printf("Set TSS.IST1 to physical address 0x%llx\n", tss.ist1);
+    }
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                      tss.rsp0 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                      tss.ist1 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
 }
 }; // namespace hal::arch::x64::gdt
 

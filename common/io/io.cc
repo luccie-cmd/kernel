@@ -42,8 +42,11 @@ void sti() {
     __asm__ volatile("sti");
 }
 void invalpg(void* addr) {
-    __asm__ volatile("invlpg (%0)" : : "r"(addr) : "memory");
-    __asm__ volatile("sfence; lfence; mfence" ::: "memory");
+    __asm__ volatile("sfence");
+    __asm__ volatile("invlpg (%0)" : : "r"(addr));
+    uint64_t cr3;
+    __asm__ volatile("mov %%cr3, %0" : "=r"(cr3));
+    __asm__ volatile("mov %0, %%cr3" ::"r"(cr3));
 }
 void wcr3(uint64_t newCR3) {
     __asm__ volatile("mov %0, %%cr3" : : "r"(newCR3) : "memory");

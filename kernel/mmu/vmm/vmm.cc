@@ -93,6 +93,8 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     if (!isInitialized()) {
         initialize();
     }
+    virtualAddr &= ~(0xFFF);
+    physicalAddr &= ~(0xFFF);
     if (getPhysicalAddr(pml4, virtualAddr, true) == physicalAddr) {
         dbg::printm(MODULE, "Attempted to double map address 0x%llx to 0x%llx\n", virtualAddr,
                     physicalAddr);
@@ -113,12 +115,14 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     bool        globalMap   = (map & MAP_GLOBAL) != 0;
     bool        uncachable  = (map & MAP_UC) != 0;
     bool        writeTrough = (map & MAP_WT) != 0;
-    dbg::printm(
-        MODULE, "(Virtual 0x%llx) Kernel: %s rw: %s nx: %s present: %s global: %s UC: %s WT: %s\n",
-        virtualAddr, kernelPage ? "true" : "false", readWrite ? "true" : "false",
-        !execute ? "true" : "false", presentMap ? "true" : "false", globalMap ? "true" : "false",
-        uncachable ? "true" : "false", writeTrough ? "true" : "false");
-    if (!presentMap) {
+    dbg::printm(MODULE,
+                "(Virtual 0x%016llx CR3: 0x%016llx) Kernel: %s rw: %s nx: %s present: %s global: "
+                "%s UC: %s WT: %s\n",
+                virtualAddr, (uint64_t)pml4, kernelPage ? "true" : "false",
+                readWrite ? "true" : "false", !execute ? "true" : "false",
+                presentMap ? "true" : "false", globalMap ? "true" : "false",
+                uncachable ? "true" : "false", writeTrough ? "true" : "false");
+    if (!presentMap && physicalAddr != 0xDEADB000) {
         dbg::printm(MODULE, "Cannot map a page that isn't present\n");
         std::abort();
     }
@@ -212,7 +216,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {
     addr &= ~(PAGE_SIZE - 1); // Align addr to the start of the page
 
     vmm_address vma = getVMMfromVA(addr);
-    if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
+    if (pml4[vma.pml4e].pdpe_ptr == 0) {
         if (!silent) {
             dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", oldAddr);
         }
@@ -220,7 +224,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {
         return 0;
     }
     PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
-    if (pdpe[vma.pdpe].pde_ptr == 0 || pdpe[vma.pdpe].present == 0) {
+    if (pdpe[vma.pdpe].pde_ptr == 0) {
         if (!silent) {
             dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", oldAddr);
         }
@@ -228,7 +232,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {
         return 0;
     }
     PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
-    if (pde[vma.pde].pte_ptr == 0 || pde[vma.pde].present == 0) {
+    if (pde[vma.pde].pte_ptr == 0) {
         if (!silent) {
             dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", oldAddr);
         }
@@ -236,7 +240,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent) {
         return 0;
     }
     PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
-    if (pte[vma.pte].papn_ppn == 0 || pte[vma.pte].present == 0) {
+    if (pte[vma.pte].papn_ppn == 0) {
         if (!silent) {
             dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", oldAddr);
         }

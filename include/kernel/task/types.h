@@ -10,6 +10,7 @@
 #define KERNEL_PID 0
 #define   INIT_PID 1
 #define MAX_PIDS   100
+#define USER_STACK_TOP 0x00007FFFFFFFF000ULL
 
 namespace task{
     using pid_t = size_t;
