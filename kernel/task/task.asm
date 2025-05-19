@@ -32,29 +32,7 @@ syscallEntry:
 
     lea rdi, [rsp]
     jmp syscallHandler
-    ; pop rax
-    ; pop rbx
-    ; pop rcx
-    ; pop rdx
-    ; pop rbp
-    ; pop rsi
-    ; pop rdi
-    ; pop r8
-    ; pop r9
-    ; pop r10
-    ; pop r11
-    ; pop r12
-    ; pop r13
-    ; pop r14
-    ; pop r15
-
-    ; pop rax
-    ; mov cr3, rax
-    ; pop rax
-    ; mov rsp, rbp
-    ; pop rbp
-
-    ; o64 sysret
+    
 switchProc:
     mov rax, [rdi + 160]
     mov cr3, rax
