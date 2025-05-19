@@ -23,8 +23,6 @@ void AbiCallCtors() {
     }
 }
 
-uint8_t tempCode[] = {0xCC, 0x0F, 0x05, 0xCC, 0xEB, 0xFE};
-
 extern "C" void KernelMain() {
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -36,9 +34,9 @@ extern "C" void KernelMain() {
     temp->setScreenX(displayDriver->getScreenX());
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
-    displayDriver   = temp;
-    task::pid_t pid = task::getNewPID();
-    task::makeNewProcess(pid, tempCode, sizeof(tempCode), 0x401000);
+    displayDriver = temp;
+    // task::pid_t pid = task::getNewPID();
+    // task::makeNewProcess(pid, tempCode, sizeof(tempCode), 0x401000);
     vfs::mount(0, 0, "/tmpboot");
     int      handle = vfs::openFile("/tmpboot/init", 0);
     uint8_t* buffer = new uint8_t[vfs::getLen(handle)];

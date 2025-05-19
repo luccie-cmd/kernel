@@ -14,7 +14,7 @@ Process*        currentProc;
 pid_t           pids = 0;
 extern "C" void syscallEntry();
 #define IDLE_ENTRY_POINT 0x802000
-uint8_t idleCodeBuffer[] = {0xCC, 0x0F, 0x05, 0xEB, 0xFC};
+uint8_t idleCodeBuffer[] = {0x0F, 0x05, 0xEB, 0xFC};
 void    initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     currentProc      = new Process;
@@ -154,13 +154,6 @@ void                nextProc() {
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         }
-        // dbg::printf("0x%llx\n", (uint64_t)tempStack & ~(0xFFF));
-        // for (size_t i = 0; i < 3; ++i) {
-        //     mmu::vmm::mapPage(mmu::vmm::getPML4(currentProc->pid),
-        //                                      ((uint64_t)tempStack & ~(0xFFF)) + i * PAGE_SIZE,
-        //                                      ((uint64_t)tempStack & ~(0xFFF)) + i * PAGE_SIZE,
-        //                                      PROTECTION_RW | PROTECTION_NOEXEC, MAP_PRESENT);
-        // }
         hal::arch::x64::gdt::setRSP0(currentProc->pid);
     }
     if ((mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(currentProc->pid),
@@ -208,7 +201,7 @@ void printRegs(SyscallRegs* regs) {
     dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
 }
 extern "C" void syscallHandler(SyscallRegs* regs) {
-    // printRegs(regs);
+    printRegs(regs);
     currentProc->registers->rax      = regs->rax;
     currentProc->registers->rbx      = regs->rbx;
     currentProc->registers->rip      = regs->rip;
@@ -227,6 +220,5 @@ extern "C" void syscallHandler(SyscallRegs* regs) {
     currentProc->registers->rflags   = regs->rflags;
     currentProc->registers->cr3      = regs->cr3;
     nextProc();
-    // std::abort();
 }
 }; // namespace task
