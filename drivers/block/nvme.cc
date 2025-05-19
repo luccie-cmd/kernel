@@ -40,7 +40,7 @@ void NVMeDriver::init(pci::device* device) {
     uint32_t BAR0   = pci::readConfig(device, 0x10);
     uint32_t BAR1   = pci::readConfig(device, 0x14);
     this->base_addr = (uint64_t)(((uint64_t)BAR1 << 32) | (BAR0 & 0xFFFFFFF0));
-    mmu::vmm::mapPage(mmu::vmm::getPML4(task::getCurrentPID()), this->base_addr, this->base_addr,
+    mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), this->base_addr, this->base_addr,
                       PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
                       MAP_GLOBAL | MAP_PRESENT | MAP_UC);
     uint64_t cap                    = this->readReg64(0x00);
@@ -205,7 +205,7 @@ bool NVMeDriver::sendCmdIO(uint8_t opcode, void* data, uint64_t lba, uint16_t nu
     cmd->command_id = 0x1337;
     cmd->opcode     = opcode;
     cmd->nsid       = this->nsid;
-    cmd->prp1       = mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()),
+    cmd->prp1       = mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID),
                                                 (uint64_t)pageAllignedBuffer, false);
     cmd->prp2       = 0;
     cmd->cwd10      = (uint32_t)lba;
@@ -216,7 +216,7 @@ bool NVMeDriver::sendCmdIO(uint8_t opcode, void* data, uint64_t lba, uint16_t nu
     this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->ioSq_tail, true);
     if (this->ioSq_tail == this->ioSq->size) this->ioSq_tail = 0;
     NVMeCompletion* completion = (NVMeCompletion*)(cq_entry_addr);
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), cq_entry_addr, true) !=
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), cq_entry_addr, true) !=
         cq_entry_addr) {
         mmu::vmm::mapPage(cq_entry_addr);
     }
@@ -245,8 +245,8 @@ bool NVMeDriver::sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t
                             uint32_t cwd1) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     void* pageAllignedBuffer = (void*)mmu::pmm::allocate();
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()),
-                                  (uint64_t)pageAllignedBuffer, true) == 0) {
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)pageAllignedBuffer,
+                                  true) == 0) {
         mmu::vmm::mapPage((size_t)pageAllignedBuffer);
     }
     std::memset(pageAllignedBuffer, 0, PAGE_SIZE);
@@ -275,7 +275,7 @@ bool NVMeDriver::sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t
     }
     if (this->admSq_tail == this->admSq->size) this->admSq_tail = 0;
     NVMeCompletion* completion = (NVMeCompletion*)(cq_entry_addr);
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), cq_entry_addr, true) !=
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), cq_entry_addr, true) !=
         cq_entry_addr) {
         mmu::vmm::mapPage(cq_entry_addr);
     }

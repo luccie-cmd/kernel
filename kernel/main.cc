@@ -23,7 +23,7 @@ void AbiCallCtors() {
     }
 }
 
-uint8_t buffer[] = {0xCC, 0x0F, 0x05, 0xCC, 0xEB, 0xFE};
+uint8_t tempCode[] = {0xCC, 0x0F, 0x05, 0xCC, 0xEB, 0xFE};
 
 extern "C" void KernelMain() {
     hal::arch::earlyInit();
@@ -38,15 +38,16 @@ extern "C" void KernelMain() {
     delete displayDriver;
     displayDriver   = temp;
     task::pid_t pid = task::getNewPID();
-    task::makeNewProcess(pid, buffer, sizeof(buffer), 0x401000);
+    task::makeNewProcess(pid, tempCode, sizeof(tempCode), 0x401000);
+    vfs::mount(0, 0, "/tmpboot");
+    int      handle = vfs::openFile("/tmpboot/init", 0);
+    uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
+    dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
+    vfs::umount("/tmpboot");
+
     while (true) {
         task::nextProc();
     }
-    // vfs::mount(0, 0, "/tmpboot");
-    // int      handle = vfs::openFile("/tmpboot/init", 0);
-    // uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
-    // dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
-    // vfs::umount("/tmpboot");
 
     std::abort();
     for (;;);

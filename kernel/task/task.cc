@@ -41,11 +41,10 @@ void    initialize() {
     std::memcpy(reinterpret_cast<void*>(IDLE_ENTRY_POINT), idleCodeBuffer, codeSize);
     currentProc->pid = pid;
     std::memset(currentProc->fpuState, 0, sizeof(currentProc->fpuState));
-    currentProc->registers = new io::Registers;
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid),
-                         mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID),
-                                                   (uint64_t)currentProc->registers, false),
-                         (uint64_t)currentProc->registers, PROTECTION_RW, MAP_PRESENT);
+    currentProc->registers = (io::Registers*)mmu::pmm::allocVirtual(sizeof(io::Registers));
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)currentProc->registers,
+                         (uint64_t)currentProc->registers, PROTECTION_NOEXEC | PROTECTION_RW,
+                         MAP_PRESENT);
     currentProc->registers->cr3      = newCR3;
     currentProc->registers->orig_rsp = stackVirt + stack_size - 16;
     currentProc->registers->rbp      = currentProc->registers->orig_rsp;
@@ -114,11 +113,11 @@ void makeNewProcess(pid_t pid, uint8_t* codeBuffer, uint64_t codeSize, uint64_t 
     proc->registers->cs       = 0x23;
     proc->hasStarted          = false;
     if (currentProc->next == currentProc) {
-        proc->next        = currentProc; // New process points to idle
-        currentProc->next = proc;        // Idle points to new process
+        proc->next        = currentProc;
+        currentProc->next = proc;
     } else {
-        proc->next        = currentProc->next; // New process points to old first real process
-        currentProc->next = proc;              // Idle points to new process
+        proc->next        = currentProc->next;
+        currentProc->next = proc;
     }
     dbg::popTrace();
 }
