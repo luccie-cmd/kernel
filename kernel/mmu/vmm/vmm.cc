@@ -51,8 +51,8 @@ PML4* getPML4(task::pid_t pid) {
         kernelCR3             = io::rcr3();
     }
     if (__CR3LookupTable[pid] == 0) {
-        dbg::printm(MODULE, "Allocating new CR3 for PID %llu\n", pid);
-        uint64_t cr3          = pmm::allocate();
+        uint64_t cr3 = pmm::allocate();
+        dbg::printm(MODULE, "Allocating new CR3 for PID %llu 0x%llx\n", pid, cr3);
         __CR3LookupTable[pid] = cr3;
     }
     uint64_t cr3 = __CR3LookupTable[pid];
@@ -116,7 +116,7 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     bool        uncachable  = (map & MAP_UC) != 0;
     bool        writeTrough = (map & MAP_WT) != 0;
     dbg::printm(MODULE,
-                "(Virtual 0x%016llx CR3: 0x%016llx) Kernel: %s rw: %s nx: %s present: %s global: "
+                "(Virtual 0x%016llx CR3: 0x%016llx) Kernel: %s rw: %s nx: %s present: %s global:"
                 "%s UC: %s WT: %s\n",
                 virtualAddr, (uint64_t)pml4, kernelPage ? "true" : "false",
                 readWrite ? "true" : "false", !execute ? "true" : "false",

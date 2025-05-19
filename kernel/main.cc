@@ -36,9 +36,9 @@ extern "C" void KernelMain() {
     temp->setScreenX(displayDriver->getScreenX());
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
-    displayDriver = temp;
-    // task::pid_t pid = task::getNewPID();
-    // task::makeNewProcess(pid, buffer, sizeof(buffer), 0x401000);
+    displayDriver   = temp;
+    task::pid_t pid = task::getNewPID();
+    task::makeNewProcess(pid, buffer, sizeof(buffer), 0x401000);
     while (true) {
         task::nextProc();
     }

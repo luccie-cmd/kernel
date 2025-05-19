@@ -2,14 +2,13 @@ global switchProc
 global syscallEntry
 extern kernelCR3
 extern tssRSP0
+extern tempValue
 extern syscallHandler
 section .trampoline.text
 syscallEntry:
-    ; Uh yeah this could go very badly if the user decided to call syscall with RSP set to 0 so FIXME ig? (CVE )
-    push rbp
-    mov rbp, rsp
+    ; Uh yeah this could go very badly if the user decided to call syscall with RSP set to 0 so FIXME ig?
+    mov [tempValue], rsp
     mov rsp, [tssRSP0]
-    push rbp
     push rax
     mov rax, cr3
     push rax
@@ -32,9 +31,7 @@ syscallEntry:
     push rbx
 
     lea rdi, [rsp]
-    call syscallHandler
-
-    ud2
+    jmp syscallHandler
     ; pop rax
     ; pop rbx
     ; pop rcx
@@ -59,7 +56,7 @@ syscallEntry:
 
     ; o64 sysret
 switchProc:
-    mov rax, [rdi + 0]
+    mov rax, [rdi + 160]
     mov cr3, rax
     jmp .flush
 .flush:
@@ -79,22 +76,22 @@ switchProc:
     mov fs, ax
     mov gs, ax
 
-    mov rbx, [rdi + 144]
-    mov rcx, [rdi + 200]
-    mov rdx, [rdi + 128]
-    mov rbp, [rdi + 120]
-    mov rsp, [rdi + 224]
-    mov rsi, [rdi + 112]
-    mov r8, [rdi + 96]
-    mov r9, [rdi + 88]
-    mov r10, [rdi + 80]
-    mov r11, [rdi + 216]
-    mov r12, [rdi + 64]
-    mov r13, [rdi + 56]
-    mov r14, [rdi + 48]
-    mov r15, [rdi + 40]
-    mov rax, [rdi + 176]
-    mov rdi, [rdi + 104]
+    mov rbx, [rdi + 136]
+    mov rcx, [rdi + 192]
+    mov rdx, [rdi + 120]
+    mov rbp, [rdi + 112]
+    mov rsp, [rdi + 216]
+    mov rsi, [rdi + 104]
+    mov r8,  [rdi + 88]
+    mov r9,  [rdi + 80]
+    mov r10, [rdi + 72]
+    mov r11, [rdi + 208]
+    mov r12, [rdi + 56]
+    mov r13, [rdi + 48]
+    mov r14, [rdi + 40]
+    mov r15, [rdi + 32]
+    mov rax, [rdi + 168]
+    mov rdi, [rdi + 96]
 
     ; int 3
     ; jmp $

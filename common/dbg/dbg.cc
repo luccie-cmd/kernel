@@ -46,9 +46,9 @@ void print(const char* str) {
 }
 char str[8192];
 void printv(const char* fmt, va_list args) {
+    std::memset(str, 0, sizeof(str));
     std::vsnprintf(str, sizeof(str), fmt, args);
     print(str);
-    std::memset(str, 0, sizeof(str));
 }
 void printf(const char* fmt, ...) {
     std::va_list args;
@@ -62,17 +62,17 @@ extern "C" void dbgPrintf(const char* fmt, ...) {
     printv(fmt, args);
     va_end(args);
 }
+char outStr[8192];
 void printm(const char* module, const char* fmt, ...) {
     const char* fmtString = "%s: %s";
-    char        outStr[8192];
+    std::memset(str, 0, sizeof(str));
+    std::memset(outStr, 0, sizeof(outStr));
     snprintf(str, sizeof(str), fmtString, module, fmt);
     va_list args;
     va_start(args, fmt);
     vsnprintf(outStr, sizeof(outStr), str, args);
     print(outStr);
     va_end(args);
-    std::memset(str, 0, sizeof(str));
-    std::memset(outStr, 0, sizeof(outStr));
 }
 static const char* stackTraces[8192];
 static uint16_t    nstackTraces = 0;

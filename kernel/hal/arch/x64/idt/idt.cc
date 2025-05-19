@@ -122,8 +122,7 @@ extern "C" void printRegs(io::Registers* regs) {
     dbg::printf("FS =0x%02.2llx\n", regs->fs);
     dbg::printf("GS =0x%02.2llx\n", regs->gs);
     dbg::printf("SS =0x%02.2llx\n", regs->ss);
-    dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx USERCR3=0x%016.16llx\n", io::rcr2(), regs->cr3,
-                regs->userCr3);
+    dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
 }
 extern "C" void handleInt(io::Registers* regs) {
     if (regs->interrupt_number < 0x20) {
@@ -159,12 +158,12 @@ void handlePF(io::Registers* regs) {
     PageFaultError err = *(PageFaultError*)(&regs->error_code);
     if (err.PPV == 0) {
         if (io::rcr2() == 0) {
-            printRegs(regs);
             dbg::print("Cannot map a page at NULL\n");
             std::abort();
         }
         uint64_t physicalCR2 =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(task::getCurrentPID()), io::rcr2(), false);
+        dbg::printf("Physical CR2 = 0x%llx\n", physicalCR2);
         if (physicalCR2 == 0xDEADB000) {
             dbg::printf("On demand mapping of 0x%llx\n", io::rcr2());
             mmu::vmm::mapPage(mmu::vmm::getPML4(task::getCurrentPID()), mmu::pmm::allocate(),
@@ -173,13 +172,11 @@ void handlePF(io::Registers* regs) {
                                   (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0),
                               MAP_PRESENT);
         } else {
-            printRegs(regs);
             dbg::printf("TODO: Exit program as it has attempted to use an invalid address 0x%llx",
                         physicalCR2);
             std::abort();
         }
     } else {
-        printRegs(regs);
         dbg::printf("TODO: Handle other types of page faults!!!\n");
         std::abort();
     }

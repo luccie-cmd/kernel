@@ -334,17 +334,11 @@ isrCommon:
     mov ax, gs
     push rax
 
-    mov rax, cr3
-    push rax
-
     cld
 
     ; Push the address of the structure onto the stack
     lea rdi, [rsp]   ; Address of the saved registers
     call handleInt
-
-    pop rax
-    mov cr3, rax
 
     xor rax, rax
     pop rax
