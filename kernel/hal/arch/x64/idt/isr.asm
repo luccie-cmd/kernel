@@ -1,15 +1,15 @@
 extern handleInt
 extern printRegs
 extern kernelCR3
+extern kernelRSP
 
 extern dbgPrintf
 section .trampoline.data
-str0: db "%llx %llx %llx %llx %llx", 0x0a, 0
+str0: db "Test123 %lx", 0x0a, 0
 
 %macro ISR_NOERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
-        cli
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
         push rax
@@ -22,14 +22,12 @@ str0: db "%llx %llx %llx %llx %llx", 0x0a, 0
         mov cr3, rax
         pop rax
         add rsp, 16
-        sti
         iretq
 %endmacro
 
 %macro ISR_ERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
-        cli
         push qword %1 ; interrupt number
         push rax
         mov rax, cr3
@@ -41,7 +39,6 @@ str0: db "%llx %llx %llx %llx %llx", 0x0a, 0
         mov cr3, rax
         pop rax
         add rsp, 16
-        sti
         iretq
 %endmacro
 

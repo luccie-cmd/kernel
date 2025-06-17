@@ -35,7 +35,7 @@ void midInit() {
     x64::irq::init();
     io::sti();
     dbg::printf("Setting LSTAR\n");
-    uint64_t star_msr = ((uint64_t)(0x1B) << 48) | ((uint64_t)0x08 << 32);
+    uint64_t star_msr = ((uint64_t)(0x13) << 48) | ((uint64_t)0x08 << 32);
     io::wrmsr(MSR_STAR, star_msr);
     io::wrmsr(MSR_SYSCALL_MASK, 0x202);
     dbg::popTrace();

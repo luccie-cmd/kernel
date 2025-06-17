@@ -36,16 +36,12 @@ syscallEntry:
 switchProc:
     mov rax, [rdi + 160]
     mov cr3, rax
+    mfence
     jmp .flush
 .flush:
     mov rcx, 0xC0000080
 	rdmsr
     or rax, 1
-	wrmsr
-
-    mov rcx, 0xc0000081
-	rdmsr
-	mov edx, 0x00100008
 	wrmsr
 
     mov rax, 0x1B

@@ -105,7 +105,7 @@ void printRfl(uint64_t rflags) {
     dbg::print("\n");
 }
 extern "C" void printRegs(io::Registers* regs) {
-    dbg::printf("\tv=0x%016.16llx e=0x%016.16llx\n", regs->interrupt_number, regs->error_code);
+    dbg::printf("\tv=0x%016.16llx e=0b%016.16llb\n", regs->interrupt_number, regs->error_code);
     dbg::printf("RAX=0x%016.16llx RBX=0x%016.16llx RCX=0x%016.16llx RDX=0x%016.16llx\n", regs->rax,
                 regs->rbx, regs->rcx, regs->rdx);
     dbg::printf("RSI=0x%016.16llx RDI=0x%016.16llx RBP=0x%016.16llx RSP=0x%016.16llx\n", regs->rsi,
