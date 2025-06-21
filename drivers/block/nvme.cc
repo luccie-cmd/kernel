@@ -163,7 +163,7 @@ void NVMeDriver::writeReg(uint32_t offset, uint32_t value, bool check) {
     *reg = value;
     if (this->readReg(offset) != value && check) {
         dbg::printm(MODULE, "Failed to update value at 0x%llx (32 bit)\n", (uint64_t)reg);
-        std::exit(1);
+        std::abort();
     }
     dbg::popTrace();
 }
@@ -176,7 +176,7 @@ void NVMeDriver::writeReg64(uint32_t offset, uint64_t value, bool check) {
     *reg = value;
     if (this->readReg64(offset) != value && check) {
         dbg::printm(MODULE, "Failed to update value at 0x%llx (64 bit)\n", (uint64_t)reg);
-        std::exit(1);
+        std::abort();
     }
     dbg::popTrace();
 }
