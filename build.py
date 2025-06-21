@@ -311,7 +311,7 @@ def makeFileSystem(loop_device):
     callCmd(f"sudo mkfs.fat -F32 {loop_device}p1")
     callCmd(f"sudo ./mkfs.fs {loop_device}p2")
 
-def mountFs(device, boot, kernel):
+def mountFs(device, boot, kernel, files):
     callCmd(f"mkdir -p mnt")
     print("> Copying boot files")
     callCmd(f"sudo mount {device}p1 mnt")
@@ -320,6 +320,11 @@ def mountFs(device, boot, kernel):
     callCmd(f"sudo cp {kernel} mnt")
     callCmd(f"sudo cp ../init/bin/init mnt")
     callCmd(f"sudo echo \"Hello, World\" > mnt/test.txt")
+    for file in files:
+        if os.path.isfile(file):
+            callCmd(f"sudo cp {file} mnt")
+        else:
+            callCmd(f"sudo mkdir mnt/{file}")
     if "limine-uefi" in CONFIG["bootloader"]:
         callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine.conf mnt")
         callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine.sys mnt/limine-bios.sys")
@@ -328,14 +333,14 @@ def mountFs(device, boot, kernel):
     callCmd(f"rm -rf mnt")
 
 
-def buildImage(out_file, boot_file, kernel_file):
+def buildImage(out_file, boot_file, kernel_file, files):
     if not out_file.startswith("/dev"):
         callCmd(f"rm -f {out_file}")
         makeImageFile(out_file)
     makePartitionTable(out_file)
     LOOP_DEVICE=setupLoopDevice(out_file)
     makeFileSystem(LOOP_DEVICE)
-    mountFs(LOOP_DEVICE, boot_file, kernel_file)
+    mountFs(LOOP_DEVICE, boot_file, kernel_file, files)
     if "limine-uefi" in CONFIG["bootloader"]:
         callCmd(f"./limine/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
 
@@ -474,12 +479,12 @@ def main():
         print("> Building kernel")
         buildDir("kernel", False)
         print("> Removing unused objects")
-        cleanFiles(["libcxx", "drivers", "common", "kernel"])
+        cleanFiles(["libcxx", "drivers", "common", "kernel", "test"])
         print("> Linking kernel")
         linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
         print("> Getting info")
         getInfo()
-        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
         # if os.path.exists("/dev/sda"):
         #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     if "run" in sys.argv:

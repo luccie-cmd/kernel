@@ -30,6 +30,12 @@ struct Process {
     ProcessMemoryMapping* memoryMapping;
     Thread*               threads;
 };
+struct Mapping {
+    uint64_t virtualStart;
+    uint64_t fileOffset;
+    uint64_t length;
+    int permissions;
+};
 void  initialize();
 bool  isInitialized();
 pid_t getNewPID();
@@ -38,9 +44,9 @@ pid_t getNewPID();
 //                                                                                          file
 //                                                                                          offset},
 //                                                                                          length}
-void makeNewProcess(pid_t pid, uint64_t codeSize, uint64_t entryPoint, size_t fileIdx,
-                    std::vector<std::pair<std::pair<size_t, size_t>, size_t>> mappings);
-void addNewThread(pid_t pid);
+void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx,
+                    std::vector<Mapping*> mappings);
+void attachThread(pid_t pid, uint64_t entryPoint);
 void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress);
 void nextProc();
 }; // namespace task

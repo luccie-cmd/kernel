@@ -46,6 +46,20 @@ static Process* findProcByPml4(mmu::vmm::PML4* pml4) {
     }
     return head;
 }
+static Process* findProcByPID(pid_t pid) {
+    if (currentProc->pid == pid) {
+        return currentProc;
+    }
+    Process* head = currentProc;
+    while (head->pid != pid) {
+        head = head->next;
+        if (head == currentProc) {
+            dbg::printm(MODULE, "Circular dependency exceeded, process %llu not found\n", pid);
+            std::abort();
+        }
+    }
+    return head;
+}
 static inline bool isInRange(uint64_t start, uint64_t end, uint64_t address) {
     return (address >= start && address <= end);
 }
@@ -88,24 +102,13 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
     }
     dbg::popTrace();
 }
-void makeNewProcess(pid_t pid, uint64_t codeSize, uint64_t entryPoint, size_t fileIdx,
-                    std::vector<std::pair<std::pair<size_t, size_t>, size_t>> mappings) {
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized()) {
-        initialize();
-    }
-    uint64_t     alignedCodeSize = (codeSize + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-    const size_t stackSize       = 4 * PAGE_SIZE;
-    uint64_t     stackPhys       = mmu::pmm::allocVirtual(stackSize);
-    uint64_t     stackVirt       = USER_STACK_TOP - stackSize;
+void attachThread(pid_t pid, uint64_t entryPoint) {
+    Process*     proc      = findProcByPID(pid);
+    const size_t stackSize = 4 * PAGE_SIZE;
+    uint64_t     stackVirt = USER_STACK_TOP - stackSize;
     for (size_t i = 0; i < stackSize; i += PAGE_SIZE) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhys + i, stackVirt + i, PROTECTION_RW,
-                          MAP_PRESENT);
-    }
-    uint64_t codeVirt = entryPoint;
-    for (size_t i = 0; i < alignedCodeSize; i += PAGE_SIZE) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, codeVirt + i, PROTECTION_RW,
-                          0);
+        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, stackVirt + i,
+                          PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
     }
     Thread* thread = new Thread;
     thread->tid    = 0;
@@ -119,20 +122,46 @@ void makeNewProcess(pid_t pid, uint64_t codeSize, uint64_t entryPoint, size_t fi
     thread->registers->rip      = entryPoint;
     thread->registers->rflags   = 0x202;
     thread->isRunning           = false;
-    thread->next                = thread;
-    Process* proc               = new Process;
-    proc->pid                   = pid;
-    proc->pml4                  = mmu::vmm::getPML4(pid);
-    proc->threads               = thread;
-    for (std::pair<std::pair<size_t, size_t>, size_t> mapping : mappings) {
+    if (proc->threads == nullptr) {
+        thread->next  = thread;
+        proc->threads = thread;
+    } else {
+        Thread* current = proc->threads;
+        while (current->next != proc->threads) {
+            current = current->next;
+        }
+        thread->next  = proc->threads;
+        current->next = thread;
+    }
+}
+void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx,
+                    std::vector<Mapping*> mappings) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    if (!isInitialized()) {
+        initialize();
+    }
+    Process* proc = new Process;
+    proc->pid     = pid;
+    proc->pml4    = mmu::vmm::getPML4(pid);
+    proc->threads = nullptr;
+    for (Mapping* mapping : mappings) {
         ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
         memMapping->fileIdx              = fileIdx;
-        memMapping->fileOffset           = mapping.first.second;
-        memMapping->length               = mapping.second;
-        memMapping->permissions          = PROTECTION_RW;
-        memMapping->virtualStart         = mapping.first.first;
-        memMapping->next                 = proc->memoryMapping;
-        proc->memoryMapping              = memMapping;
+        memMapping->fileOffset           = mapping->fileOffset;
+        memMapping->length               = mapping->length;
+        memMapping->permissions          = mapping->permissions;
+        memMapping->virtualStart         = mapping->virtualStart;
+        if (memMapping->virtualStart % PAGE_SIZE == 0) {
+            for (size_t i = 0; i < (memMapping->length & ~(PAGE_SIZE)); i += PAGE_SIZE) {
+                mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS,
+                                  memMapping->virtualStart + i, memMapping->permissions, 0);
+            }
+        } else {
+            dbg::printm(MODULE, "TODO: Memory permisssion sharing\n");
+            std::abort();
+        }
+        memMapping->next    = proc->memoryMapping;
+        proc->memoryMapping = memMapping;
     }
     if (currentProc == nullptr) {
         currentProc = proc;
@@ -144,6 +173,7 @@ void makeNewProcess(pid_t pid, uint64_t codeSize, uint64_t entryPoint, size_t fi
         currentProc->prev->next = proc;
         currentProc->prev       = proc;
     }
+    attachThread(pid, entryPoint);
     dbg::popTrace();
 }
 extern "C" void     switchProc(io::Registers* regs, mmu::vmm::PML4* pml4);

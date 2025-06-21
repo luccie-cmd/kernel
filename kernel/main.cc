@@ -40,8 +40,8 @@ extern "C" void KernelMain() {
     int      handle = vfs::openFile("/tmpboot/init", 0);
     uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
     dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
-    task::makeNewProcess(pid, 169, 0x401000, handle,
-                         {std::make_pair(std::make_pair(0x401000, 0x0000000000001000), 169)});
+    task::makeNewProcess(pid, 0x401060, handle,
+                         {new task::Mapping(0x401000, 0x0000000000001000, 169, PROTECTION_RW)});
     vfs::umount("/tmpboot");
 
     while (true) {

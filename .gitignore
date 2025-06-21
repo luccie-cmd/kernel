@@ -3,6 +3,7 @@ limine/
 .vscode/
 script/__pycache__/
 .build-cache/
+test/
 temp.py
 *.txt
 pci.ids
