@@ -38,6 +38,7 @@ void midInit() {
     uint64_t star_msr = ((uint64_t)(0x13) << 48) | ((uint64_t)0x08 << 32);
     io::wrmsr(MSR_STAR, star_msr);
     io::wrmsr(MSR_SYSCALL_MASK, 0x202);
+    hal::arch::x64::gdt::setRSP0(KERNEL_PID);
     dbg::popTrace();
 }
 }; // namespace hal::arch

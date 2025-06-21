@@ -18,11 +18,11 @@ extern "C" void __cxa_pure_virtual() {
     std::abort();
 }
 
-extern "C" int __cxa_guard_acquire(void* guard_object) {
+extern "C" int __cxa_guard_acquire(__cxxabiv1::__guard* guard_object) {
     (void)guard_object;
     return 0;
 }
 
-extern "C" void __cxa_guard_release(void* guard_object) {
+extern "C" void __cxa_guard_release(__cxxabiv1::__guard* guard_object) {
     (void)guard_object;
 }

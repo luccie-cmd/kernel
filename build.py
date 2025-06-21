@@ -58,7 +58,7 @@ if os.path.exists("./script/config.py.old"):
 ALLOWED_CONFIG = [
     ["config", ["release", "debug"], True],
     ["arch", ["x64"], True],
-    ["compiler", ["gcc"], True],
+    ["compiler", ["gcc", "clang"], True],
     ["rootFS", ["fat32", 'ext2', 'ext3', "ext4"], True],
     ["bootloader", ["limine-uefi", "custom"], True],
     ["outDir", [], True],
@@ -84,19 +84,19 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fno-omit-frame-pointer', '-nostdlib', '-g0', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
-CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function', '-Wno-aggressive-loop-optimizations']
+CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
 
 if "debug" in CONFIG.get("config"):
-    CONFIG["CFLAGS"] += ["-O0"]
+    CONFIG["CFLAGS"] += ["-O1"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
     CONFIG["CFLAGS"] += ["-O3"]
@@ -105,11 +105,13 @@ else:
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
 
-if "yes" in CONFIG.get("analyzer"):
-    CONFIG["CFLAGS"].append("-fanalyzer")
-
 if "gcc" in CONFIG.get("compiler"):
+    if "yes" in CONFIG.get("analyzer"):
+        CONFIG["CFLAGS"].append("-fanalyzer")
     CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=1000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']
+    CONFIG["CFLAGS"] += ['-Wno-aggressive-loop-optimizations']
+if "clang" in CONFIG.get("compiler"):
+    CONFIG["CFLAGS"] += ['-Wno-ignored-attributes']
 
 stopEvent = threading.Event()
 
@@ -141,7 +143,8 @@ def getExtension(file):
 
 def buildC(file):
     compiler = CONFIG.get("compiler")[0]
-    compiler += "-11"
+    if CONFIG.get("compiler")[0] == "gcc":
+        compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     if "main.c" in file and "yes" in CONFIG.get("analyzer"):
         options.remove("-fanalyzer")
@@ -158,7 +161,8 @@ def buildCXX(file):
     if compiler == "gcc":
         compiler = "g"
     compiler += "++"
-    compiler += "-11"
+    if CONFIG.get("compiler")[0] == "gcc":
+        compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
     options.append("-std=c++23")
@@ -268,7 +272,7 @@ def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"objdump -C -D -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
+    callCmd(f"objdump -C -D -x -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])
@@ -476,8 +480,8 @@ def main():
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
-        if os.path.exists("/dev/sda"):
-            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+        # if os.path.exists("/dev/sda"):
+        #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

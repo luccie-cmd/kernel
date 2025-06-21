@@ -34,13 +34,14 @@ extern "C" void KernelMain() {
     temp->setScreenX(displayDriver->getScreenX());
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
-    displayDriver = temp;
-    // task::pid_t pid = task::getNewPID();
-    // task::makeNewProcess(pid, tempCode, sizeof(tempCode), 0x401000);
+    displayDriver   = temp;
+    task::pid_t pid = task::getNewPID();
     vfs::mount(0, 0, "/tmpboot");
     int      handle = vfs::openFile("/tmpboot/init", 0);
     uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
     dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
+    task::makeNewProcess(pid, 169, 0x401000, handle,
+                         {std::make_pair(std::make_pair(0x401000, 0x0000000000001000), 169)});
     vfs::umount("/tmpboot");
 
     while (true) {

@@ -54,6 +54,7 @@ static_assert(sizeof(DataBlock) == 512, "DataBlock alignment is messed up");
 struct SFSFile {
     bool     opened;
     uint64_t lba;
+    uint64_t position;
 };
 class SFSDriver : public FSDriver {
   public:
@@ -66,6 +67,8 @@ class SFSDriver : public FSDriver {
     void     write(int file, size_t length, const void* buffer);
     void     close(int file);
     void     sync();
+    void     seek(int file, uint64_t offset);
+    uint64_t getOffsetInFile(int file);
     uint64_t getLengthOfFile(int file);
     void     create(const char* path);
 

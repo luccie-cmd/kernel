@@ -9,7 +9,7 @@
 #define MODULE "ACPI"
 
 namespace acpi {
-limine_rsdp_request rsdpRequest = {
+limine_rsdp_request __attribute__((section(".limine_requests"))) rsdpRequest = {
     .id       = LIMINE_RSDP_REQUEST,
     .revision = 0,
     .response = nullptr,

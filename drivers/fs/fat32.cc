@@ -364,7 +364,7 @@ FAT_File* FAT32Driver::openEntry(FAT_DirectoryEntry* entry) {
     fd->Public.IsDirectory     = (entry->Attributes & (uint8_t)FAT_Attributes::DIRECTORY) != 0;
     fd->Public.Size            = entry->Size;
     fd->Public.Position        = 0;
-    fd->Public.Pid             = task::getCurrentPID();
+    fd->Public.Pid             = KERNEL_PID;
     fd->Opened                 = true;
     fd->FirstCluster           = (entry->FirstClusterHigh << 16) | entry->FirstClusterLow;
     fd->CurrentCluster         = fd->FirstCluster;
@@ -374,5 +374,43 @@ FAT_File* FAT32Driver::openEntry(FAT_DirectoryEntry* entry) {
         this->clusterToLBA(fd->FirstCluster) + this->getPartEntry()->startLBA, 1, fd->Buffer);
     dbg::popTrace();
     return &fd->Public;
+}
+void FAT32Driver::seek(int file, uint64_t offset) {
+    FAT_FileData* fd = (file == FAT32_ROOT_DIRECTORY_HANDLE) ? this->rootDir : this->files.at(file);
+    if (offset > fd->Public.Size) {
+        dbg::printm(MODULE, "Seek offset %llu exceeds file size %llu\n", offset, fd->Public.Size);
+        offset = fd->Public.Size;
+    }
+    uint32_t bytesPerCluster    = this->bootSector->SectorsPerCluster * SECTOR_SIZE;
+    uint32_t newClusterOffset   = offset / bytesPerCluster;
+    uint32_t newSectorInCluster = (offset % bytesPerCluster) / SECTOR_SIZE;
+    if (newClusterOffset != (fd->Public.Position / bytesPerCluster)) {
+        fd->CurrentCluster = fd->FirstCluster;
+        for (uint32_t i = 0; i < newClusterOffset; i++) {
+            fd->CurrentCluster = this->nextCluster(fd->CurrentCluster);
+            if (fd->CurrentCluster >= 0xFFFFFFF8) {
+                dbg::printm(MODULE, "Invalid cluster chain during seek\n");
+                break;
+            }
+        }
+        fd->CurrentSectorInCluster = newSectorInCluster;
+        this->getDiskDevice().first->read(
+            this->getDiskDevice().second,
+            (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) +
+                this->getPartEntry()->startLBA,
+            1, fd->Buffer);
+    } else if (newSectorInCluster != fd->CurrentSectorInCluster) {
+        fd->CurrentSectorInCluster = newSectorInCluster;
+        this->getDiskDevice().first->read(
+            this->getDiskDevice().second,
+            (this->clusterToLBA(fd->CurrentCluster) + fd->CurrentSectorInCluster) +
+                this->getPartEntry()->startLBA,
+            1, fd->Buffer);
+    }
+    fd->Public.Position = offset;
+}
+uint64_t FAT32Driver::getOffsetInFile(int file) {
+    FAT_FileData* fd = (file == FAT32_ROOT_DIRECTORY_HANDLE) ? this->rootDir : this->files.at(file);
+    return fd->Public.Position;
 }
 }; // namespace drivers::fs

@@ -39,28 +39,12 @@ void            initialize(uint64_t pmm_size, uint64_t vmm_max) {
 bool isInitialized() {
     return __initialized;
 }
-size_t getNextPowerOfTwo(size_t size) {
-    if (size <= 1) return 1;
-    size_t power = 1;
-    while (power < size) {
-        power <<= 1;
-    }
-    return power;
-}
-size_t getAlignSize(size_t size) {
-    const size_t CACHE_LINE_SIZE = 64;
-    size_t       alignedSize     = getNextPowerOfTwo(size);
-    if (alignedSize < CACHE_LINE_SIZE) {
-        alignedSize = CACHE_LINE_SIZE;
-    }
-    return alignedSize;
-}
-void* allocate(size_t size) {
+void* allocate(size_t size, size_t align) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize(PMM_SIZE, VMM_MAX);
     }
-    size_t ALIGN_SIZE    = getAlignSize(size);
+    size_t ALIGN_SIZE    = align;
     size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
     node*  current       = __head;
     while (current && current->next) {
@@ -134,7 +118,7 @@ void* allocate(size_t size) {
     dbg::printm(MODULE, "TODO: Extending of heap\n");
     std::abort();
 }
-void free(void* ptr, size_t size) {
+void free(void* ptr, size_t size, size_t align) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         dbg::printm(MODULE, "Called free before initialized\n");
@@ -159,7 +143,7 @@ void free(void* ptr, size_t size) {
                     ptr, (uint64_t)ptr - sizeof(node), size);
         std::abort();
     }
-    size_t ALIGN_SIZE    = getAlignSize(size);
+    size_t ALIGN_SIZE    = align;
     size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
     node*  freeNode      = reinterpret_cast<node*>((uintptr_t)ptr - sizeof(node));
     if (freeNode->free) {
@@ -200,6 +184,28 @@ void free(void* ptr, size_t size) {
         }
     }
     dbg::popTrace();
+}
+size_t getNextPowerOfTwo(size_t size) {
+    if (size <= 1) return 1;
+    size_t power = 1;
+    while (power < size) {
+        power <<= 1;
+    }
+    return power;
+}
+size_t getAlignSize(size_t size) {
+    const size_t CACHE_LINE_SIZE = 64;
+    size_t       alignedSize     = getNextPowerOfTwo(size);
+    if (alignedSize < CACHE_LINE_SIZE) {
+        alignedSize = CACHE_LINE_SIZE;
+    }
+    return alignedSize;
+}
+void* allocate(size_t size) {
+    return allocate(size, getAlignSize(size));
+}
+void free(void* ptr, size_t size) {
+    free(ptr, size, getAlignSize(size));
 }
 void free(void* ptr) {
     dbg::addTrace(__PRETTY_FUNCTION__);

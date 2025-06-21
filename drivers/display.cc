@@ -10,8 +10,9 @@
 extern drivers::DisplayDriver* displayDriver;
 
 namespace drivers {
-limine_framebuffer_request fbRequest = {
-    .id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0, .response = nullptr};
+static volatile limine_framebuffer_request
+    __attribute__((used, retain, section(".limine_requests"))) fbRequest = {
+        .id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0, .response = nullptr};
 DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (fbRequest.response == nullptr) {
@@ -26,6 +27,10 @@ DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY) {
             MODULE, "Loaded display %lux%lux%lu\n", fbRequest.response->framebuffers[i]->width,
             fbRequest.response->framebuffers[i]->height, fbRequest.response->framebuffers[i]->bpp);
         this->infos.push_back(fbRequest.response->framebuffers[i]);
+    }
+    this->buffer = new uint8_t*[this->infos.size()];
+    for (size_t i = 0; i < this->infos.size(); ++i) {
+        this->buffer[i] = (uint8_t*)this->infos.at(i)->address;
     }
     this->setDriverName("Display driver");
     dbg::popTrace();
@@ -72,8 +77,8 @@ void DisplayDriver::drawCharacter(uint8_t display, char c) {
     this->screenX += CHAR_WIDTH + MARGIN;
     dbg::popTrace();
 }
-void DisplayDriver::drawChar(uint8_t display, char c) {
-    limine_framebuffer* buffer = this->infos.at(display);
+void DisplayDriver::drawChar(uint8_t displayIdx, char c) {
+    limine_framebuffer* display = this->infos.at(displayIdx);
     switch (c) {
     case '\n': {
         this->screenY += CHAR_HEIGHT + MARGIN;
@@ -92,15 +97,15 @@ void DisplayDriver::drawChar(uint8_t display, char c) {
                 const uint64_t line_start_y = this->screenY;
                 const uint64_t line_end_y   = line_start_y + CHAR_HEIGHT + MARGIN;
                 for (int64_t cell_x =
-                         ((buffer->width - 1) / (CHAR_WIDTH + MARGIN)) * (CHAR_WIDTH + MARGIN);
+                         ((display->width - 1) / (CHAR_WIDTH + MARGIN)) * (CHAR_WIDTH + MARGIN);
                      cell_x >= 0 && !found; cell_x -= CHAR_WIDTH + MARGIN) {
                     for (uint64_t y = line_start_y; y < line_end_y && !found; y++) {
                         for (uint64_t x_offset = 0; x_offset < CHAR_WIDTH + MARGIN && !found;
                              x_offset++) {
                             uint64_t x = cell_x + x_offset;
-                            if (x >= buffer->width) continue;
+                            if (x >= display->width) continue;
                             uint8_t r, g, b, a;
-                            this->readPixel(display, x, y, &r, &g, &b, &a);
+                            this->readPixel(displayIdx, x, y, &r, &g, &b, &a);
                             if (r != 0 || g != 0 || b != 0) {
 
                                 this->screenX = cell_x + CHAR_WIDTH + (MARGIN * 2);
@@ -109,7 +114,6 @@ void DisplayDriver::drawChar(uint8_t display, char c) {
                         }
                     }
                 }
-
                 if (!found) {
                     this->screenX = MARGIN;
                 }
@@ -118,44 +122,43 @@ void DisplayDriver::drawChar(uint8_t display, char c) {
             }
         }
         this->screenX =
-            std::clamp(this->screenX, (uint64_t)MARGIN, buffer->width - CHAR_WIDTH + MARGIN);
+            std::clamp(this->screenX, (uint64_t)MARGIN, display->width - CHAR_WIDTH + MARGIN);
         this->screenY =
-            std::clamp(this->screenY, (uint64_t)MARGIN, buffer->height - CHAR_HEIGHT + MARGIN);
+            std::clamp(this->screenY, (uint64_t)MARGIN, display->height - CHAR_HEIGHT + MARGIN);
 
         for (uint8_t y = 0; y < CHAR_HEIGHT + MARGIN; ++y) {
             for (uint8_t x = 0; x < CHAR_WIDTH + MARGIN; ++x) {
-                this->writePixel(display, this->screenX + x, this->screenY + y, 0x00000000);
+                this->writePixel(displayIdx, this->screenX + x, this->screenY + y, 0x00000000);
             }
         }
     } break;
     default:
-        this->drawCharacter(display, c);
+        this->drawCharacter(displayIdx, c);
     }
-    if (this->screenX + CHAR_WIDTH + MARGIN > buffer->width) {
+    if (this->screenX + CHAR_WIDTH + MARGIN > display->width) {
         this->screenX = MARGIN;
         this->screenY += CHAR_HEIGHT + MARGIN;
     }
-    // Always make sure we have some space
-    while (this->screenY + CHAR_HEIGHT + MARGIN > buffer->height) {
-        this->scrollBack(display, CHAR_HEIGHT + MARGIN);
+    while (this->screenY + CHAR_HEIGHT + MARGIN > display->height) {
+        this->scrollBack(displayIdx, CHAR_HEIGHT + MARGIN);
         this->screenY -= CHAR_HEIGHT + MARGIN;
     }
 }
-void DisplayDriver::scrollBack(uint8_t display, uint64_t lines) {
+void DisplayDriver::scrollBack(uint8_t displayIdx, uint64_t lines) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* buffer = this->infos.at(display);
-    if (!buffer || lines == 0 || buffer->height == 0) {
+    limine_framebuffer* display = this->infos.at(displayIdx);
+    if (!display || lines == 0 || display->height == 0) {
         dbg::popTrace();
         return;
     }
-    if (lines >= buffer->height) {
-        std::memset(buffer->address, 0, buffer->pitch * buffer->height);
+    if (lines >= display->height) {
+        std::memset(this->buffer[displayIdx], 0, display->pitch * display->height);
         dbg::popTrace();
         return;
     }
-    uint8_t* fb     = static_cast<uint8_t*>(buffer->address);
-    uint32_t pitch  = buffer->pitch;
-    uint64_t height = buffer->height;
+    uint8_t* fb     = static_cast<uint8_t*>(this->buffer[displayIdx]);
+    uint32_t pitch  = display->pitch;
+    uint64_t height = display->height;
     for (uint64_t y = 0; y < height - lines; ++y) {
         std::memmove(fb + y * pitch, fb + (y + lines) * pitch, pitch);
     }
@@ -170,11 +173,11 @@ void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint32_t
                      rgba & 0xFF);
     dbg::popTrace();
 }
-void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint8_t r, uint8_t g,
+void DisplayDriver::writePixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_t r, uint8_t g,
                                uint8_t b, uint8_t a) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* buffer = this->infos.at(display);
-    if (x > buffer->width || y > buffer->height) {
+    limine_framebuffer* display = this->infos.at(displayIdx);
+    if (x > display->width || y > display->height) {
         DisplayDriver* temp = displayDriver;
         displayDriver       = nullptr;
         dbg::printf("X %llu or Y %llu pos oob", x, y);
@@ -182,17 +185,17 @@ void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint8_t 
         dbg::popTrace();
         return;
     }
-    uint64_t offset    = (y * buffer->width + x) * (buffer->bpp / 8);
-    auto     pixelAddr = reinterpret_cast<volatile uint8_t*>(buffer->address) + offset;
+    uint64_t offset    = (y * display->width + x) * (display->bpp / 8);
+    auto     pixelAddr = reinterpret_cast<volatile uint8_t*>(this->buffer[displayIdx]) + offset;
     uint8_t  newR      = (r * a) / 255;
     uint8_t  newG      = (g * a) / 255;
     uint8_t  newB      = (b * a) / 255;
-    uint8_t  rShift    = buffer->red_mask_shift;
-    uint8_t  gShift    = buffer->green_mask_shift;
-    uint8_t  bShift    = buffer->blue_mask_shift;
-    uint32_t rMask     = (1 << buffer->red_mask_size) - 1;
-    uint32_t gMask     = (1 << buffer->green_mask_size) - 1;
-    uint32_t bMask     = (1 << buffer->blue_mask_size) - 1;
+    uint8_t  rShift    = display->red_mask_shift;
+    uint8_t  gShift    = display->green_mask_shift;
+    uint8_t  bShift    = display->blue_mask_shift;
+    uint32_t rMask     = (1 << display->red_mask_size) - 1;
+    uint32_t gMask     = (1 << display->green_mask_size) - 1;
+    uint32_t bMask     = (1 << display->blue_mask_size) - 1;
     *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(rMask << rShift);
     *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(gMask << gShift);
     *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(bMask << bShift);
@@ -211,11 +214,11 @@ void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint32_t*
     *(uint8_t*)((uint8_t*)rgba + 3) = a;
     dbg::popTrace();
 }
-void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint8_t* r, uint8_t* g,
+void DisplayDriver::readPixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_t* r, uint8_t* g,
                               uint8_t* b, uint8_t* a) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* buffer = this->infos.at(display);
-    if (x > buffer->width || y > buffer->height) {
+    limine_framebuffer* display = this->infos.at(displayIdx);
+    if (x > display->width || y > display->height) {
         *r                  = 0;
         *g                  = 0;
         *b                  = 0;
@@ -227,18 +230,18 @@ void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint8_t* 
         dbg::popTrace();
         return;
     }
-    uint64_t          offset       = (y * buffer->width + x) * (buffer->bpp / 8);
-    volatile uint8_t* pixelAddress = (volatile uint8_t*)(buffer->address) + offset;
+    uint64_t          offset       = (y * display->width + x) * (display->bpp / 8);
+    volatile uint8_t* pixelAddress = (volatile uint8_t*)(this->buffer[displayIdx]) + offset;
     uint32_t          pixelValue   = 0;
-    for (uint64_t i = 0; i < buffer->bpp / 8; ++i) {
+    for (uint64_t i = 0; i < display->bpp / 8; ++i) {
         pixelValue |= pixelAddress[i] << (i * 8);
     }
-    uint8_t  rShift = buffer->red_mask_shift;
-    uint8_t  gShift = buffer->green_mask_shift;
-    uint8_t  bShift = buffer->blue_mask_shift;
-    uint32_t rMask  = (1 << buffer->red_mask_size) - 1;
-    uint32_t gMask  = (1 << buffer->green_mask_size) - 1;
-    uint32_t bMask  = (1 << buffer->blue_mask_size) - 1;
+    uint8_t  rShift = display->red_mask_shift;
+    uint8_t  gShift = display->green_mask_shift;
+    uint8_t  bShift = display->blue_mask_shift;
+    uint32_t rMask  = (1 << display->red_mask_size) - 1;
+    uint32_t gMask  = (1 << display->green_mask_size) - 1;
+    uint32_t bMask  = (1 << display->blue_mask_size) - 1;
     *r              = (pixelValue >> rShift) & rMask;
     *g              = (pixelValue >> gShift) & gMask;
     *b              = (pixelValue >> bShift) & bMask;

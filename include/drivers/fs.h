@@ -5,6 +5,9 @@
 #include <kernel/task/types.h>
 #include <drivers/msc.h>
 
+// virtual void seek(int file, uint64_t offset) = 0;
+// virtual uint64_t getOffsetInFile(int file) = 0;
+
 #define FS_FLAGS_READ (1 << 0)
 #define SECTOR_SIZE 512
 
@@ -25,10 +28,12 @@ namespace drivers{
             virtual int open(task::pid_t PID, const char* path, int flags) = 0;
             virtual void read(int file, size_t length, void* buffer) = 0;
             virtual void write(int file, size_t length, const void* buffer) = 0;
+            virtual void seek(int file, uint64_t offset) = 0;
             virtual void close(int file) = 0;
             virtual void sync() = 0;
             virtual void create(const char* path) = 0;
             virtual uint64_t getLengthOfFile(int file) = 0;
+            virtual uint64_t getOffsetInFile(int file) = 0;
             vfs::PartitionEntry* getPartEntry();
             std::pair<MSCDriver*, uint8_t> getDiskDevice();
             FSType getFsType();

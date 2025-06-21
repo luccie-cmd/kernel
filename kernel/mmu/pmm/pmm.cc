@@ -27,9 +27,7 @@ void         initialize() {
     uint64_t memmap_entries = memmap_request.response->entry_count;
     for (uint64_t i = 0; i < memmap_entries; ++i) {
         limine_memmap_entry* entry = memmap_request.response->entries[i];
-        if ((entry->type == LIMINE_MEMMAP_USABLE ||
-             entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE) &&
-            entry->length >= PAGE_SIZE) {
+        if (entry->type == LIMINE_MEMMAP_USABLE && entry->length >= PAGE_SIZE) {
             if (entry->base == io::rcr3()) {
                 continue;
             }

@@ -26,6 +26,7 @@ namespace drivers
         void writePixel(uint8_t display, uint64_t x, uint64_t y, uint8_t r, uint8_t g, uint8_t b, uint8_t a);
         std::vector<limine_framebuffer *> infos;
         std::size_t screenX, screenY;
+        uint8_t** buffer;
     };
     DisplayDriver *loadDisplayDriver(pci::device *dev);
 };

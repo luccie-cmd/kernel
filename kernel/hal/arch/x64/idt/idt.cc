@@ -127,12 +127,12 @@ extern "C" void printRegs(io::Registers* regs) {
 extern "C" void handleInt(io::Registers* regs) {
     if (regs->interrupt_number < 0x20) {
         dbg::printf("Interrupt type: %s\n", exceptions[regs->interrupt_number]);
-        printRegs(regs);
         if (exceptionHandlers[regs->interrupt_number]) {
             exceptionHandlers[regs->interrupt_number](regs);
         } else {
+            printRegs(regs);
             dbg::printf("TODO: Add exception handler for %llu\n", regs->interrupt_number);
-            // std::abort();
+            std::abort();
         }
         return;
     }
@@ -165,10 +165,8 @@ static mmu::vmm::vmm_address getVMMfromVA(uint64_t vaddr) {
 void handlePF(io::Registers* regs) {
     io::cli();
     disablePageFaultProtection();
-    PageFaultError  err         = *(PageFaultError*)(&regs->error_code);
-    mmu::vmm::PML4* pml4        = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3);
-    uint64_t        physicalCR2 = mmu::vmm::getPhysicalAddr(pml4, io::rcr2(), false);
-    dbg::printf("Physical CR2 = 0x%llx\n", physicalCR2);
+    PageFaultError  err  = *(PageFaultError*)(&regs->error_code);
+    mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3);
     dbg::printf("PPV: %hhu, "
                 "write: %hhu, "
                 "user: %hhu, "
@@ -177,29 +175,19 @@ void handlePF(io::Registers* regs) {
                 "PKV: %hhu, "
                 "SS: %hhu\n",
                 err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
-    mmu::vmm::vmm_address vma = getVMMfromVA(io::rcr2());
-    mmu::vmm::PDPE*       pdpe =
-        reinterpret_cast<mmu::vmm::PDPE*>(mmu::vmm::makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
-    mmu::vmm::PDE* pde =
-        reinterpret_cast<mmu::vmm::PDE*>(mmu::vmm::makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
-    mmu::vmm::PTE* pte =
-        reinterpret_cast<mmu::vmm::PTE*>(mmu::vmm::makeVirtual(pde[vma.pde].pte_ptr << 12));
-    dbg::printf("%hhu %hhu %hhu %hhu\n", pml4[vma.pml4e].no_execute, pdpe[vma.pdpe].no_execute,
-                pde[vma.pde].no_execute, pte[vma.pte].no_execute);
     if (err.PPV == 0) {
         if (io::rcr2() == 0) {
             dbg::print("Cannot map a page at NULL\n");
             std::abort();
         }
-        if (physicalCR2 == 0xDEADB000) {
-            dbg::printf("On demand mapping of 0x%llx\n", io::rcr2());
-            mmu::vmm::mapPage(pml4, mmu::pmm::allocate(), io::rcr2() & PAGE_MASK,
-                              PROTECTION_RW |
-                                  (task::getCurrentPID() == KERNEL_PID ? PROTECTION_KERNEL : 0),
-                              MAP_PRESENT);
+        uint64_t physicalCR2 = mmu::vmm::getPhysicalAddr(pml4, io::rcr2(), false, true);
+        if (physicalCR2 == ONDEMAND_MAP_ADDRESS) {
+            task::mapProcess(reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM()),
+                             io::rcr2());
         } else {
-            dbg::printf("TODO: Exit program as it has attempted to use an invalid address 0x%llx",
-                        physicalCR2);
+            dbg::printf("TODO: Exit program as it has attempted to use an invalid address 0x%llx "
+                        "(Physical 0x%llx)\n",
+                        io::rcr2(), physicalCR2);
             std::abort();
         }
     } else {

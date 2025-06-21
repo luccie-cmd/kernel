@@ -283,6 +283,9 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
         __asm__ volatile("popw %ax");
         __asm__ volatile("mov %ax, %es");
         __asm__ volatile("popw %ax");
+        forceReadVolatile(words);
+        forceReadVolatile(bus);
+        forceReadVolatile(buffer);
         buffer = (void*)((uint8_t*)buffer + (words * 2));
     }
     dbg::popTrace();

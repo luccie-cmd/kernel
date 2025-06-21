@@ -22,6 +22,8 @@ namespace heap{
     void initialize(uint64_t pmm_size, uint64_t vmm_max);
     bool isInitialized();
     void* allocate(size_t size);
+    void* allocate(size_t size, size_t align);
+    void free(void* ptr, size_t size, size_t align);
     void free(void* ptr, size_t size);
     void free(void* ptr);
     void printInfo();

@@ -6,7 +6,6 @@ extern tempValue
 extern syscallHandler
 section .trampoline.text
 syscallEntry:
-    ; Uh yeah this could go very badly if the user decided to call syscall with RSP set to 0 so FIXME ig?
     mov [tempValue], rsp
     mov rsp, [tssRSP0]
     push rax
@@ -14,6 +13,13 @@ syscallEntry:
     push rax
     mov rax, [kernelCR3]
     mov cr3, rax
+
+    mov eax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
 
     push r15
     push r14
@@ -34,8 +40,7 @@ syscallEntry:
     jmp syscallHandler
     
 switchProc:
-    mov rax, [rdi + 160]
-    mov cr3, rax
+    mov cr3, rsi
     mfence
     jmp .flush
 .flush:

@@ -89,10 +89,12 @@ void setRSP0(task::pid_t pid) {
         dbg::printf("Set TSS.RSP0 to physical address 0x%llx\n", tss.rsp0);
         dbg::printf("Set TSS.IST1 to physical address 0x%llx\n", tss.ist1);
     }
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                      tss.rsp0 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                      tss.ist1 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
+    if (pid != KERNEL_PID) {
+        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                          tss.rsp0 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
+        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                          tss.ist1 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
+    }
 }
 }; // namespace hal::arch::x64::gdt
 

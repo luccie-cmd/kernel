@@ -3,6 +3,12 @@
 #include <cstdint>
 #define DBG_PORT 0xE9
 
+template<typename T>
+inline void forceReadVolatile(const T& var) {
+    volatile T tmp = *(volatile const T*)&var;
+    asm volatile("" : "+m"(tmp));
+}
+
 namespace io{
     void outb(uint16_t port, uint8_t data);
     void outl(uint16_t port, uint32_t data);

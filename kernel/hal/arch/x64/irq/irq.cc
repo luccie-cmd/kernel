@@ -151,7 +151,8 @@ void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
 
 uint8_t requestIrq(std::function<void(io::Registers*)> func) {
     (void)func;
-    return 0;
+    dbg::printm(MODULE, "TODO: Request IRQ\n");
+    std::abort();
 }
 
 static void lapicSendEOI() {

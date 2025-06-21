@@ -188,7 +188,7 @@ void SFSDriver::read(int file, size_t length, void* buffer) {
     uint64_t   readLBA   = fileBlock->dataBlock;
     delete fileBlock;
     uint64_t bufferCount = 0;
-    uint8_t* u8buffer    = (uint8_t*)buffer;
+    uint8_t* u8buffer    = (uint8_t*)((uint64_t)buffer + this->files.at(file)->position);
     while (readLBA && length) {
         uint16_t count = 0;
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
@@ -202,6 +202,7 @@ void SFSDriver::read(int file, size_t length, void* buffer) {
         }
         readLBA = dataBlock->nextData;
     }
+    this->files.at(file)->position += length;
     delete dataBlock;
     dbg::popTrace();
 }
@@ -224,7 +225,7 @@ void SFSDriver::write(int file, size_t length, const void* buffer) {
         }
         writeLBA = dataBlock->nextData;
     }
-    if (length > sizeof(dataBlock->data)) {
+    if (length + this->files.at(file)->position > sizeof(dataBlock->data)) {
         dbg::printm(MODULE, "Split write block in 2 or more to fit it\n");
         std::abort();
     }
@@ -232,11 +233,13 @@ void SFSDriver::write(int file, size_t length, const void* buffer) {
     const uint8_t* u8buffer = (const uint8_t*)buffer;
     size_t         count    = 0;
     while (count < length) {
-        dataBlock->data[c] = u8buffer[count];
+        ((uint8_t*)((uint64_t)dataBlock->data + this->files.at(file)->position))[c] =
+            u8buffer[count];
         c++;
         count++;
     }
     this->writeDataBlock(dataBlock);
+    this->files.at(file)->position += length;
     delete dataBlock;
     dbg::popTrace();
 }
@@ -519,5 +522,11 @@ int SFSDriver::findHandle(uint64_t lba) {
     this->files.at(handle)->lba = lba;
     dbg::popTrace();
     return handle;
+}
+void SFSDriver::seek(int file, uint64_t offset) {
+    this->files.at(file)->position = offset;
+}
+uint64_t SFSDriver::getOffsetInFile(int file) {
+    return this->files.at(file)->position;
 }
 }; // namespace drivers::fs

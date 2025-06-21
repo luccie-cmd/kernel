@@ -26,6 +26,8 @@ namespace vfs{
     void mount(const char* file, const char* mountLoc);
     void umount(const char* mountLocation);
     uint64_t openFile(const char* path, uint64_t flags);
+    uint64_t getOffset(uint64_t handle);
+    void seek(uint64_t handle, uint64_t offset);
     void closeFile(uint64_t handle);
     void readFile(uint64_t handle, uint64_t size, void* buffer);
     void writeFile(uint64_t handle, uint64_t size, const void* buffer);

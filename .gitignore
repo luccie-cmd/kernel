@@ -9,3 +9,4 @@ pci.ids
 *.log
 *.pyc
 *.old
+foodchain.*

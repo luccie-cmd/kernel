@@ -226,8 +226,8 @@ uint64_t openFile(const char* path, uint64_t flags) {
             const char* copyPath = path;
             copyPath += std::strlen(mp->mountPath);
             pathWithoutMountPoint = copyPath;
-            handle = mp->fileSystemDriver->open(task::getCurrentPID(), copyPath, flags);
-            mpIdx  = i;
+            handle                = mp->fileSystemDriver->open(KERNEL_PID, copyPath, flags);
+            mpIdx                 = i;
             break;
         }
     }
@@ -239,6 +239,32 @@ uint64_t openFile(const char* path, uint64_t flags) {
     vfsFile->pathWithoutMountPoint = pathWithoutMountPoint;
     dbg::popTrace();
     return vfsFile->vfsHandle;
+}
+uint64_t getOffset(uint64_t handle) {
+    VFSFile* vfsFile = vfsFiles.at(handle);
+    if (vfsFile->used == false) {
+        dbg::printm(MODULE, "Tried closing already closed file!!!\n");
+        std::abort();
+    }
+    if (vfsFile->mpIdx > mountPoints.size()) {
+        dbg::printm(MODULE, "No mountpoint available at index 0x%llx\n", vfsFile->mpIdx);
+        std::abort();
+    }
+    MountPoint* mp = mountPoints.at(vfsFile->mpIdx);
+    return mp->fileSystemDriver->getOffsetInFile(vfsFile->fsHandle);
+}
+void seek(uint64_t handle, uint64_t offset) {
+    VFSFile* vfsFile = vfsFiles.at(handle);
+    if (vfsFile->used == false) {
+        dbg::printm(MODULE, "Tried closing already closed file!!!\n");
+        std::abort();
+    }
+    if (vfsFile->mpIdx > mountPoints.size()) {
+        dbg::printm(MODULE, "No mountpoint available at index 0x%llx\n", vfsFile->mpIdx);
+        std::abort();
+    }
+    MountPoint* mp = mountPoints.at(vfsFile->mpIdx);
+    mp->fileSystemDriver->seek(vfsFile->fsHandle, offset);
 }
 void closeFile(uint64_t handle) {
     dbg::addTrace(__PRETTY_FUNCTION__);

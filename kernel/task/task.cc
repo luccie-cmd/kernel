@@ -4,69 +4,26 @@
 #include <kernel/hal/arch/x64/gdt/gdt.h>
 #include <kernel/mmu/mmu.h>
 #include <kernel/task/task.h>
+#include <kernel/vfs/vfs.h>
 #define MODULE "Task manager"
 
 uint64_t __attribute__((section(".trampoline.data")))  tempValue;
 uint64_t* __attribute__((section(".trampoline.data"))) tempStack;
 namespace task {
-bool            initialized = false;
-Process*        currentProc;
-pid_t           pids = 0;
+bool            initialized   = false;
+Process*        currentProc   = nullptr;
+Thread*         currentThread = nullptr;
+pid_t           pids          = 1;
 extern "C" void syscallEntry();
-#define IDLE_ENTRY_POINT 0x802000
-uint8_t idleCodeBuffer[] = {0x0F, 0x05, 0xEB, 0xFC};
-void    initialize() {
+void            initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    currentProc      = new Process;
-    initialized      = true;
-    pids             = 10;
-    pid_t        pid = getNewPID();
-    uint64_t     newCR3 = reinterpret_cast<uint64_t>(mmu::vmm::getPML4(pid)) - mmu::vmm::getHHDM();
-    uint64_t     codeSize   = sizeof(idleCodeBuffer);
-    const size_t stack_size = 4 * PAGE_SIZE;
-    uint64_t     stackPhys  = mmu::pmm::allocVirtual(stack_size);
-    uint64_t     stackVirt  = USER_STACK_TOP - stack_size;
-    for (size_t i = 0; i < stack_size; i += PAGE_SIZE) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhys + i, stackVirt + i, PROTECTION_RW,
-                             MAP_PRESENT);
-    }
-    uint64_t codePhys = mmu::pmm::allocVirtual(codeSize);
-    uint64_t codeVirt = IDLE_ENTRY_POINT;
-    for (size_t i = 0; i < codeSize; i += PAGE_SIZE) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), codePhys + i, codeVirt + i, PROTECTION_RW,
-                             MAP_PRESENT);
-        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), codePhys + i, codeVirt + i,
-                             PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
-    }
-    std::memcpy(reinterpret_cast<void*>(IDLE_ENTRY_POINT), idleCodeBuffer, codeSize);
-    currentProc->pid = pid;
-    std::memset(currentProc->fpuState, 0, sizeof(currentProc->fpuState));
-    currentProc->registers = (io::Registers*)mmu::pmm::allocVirtual(sizeof(io::Registers));
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)currentProc->registers,
-                         (uint64_t)currentProc->registers, PROTECTION_NOEXEC | PROTECTION_RW,
-                         MAP_PRESENT);
-    currentProc->registers->cr3      = newCR3;
-    currentProc->registers->orig_rsp = stackVirt + stack_size - 16;
-    currentProc->registers->rbp      = currentProc->registers->orig_rsp;
-    currentProc->registers->rip      = IDLE_ENTRY_POINT;
-    currentProc->registers->rflags   = 0x202;
-    currentProc->registers->ss       = 0x1B;
-    currentProc->registers->cs       = 0x23;
-    currentProc->next                = currentProc;
-    currentProc->hasStarted          = false;
+    initialized = true;
+    pids        = 10;
     io::wrmsr(0xC0000082, (uint64_t)syscallEntry);
     dbg::popTrace();
 }
 bool isInitialized() {
     return initialized;
-}
-pid_t getCurrentPID() {
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    if (!isInitialized()) {
-        initialize();
-    }
-    dbg::popTrace();
-    return currentProc->pid;
 }
 pid_t getNewPID() {
     if (!isInitialized()) {
@@ -74,72 +31,143 @@ pid_t getNewPID() {
     }
     return pids++;
 }
-void makeNewProcess(pid_t pid, uint8_t* codeBuffer, uint64_t codeSize, uint64_t entryPoint) {
+static Process* findProcByPml4(mmu::vmm::PML4* pml4) {
+    if (currentProc->pml4 == pml4) {
+        return currentProc;
+    }
+    Process* head = currentProc;
+    while (head->pml4 != pml4) {
+        head = head->next;
+        if (head == currentProc) {
+            dbg::printm(MODULE, "Circular dependency exceeded, no process found for PML4 0x%llx\n",
+                        pml4);
+            std::abort();
+        }
+    }
+    return head;
+}
+static inline bool isInRange(uint64_t start, uint64_t end, uint64_t address) {
+    return (address >= start && address <= end);
+}
+static ProcessMemoryMapping* findMappingInProcess(Process* proc, uint64_t virtualAddress) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    ProcessMemoryMapping* head = proc->memoryMapping;
+    while (head) {
+        if (isInRange(head->virtualStart, head->virtualStart + head->length, virtualAddress)) {
+            dbg::popTrace();
+            return head;
+        }
+        head = head->next;
+    }
+    dbg::printm(MODULE, "Couldn't find memory mapping for address 0x%llx\n", virtualAddress);
+    std::abort();
+}
+void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    virtualAddress &= ~(PAGE_SIZE - 1);
+    Process*              proc    = findProcByPml4(pml4);
+    ProcessMemoryMapping* mapping = findMappingInProcess(proc, virtualAddress);
+    if (mapping->fileIdx == static_cast<size_t>(-1)) {
+        dbg::printm(MODULE, "TODO: Map 0x%llx as data\n", virtualAddress);
+        std::abort();
+    } else {
+        uint8_t* buffer = new uint8_t[PAGE_SIZE];
+        uint64_t offset = vfs::getOffset(mapping->fileIdx);
+        vfs::seek(mapping->fileIdx, (virtualAddress - mapping->virtualStart) + mapping->fileOffset);
+        vfs::readFile(mapping->fileIdx, PAGE_SIZE, buffer);
+        vfs::seek(mapping->fileIdx, offset);
+        uint64_t phys = mmu::pmm::allocate();
+        mmu::vmm::mapPage(proc->pml4, phys, virtualAddress, mapping->permissions, MAP_PRESENT);
+        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), phys, virtualAddress,
+                          PROTECTION_KERNEL | mapping->permissions, MAP_PRESENT);
+        std::memcpy((void*)virtualAddress, buffer, PAGE_SIZE);
+        mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)phys);
+        dbg::printm(MODULE, "On demand map for process %llu 0x%llx to 0x%llx physical\n", proc->pid,
+                    virtualAddress, phys);
+        delete[] buffer;
+    }
+    dbg::popTrace();
+}
+void makeNewProcess(pid_t pid, uint64_t codeSize, uint64_t entryPoint, size_t fileIdx,
+                    std::vector<std::pair<std::pair<size_t, size_t>, size_t>> mappings) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
     }
-    uint64_t     newCR3 = reinterpret_cast<uint64_t>(mmu::vmm::getPML4(pid)) - mmu::vmm::getHHDM();
-    const size_t stack_size = 4 * PAGE_SIZE;
-    uint64_t     stackPhys  = mmu::pmm::allocVirtual(stack_size);
-    uint64_t     stackVirt  = USER_STACK_TOP - stack_size;
-    for (size_t i = 0; i < stack_size; i += PAGE_SIZE) {
+    uint64_t     alignedCodeSize = (codeSize + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    const size_t stackSize       = 4 * PAGE_SIZE;
+    uint64_t     stackPhys       = mmu::pmm::allocVirtual(stackSize);
+    uint64_t     stackVirt       = USER_STACK_TOP - stackSize;
+    for (size_t i = 0; i < stackSize; i += PAGE_SIZE) {
         mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhys + i, stackVirt + i, PROTECTION_RW,
                           MAP_PRESENT);
     }
-    uint64_t codePhys = mmu::pmm::allocVirtual(codeSize);
     uint64_t codeVirt = entryPoint;
-    for (size_t i = 0; i < codeSize; i += PAGE_SIZE) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), codePhys + i, codeVirt + i, PROTECTION_RW,
-                          MAP_PRESENT);
-        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), codePhys + i, codeVirt + i,
-                          PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
+    for (size_t i = 0; i < alignedCodeSize; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, codeVirt + i, PROTECTION_RW,
+                          0);
     }
-    std::memcpy(reinterpret_cast<void*>(entryPoint), codeBuffer, codeSize);
-    Process* proc = new Process;
-    proc->pid     = pid;
-    std::memset(proc->fpuState, 0, sizeof(proc->fpuState));
-    proc->registers = new io::Registers;
-    mmu::vmm::mapPage(
-        mmu::vmm::getPML4(pid),
-        mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)proc->registers, false),
-        (uint64_t)proc->registers, PROTECTION_RW, MAP_PRESENT);
-    proc->registers->cr3      = newCR3;
-    proc->registers->orig_rsp = stackVirt + stack_size - 16;
-    proc->registers->rbp      = proc->registers->orig_rsp;
-    proc->registers->rip      = entryPoint;
-    proc->registers->rflags   = 0x202;
-    proc->registers->ss       = 0x1B;
-    proc->registers->cs       = 0x23;
-    proc->hasStarted          = false;
-    if (currentProc->next == currentProc) {
-        proc->next        = currentProc;
-        currentProc->next = proc;
+    Thread* thread = new Thread;
+    thread->tid    = 0;
+    std::memset(thread->fpuState, 0, sizeof(thread->fpuState));
+    thread->registers = (io::Registers*)mmu::pmm::allocVirtual(sizeof(io::Registers));
+    std::memset(thread->registers, 0, sizeof(io::Registers));
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)thread->registers,
+                      (uint64_t)thread->registers, PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
+    thread->registers->orig_rsp = stackVirt + stackSize - 16;
+    thread->registers->rbp      = thread->registers->orig_rsp;
+    thread->registers->rip      = entryPoint;
+    thread->registers->rflags   = 0x202;
+    thread->isRunning           = false;
+    thread->next                = thread;
+    Process* proc               = new Process;
+    proc->pid                   = pid;
+    proc->pml4                  = mmu::vmm::getPML4(pid);
+    proc->threads               = thread;
+    for (std::pair<std::pair<size_t, size_t>, size_t> mapping : mappings) {
+        ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
+        memMapping->fileIdx              = fileIdx;
+        memMapping->fileOffset           = mapping.first.second;
+        memMapping->length               = mapping.second;
+        memMapping->permissions          = PROTECTION_RW;
+        memMapping->virtualStart         = mapping.first.first;
+        memMapping->next                 = proc->memoryMapping;
+        proc->memoryMapping              = memMapping;
+    }
+    if (currentProc == nullptr) {
+        currentProc = proc;
+        proc->next  = proc;
+        proc->prev  = proc;
     } else {
-        proc->next        = currentProc->next;
-        currentProc->next = proc;
+        proc->prev              = currentProc->prev;
+        proc->next              = currentProc;
+        currentProc->prev->next = proc;
+        currentProc->prev       = proc;
     }
     dbg::popTrace();
 }
-extern "C" void     switchProc(io::Registers* regs);
+extern "C" void     switchProc(io::Registers* regs, mmu::vmm::PML4* pml4);
 extern "C" uint64_t __trampoline_text_start;
 extern "C" uint64_t __trampoline_text_end;
 extern "C" uint64_t __trampoline_data_start;
 extern "C" uint64_t __trampoline_data_end;
+extern "C" void     printRegs(io::Registers* regs);
 void                nextProc() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
     }
-    currentProc = currentProc->next;
+    currentProc          = currentProc->next;
+    currentProc->threads = currentProc->threads->next;
+    currentThread        = currentProc->threads;
     if (currentProc->hasStarted == false) {
         currentProc->hasStarted = true;
         uint64_t trampoline_va  = (uint64_t)&__trampoline_text_start;
         uint64_t trampoline_phys =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         while (trampoline_va < (uint64_t)&__trampoline_text_end) {
-            mmu::vmm::mapPage(mmu::vmm::getPML4(currentProc->pid), trampoline_phys, trampoline_va,
-                                             PROTECTION_RW, MAP_PRESENT);
+            mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
+                                             MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
@@ -148,23 +176,24 @@ void                nextProc() {
         trampoline_phys =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         while (trampoline_va < (uint64_t)&__trampoline_data_end) {
-            mmu::vmm::mapPage(mmu::vmm::getPML4(currentProc->pid), trampoline_phys, trampoline_va,
-                                             PROTECTION_RW, MAP_PRESENT);
+            mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
+                                             MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         }
         hal::arch::x64::gdt::setRSP0(currentProc->pid);
     }
-    if ((mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(currentProc->pid),
-                                                  (uint64_t)switchProc & (~0xFFF), true)) == 0) {
+    if ((mmu::vmm::getPhysicalAddr(currentProc->pml4, (uint64_t)switchProc & (~0xFFF), true)) ==
+        0) {
         dbg::printm(MODULE, "switchProc(io::Registers*) became unmapped!!!\n");
         std::abort();
     }
     dbg::popTrace();
-    switchProc(currentProc->registers);
+    switchProc(currentThread->registers,
+                              reinterpret_cast<mmu::vmm::PML4*>(reinterpret_cast<uint64_t>(currentProc->pml4) -
+                                                                mmu::vmm::getHHDM()));
 }
-
 struct __attribute__((packed)) SyscallRegs {
     uint64_t rbx, rip, rdx, rbp, rsi, rdi, r8, r9, r10, rflags, r12, r13, r14, r15, cr3, rax;
 };
@@ -202,23 +231,23 @@ void printRegs(SyscallRegs* regs) {
 }
 extern "C" void syscallHandler(SyscallRegs* regs) {
     printRegs(regs);
-    currentProc->registers->rax      = regs->rax;
-    currentProc->registers->rbx      = regs->rbx;
-    currentProc->registers->rip      = regs->rip;
-    currentProc->registers->rdx      = regs->rdx;
-    currentProc->registers->rsi      = regs->rsi;
-    currentProc->registers->rdi      = regs->rdi;
-    currentProc->registers->rbp      = regs->rbp;
-    currentProc->registers->orig_rsp = tempValue;
-    currentProc->registers->r8       = regs->r8;
-    currentProc->registers->r9       = regs->r9;
-    currentProc->registers->r10      = regs->r10;
-    currentProc->registers->r12      = regs->r12;
-    currentProc->registers->r13      = regs->r13;
-    currentProc->registers->r14      = regs->r14;
-    currentProc->registers->r15      = regs->r15;
-    currentProc->registers->rflags   = regs->rflags;
-    currentProc->registers->cr3      = regs->cr3;
+    currentThread->registers->rax      = regs->rax;
+    currentThread->registers->rbx      = regs->rbx;
+    currentThread->registers->rip      = regs->rip;
+    currentThread->registers->rdx      = regs->rdx;
+    currentThread->registers->rsi      = regs->rsi;
+    currentThread->registers->rdi      = regs->rdi;
+    currentThread->registers->rbp      = regs->rbp;
+    currentThread->registers->orig_rsp = tempValue;
+    currentThread->registers->r8       = regs->r8;
+    currentThread->registers->r9       = regs->r9;
+    currentThread->registers->r10      = regs->r10;
+    currentThread->registers->r12      = regs->r12;
+    currentThread->registers->r13      = regs->r13;
+    currentThread->registers->r14      = regs->r14;
+    currentThread->registers->r15      = regs->r15;
+    currentThread->registers->rflags   = regs->rflags;
+    currentThread->registers->cr3      = regs->cr3;
     nextProc();
 }
 }; // namespace task
