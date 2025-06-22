@@ -16,9 +16,9 @@ struct ProcessMemoryMapping {
     ProcessMemoryMapping* next;
 };
 enum struct ThreadStatus {
-    READY,
-    RUNNING,
-    BLOCKED,
+    Ready,
+    Running,
+    Blocked,
 };
 struct Thread {
     pid_t          tid;
@@ -27,8 +27,18 @@ struct Thread {
     ThreadStatus   status;
     Thread*        next;
 };
+enum struct ProcessState {
+    Ready,
+    Zombie,
+    Blocked,
+    Running,
+};
 struct Process {
     pid_t                 pid;
+    pid_t                 waitingFor;
+    ProcessState          state;
+    uint8_t               waitStatus;
+    uint8_t               exitCode;
     bool                  hasStarted;
     mmu::vmm::PML4*       pml4;
     Process *             next, *prev;

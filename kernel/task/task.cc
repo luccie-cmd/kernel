@@ -10,13 +10,14 @@
 uint64_t __attribute__((section(".trampoline.data")))  tempValue;
 uint64_t* __attribute__((section(".trampoline.data"))) tempStack;
 namespace task {
-bool            initialized   = false;
-Process*        globalParent  = nullptr;
-Process*        currentProc   = nullptr;
-Thread*         currentThread = nullptr;
-pid_t           pids          = 1;
-extern "C" void syscallEntry();
-void            initialize() {
+bool                  initialized   = false;
+Process*              globalParent  = nullptr;
+Process*              currentProc   = nullptr;
+Thread*               currentThread = nullptr;
+std::vector<Process*> zombieProcs;
+pid_t                 pids = 1;
+extern "C" void       syscallEntry();
+void                  initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     initialized = true;
     pids        = 10;
@@ -134,7 +135,7 @@ void attachThread(pid_t pid, uint64_t entryPoint) {
     thread->registers->rbp      = thread->registers->orig_rsp;
     thread->registers->rip      = entryPoint;
     thread->registers->rflags   = 0x202;
-    thread->status              = ThreadStatus::READY;
+    thread->status              = ThreadStatus::Ready;
     if (proc->threads == nullptr) {
         thread->next  = thread;
         proc->threads = thread;
@@ -153,11 +154,11 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx,
     if (!isInitialized()) {
         initialize();
     }
-    Process* proc    = new Process;
-    proc->pid        = pid;
-    proc->hasStarted = false;
-    proc->pml4       = mmu::vmm::getPML4(pid);
-    proc->threads    = nullptr;
+    Process* proc = new Process;
+    proc->pid     = pid;
+    proc->state   = ProcessState::Ready;
+    proc->pml4    = mmu::vmm::getPML4(pid);
+    proc->threads = nullptr;
     for (Mapping* mapping : mappings) {
         ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
         memMapping->fileIdx              = fileIdx;
@@ -206,9 +207,22 @@ void                nextProc() {
     if (!isInitialized()) {
         initialize();
     }
-    currentProc = currentProc->next;
-    while (currentProc->threads->status == ThreadStatus::BLOCKED) {
-        currentProc->threads = currentProc->threads->next;
+    Process* beginProc = currentProc;
+    while (currentProc->state == ProcessState::Blocked ||
+           currentProc->state == ProcessState::Zombie) {
+        currentProc = currentProc->next;
+        if (currentProc == beginProc) {
+            dbg::printm(MODULE, "Ran out of processes to run\n");
+            std::abort();
+        }
+        Thread* beginThread = currentProc->threads;
+        while (currentProc->threads->status == ThreadStatus::Blocked) {
+            currentProc->threads = currentProc->threads->next;
+            if (currentProc->threads == beginThread) {
+                dbg::printm(MODULE, "Ran out of threads to run, switching to next process\n");
+                std::abort();
+            }
+        }
     }
     currentThread = currentProc->threads;
     if (!currentProc->hasStarted) {
@@ -283,6 +297,12 @@ void printRegs(SyscallRegs* regs) {
     printRfl(regs->rflags);
     dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
 }
+static void unblockProcess(Process* proc) {
+    dbg::printm(MODULE, "TODO: Unblock process %lu\n", proc->pid);
+}
+static void blockProcess(Process* proc) {
+    dbg::printm(MODULE, "TODO: Block process %lu\n", proc->pid);
+}
 extern "C" void syscallHandler(SyscallRegs* regs) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     currentThread->registers->rax      = regs->rax;
@@ -302,10 +322,30 @@ extern "C" void syscallHandler(SyscallRegs* regs) {
     currentThread->registers->r15      = regs->r15;
     currentThread->registers->rflags   = regs->rflags;
     currentThread->registers->cr3      = regs->cr3;
-    currentThread->status              = ThreadStatus::BLOCKED;
+    currentThread->status              = ThreadStatus::Blocked;
     __asm__("mfence" : : : "memory");
     printRegs(regs);
     switch (regs->rax) {
+    // SYS_exit
+    case 0x0: {
+        uint8_t exitCode = regs->rdi;
+        // Last thread
+        if (currentThread->next == currentThread && currentProc->threads == currentThread) {
+            dbg::printm(MODULE, "TODO: Free process resources\n");
+            if (currentProc->parent && currentProc->parent->waitingFor == currentProc->pid) {
+                currentProc->parent->waitingFor = 0;
+                currentProc->parent->waitStatus = exitCode;
+                unblockProcess(currentProc->parent);
+            }
+            currentProc->state    = ProcessState::Zombie;
+            currentProc->exitCode = exitCode;
+            zombieProcs.push_back(currentProc);
+        } else {
+            dbg::printm(MODULE, "TODO: Support multiple thread exit\n");
+            std::abort();
+        }
+        dbg::printm(MODULE, "TODO: Free thread resources\n");
+    } break;
     // SYS_write
     case 0x1: {
         if (regs->rsi == 0) {
@@ -338,7 +378,9 @@ extern "C" void syscallHandler(SyscallRegs* regs) {
         }
         dbg::printf("%.*s\n", printSize, buffer);
         delete[] buffer;
+        currentThread->status = ThreadStatus::Ready;
     } break;
+    // SYS_waitpid
     default: {
         // printRegs(regs);
         printRegs(currentThread->registers);
@@ -346,7 +388,6 @@ extern "C" void syscallHandler(SyscallRegs* regs) {
         std::abort();
     } break;
     }
-    currentThread->status = ThreadStatus::READY;
     dbg::popTrace();
     nextProc();
 }
