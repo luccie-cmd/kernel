@@ -206,6 +206,7 @@ void umount(const char* path) {
             continue;
         }
         if (std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0) {
+
             mp->mounted = false;
             delete mp->fileSystemDriver;
         }

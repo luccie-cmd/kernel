@@ -48,12 +48,25 @@ void         initialize() {
 bool isInitialized() {
     return __initialized;
 }
+void free(uint64_t addr) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    node* current = __head;
+    while (current->next != nullptr) {
+        current = current->next;
+    }
+    node* newNode = (node*)(addr + vmm::getHHDM());
+    newNode->size = current->size;
+    newNode->next = current->next;
+    current->next = newNode;
+    allocatedPages -= 1;
+    dbg::popTrace();
+}
 uint64_t allocVirtual(uint64_t size) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
     }
-    size          = (size + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    size          = ALIGNUP(size, PAGE_SIZE);
     node* current = __head;
     node* prev    = nullptr;
     while (current) {

@@ -204,151 +204,125 @@ static void keyboardPress(io::Registers* regs) {
     }
 }
 PS2Driver::PS2Driver() : KeyboardDriver(KeyboardType::PS2) {
+    auto wait_input_buffer_clear = []() -> bool {
+        while ((io::inb(0x64) & 0x02) == 0) {
+            __asm__ volatile("nop");
+            __asm__ volatile("mfence" : : : "memory");
+        }
+        return true;
+    };
+
+    auto wait_output_buffer_full = []() -> bool {
+        while ((io::inb(0x64) & 0x01) == 0) {
+            __asm__ volatile("nop");
+            __asm__ volatile("mfence" : : : "memory");
+        }
+        return true;
+    };
+
+    auto send_command = [&](uint8_t cmd, uint8_t data = 0, bool wait = false) -> bool {
+        if (wait) {
+            if (!wait_input_buffer_clear()) {
+                dbg::printm(MODULE, "Timeout waiting to send command 0x%hhx\n", cmd);
+                return false;
+            }
+        }
+        dbg::printm(MODULE, "Sending command 0x%hx\n", cmd);
+        if (cmd > 0xED) {
+            io::outb(0x60, cmd);
+        } else {
+            io::outb(0x64, cmd);
+        }
+
+        if (data != 0 || cmd == 0xF0) {
+            dbg::printm(MODULE, "Sending data 0x%hx\n", data);
+            if (wait) {
+                if (!wait_input_buffer_clear()) {
+                    dbg::printm(MODULE, "Timeout waiting to send data 0x%hhx\n", data);
+                    return false;
+                }
+            }
+            io::outb(0x60, data);
+        }
+        return true;
+    };
     dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::printm(MODULE, "Initializing PS/2 Keyboard\n");
-    // 0x60 = data;
-    // 0x64 = status, command;
-    // Disable ports
-    io::outb(0x64, 0xAD);
-    io::outb(0x64, 0xA7);
-    // Clear buffer
+    if (!send_command(0xAD) || !send_command(0xA7)) {
+        dbg::printm(MODULE, "Failed to disable PS/2 ports\n");
+        std::abort();
+    }
     while (io::inb(0x64) & 0x01) {
         (void)io::inb(0x60);
     }
-    // Reset controller
-    io::outb(0x64, 0xFF);
-    // Write new config
-    while (io::inb(0x64) & 0x02);
-    uint8_t cc = 0b00100101;
-    io::outb(0x64, 0x60);
-    while (io::inb(0x64) & 0x02);
-    io::outb(0x60, cc);
-    // Read new confing and test
-    while (io::inb(0x64) & 0x02);
-    io::outb(0x64, 0x20);
-    while ((io::inb(0x64) & 0x01) == 0);
-    uint8_t current_config = io::inb(0x60);
-    if (current_config != cc) {
-        dbg::printm(MODULE,
-                    "PS/2 Keyboard failed to accept new configuration (expected: 0b%08hhb current: "
-                    "0b%08hhb)\n",
-                    cc, current_config);
+    if (!send_command(0xAA)) {
+        dbg::printm(MODULE, "Self test failed\n");
         std::abort();
     }
-    dbg::printm(MODULE, "Current config: 0b%08hhb\n", current_config);
-    // Self test
-    io::outb(0x64, 0xAA);
-    while ((io::inb(0x64) & 1) == 0);
+    if (!wait_output_buffer_full()) {
+        dbg::printm(MODULE, "Self test failed\n");
+        std::abort();
+    }
     if (io::inb(0x60) != 0x55) {
-        dbg::printm(MODULE, "No PS/2 keyboard present\n");
+        dbg::printm(MODULE, "Controller self-test failed\n");
         std::abort();
     }
-    // Test first port
-    io::outb(0x64, 0xAB);
-    while ((io::inb(0x64) & 1) == 0);
+    if (!send_command(0xAB)) {
+        dbg::printm(MODULE, "Keyboard port test failed\n");
+        std::abort();
+    }
+    if (!wait_output_buffer_full()) {
+        dbg::printm(MODULE, "Keyboard port test failed\n");
+        std::abort();
+    }
     if (io::inb(0x60) != 0x00) {
-        dbg::printm(MODULE, "No PS/2 keyboard present\n");
+        dbg::printm(MODULE, "Keyboard port test failed\n");
         std::abort();
     }
-    // Enable
-    io::outb(0x64, 0xAE);
-    // Check echo result
-    io::outb(0x60, 0xEE);
-    while ((io::inb(0x64) & 0x01) == 0);
-    uint8_t echo = io::inb(0x60);
-    dbg::printm(MODULE, "Echo result: 0x%hhx\n", echo);
-    // Check config
-    while (io::inb(0x64) & 0x02);
-    io::outb(0x64, 0x20);
-    while ((io::inb(0x64) & 0x01) == 0);
-    current_config = io::inb(0x60);
-    if (current_config != cc) {
-        dbg::printm(MODULE,
-                    "PS/2 Keyboard failed to accept new configuration (expected: 0b%08hhb current: "
-                    "0b%08hhb)\n",
-                    cc, current_config);
-    }
-    // Read scancode set
-    io::outb(0x60, 0xF0);
-    while ((io::inb(0x64) & 0x01) == 0);
-    uint8_t resp = io::inb(0x60);
-    if (resp != 0xFA) {
-        dbg::printm(MODULE,
-                    "Keyboard did not ACK scan code get command request (response: 0x%hhx)\n",
-                    resp);
+    const uint8_t target_config = 0b00100101;
+    if (!send_command(0x60, target_config)) {
+        dbg::printm(MODULE, "Controller failed to recieve configuration\n");
         std::abort();
     }
-    io::outb(0x60, 0x00);
-    while ((io::inb(0x64) & 0x01) == 0);
-    resp = io::inb(0x60);
-    if (resp != 0xFA) {
-        dbg::printm(MODULE,
-                    "Keyboard did not ACK scan code get operand request (response: 0x%hhx)\n",
-                    resp);
+    if (!send_command(0x20)) {
+        dbg::printm(MODULE, "Failed to send read config command\n");
         std::abort();
     }
-    uint8_t scancodeSet = io::inb(0x60);
-    // Check and set scancodeset
-    if (scancodeSet != 0x02) {
-        dbg::printm(
-            MODULE,
-            "Controller isn't initialized to scancodeset 2 so we'll force it (Current is 0x%hhx)\n",
-            scancodeSet);
-        // Set scancodeset 2
-        io::outb(0x60, 0xF0);
-        while ((io::inb(0x64) & 0x01) == 0);
-        resp = io::inb(0x60);
-        if (resp != 0xFA) {
-            dbg::printm(MODULE,
-                        "Keyboard did not ACK scan code set command request (response: 0x%hhx)\n",
-                        resp);
-            std::abort();
-        }
-        io::outb(0x60, 0x02);
-        while ((io::inb(0x64) & 0x01) == 0);
-        resp = io::inb(0x60);
-        if (resp != 0xFA) {
-            dbg::printm(MODULE,
-                        "Keyboard did not ACK scan code set operand request (response: 0x%hhx)\n",
-                        resp);
-            std::abort();
-        }
-        // Check new scancodeset
-        io::outb(0x60, 0xF0);
-        while ((io::inb(0x64) & 0x01) == 0);
-        resp = io::inb(0x60);
-        if (resp != 0xFA) {
-            dbg::printm(MODULE,
-                        "Keyboard did not ACK scan code get command request (response: 0x%hhx)\n",
-                        resp);
-            std::abort();
-        }
-        io::outb(0x60, 0x00);
-        while ((io::inb(0x64) & 0x01) == 0);
-        resp = io::inb(0x60);
-        if (resp != 0xFA) {
-            dbg::printm(MODULE,
-                        "Keyboard did not ACK scan code get operand request (response: 0x%hhx)\n",
-                        resp);
-            std::abort();
-        }
-        scancodeSet = io::inb(0x60);
-        while (scancodeSet == 0xFE) {
-            io::outb(0x60, 0xF0);
-            io::outb(0x60, 0x00);
-            while ((io::inb(0x64) & 0x01) == 0);
-            scancodeSet = io::inb(0x60);
-            dbg::printm(MODULE, "New result: 0x%hhx\n", scancodeSet);
-        }
-        if (scancodeSet != 0x02) {
-            dbg::printm(
-                MODULE,
-                "PS/2 controller didn't recieve scancodeset 2 request (0x%hhx was returned)\n",
-                scancodeSet);
+    if (!wait_output_buffer_full()) {
+        dbg::printm(MODULE, "Failed to send read config command\n");
+        std::abort();
+    }
+    uint8_t current_config = io::inb(0x60);
+    if (current_config != target_config) {
+        dbg::printm(MODULE, "Config mismatch (got 0x%hx, wanted 0x%hx)\n", current_config,
+                    target_config);
+        std::abort();
+    }
+    if (!send_command(0xAE)) {
+        dbg::printm(MODULE, "Failed to enable keyboard\n");
+        std::abort();
+    }
+    auto set_scancode = [&](uint8_t set) -> bool {
+        if (!send_command(0xF0, set)) return false;
+        if (!wait_output_buffer_full()) return false;
+        return io::inb(0x60) == 0xFA;
+    };
+    if (!set_scancode(0x00)) {
+        dbg::printm(MODULE, "Failed send scancode get command\n");
+        std::abort();
+    }
+    if (!wait_output_buffer_full()) {
+        dbg::printm(MODULE, "Output buffer timeout\n");
+        std::abort();
+    }
+    uint8_t scancode_set = io::inb(0x60);
+    if (scancode_set != 0x02) {
+        dbg::printm(MODULE, "Setting scancode set 2 (current: 0x%hx)\n", scancode_set);
+        if (!set_scancode(0x02)) {
+            dbg::printm(MODULE, "Failed to set scancode set 2\n");
             std::abort();
         }
     }
-    dbg::printm(MODULE, "Using PS/2 scancode set 0x%hhx\n", scancodeSet);
     hal::arch::x64::irq::overrideIrq(1, keyboardPress);
     dbg::printm(MODULE, "Initialized PS/2 keyboard\n");
     dbg::popTrace();
@@ -399,8 +373,8 @@ PS2Driver* loadPS2Driver() {
     //         pressed = false;
     //     }
     //     dbg::printf("%c", translateScancode(byte, pressed, !normal));
-    //     // dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
-    //     // pressed ? "pressed" : "released", normal ? "" : " multimedia");
+    //     dbg::printf("%c %s%s\n", translateScancode(byte, pressed, !normal),
+    //     pressed ? "pressed" : "released", normal ? "" : " multimedia");
     // }
     dbg::printm(MODULE, "Added PS/2 keyboard\n");
     dbg::popTrace();

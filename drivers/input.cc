@@ -26,6 +26,7 @@ std::vector<InputDriver*> loadInputDrivers() {
         // std::abort();
     }
     if (!kbdFound) {
+        dbg::printm(MODULE, "No ordinary keyboard found, falling back to PS/2\n");
         inputDrivers.push_back(kbd::loadPS2Driver());
     }
     dbg::popTrace();

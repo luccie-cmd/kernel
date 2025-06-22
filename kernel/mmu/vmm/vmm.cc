@@ -32,7 +32,9 @@ void                                       initialize() {
         std::abort();
     }
     __HHDMoffset  = hhdm_request.response->offset;
+    kernelCR3     = io::rcr3();
     __initialized = true;
+    dbg::printm(MODULE, "Initialized\n");
     dbg::popTrace();
 }
 bool isInitialized() {
@@ -45,11 +47,10 @@ PML4* getPML4(task::pid_t pid) {
     }
     if (pid == KERNEL_PID && __CR3LookupTable[pid] == 0) {
         __CR3LookupTable[pid] = io::rcr3();
-        kernelCR3             = io::rcr3();
     }
     if (__CR3LookupTable[pid] == 0) {
         uint64_t cr3 = pmm::allocate();
-        std::memset((void*)cr3, 0, PAGE_SIZE);
+        std::memset((void*)(cr3 + __HHDMoffset), 0, PAGE_SIZE);
         __CR3LookupTable[pid] = cr3;
     }
     uint64_t cr3 = __CR3LookupTable[pid];
@@ -109,6 +110,7 @@ void unmapPage(PML4* pml4, size_t virtualAddr) {
     }
     pte[vma.pte].papn_ppn = 0;
     pte[vma.pte].present  = 0;
+    io::invalpg((void*)virtualAddr);
 }
 void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int map) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -117,10 +119,12 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     }
     virtualAddr &= ~(0xFFF);
     physicalAddr &= ~(0xFFF);
-    if (getPhysicalAddr(pml4, virtualAddr, true) == physicalAddr && physicalAddr != 0) {
+    // dbg::printm(MODULE, "Mapping virtual address 0x%lx to physical address 0x%lx in CR3 %lp\n",
+    //             virtualAddr, physicalAddr, pml4);
+    if (getPhysicalAddr(pml4, virtualAddr, true, false) == physicalAddr && physicalAddr != 0) {
         dbg::printm(MODULE,
                     "Attempted to double map address 0x%llx to 0x%llx (current address = 0x%llx)\n",
-                    virtualAddr, physicalAddr, getPhysicalAddr(pml4, virtualAddr, true));
+                    virtualAddr, physicalAddr, getPhysicalAddr(pml4, virtualAddr, true, false));
         std::abort();
     }
     vmm_address vma         = getVMMfromVA(virtualAddr);
@@ -215,7 +219,7 @@ void mapPage(size_t virtualAddr) {
 }
 uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePresent) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    addr &= ~(PAGE_SIZE - 1); // Align addr to the start of the page
+    addr = ALIGNDOWN(addr, PAGE_SIZE);
 
     vmm_address vma = getVMMfromVA(addr);
     if (pml4[vma.pml4e].pdpe_ptr == 0 || (pml4[vma.pml4e].present == 0 && !ignorePresent)) {

@@ -4,6 +4,7 @@ limine/
 script/__pycache__/
 .build-cache/
 test/
+test.*
 temp.py
 *.txt
 pci.ids

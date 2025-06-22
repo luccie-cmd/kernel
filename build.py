@@ -125,11 +125,11 @@ def callCmd(command, print_out=False):
 
 callCmd("rm -rf commands.txt")
 
-if not compareFiles('build.py', '.build-cache/build.py'):
-    if not os.path.exists(".build-cache"):
-        callCmd(f"mkdir -p .build-cache")
-    callCmd(f"cp 'build.py' .build-cache/build.py")
-    force_rebuild = True
+# if not compareFiles('build.py', '.build-cache/build.py'):
+#     if not os.path.exists(".build-cache"):
+#         callCmd(f"mkdir -p .build-cache")
+#     callCmd(f"cp 'build.py' .build-cache/build.py")
+#     force_rebuild = True
 
 
 def checkExtension(file: str, valid_extensions: list[str]):
@@ -327,7 +327,7 @@ def mountFs(device, boot, kernel, files):
             callCmd(f"sudo mkdir mnt/{file}")
     if "limine-uefi" in CONFIG["bootloader"]:
         callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine.conf mnt")
-        callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine.sys mnt/limine-bios.sys")
+        callCmd(f"sudo cp {CONFIG['outDir'][0]}/limine-bios.sys mnt")
     callCmd(f"sudo umount -l mnt")
     callCmd(f"sudo losetup -d {device}")
     callCmd(f"rm -rf mnt")
@@ -414,7 +414,7 @@ def setupLimine():
         os.chdir("..")
         callCmd("rm -rf ./limine/commands.txt")
     callCmd(f"cp ./util/limine.conf {CONFIG['outDir'][0]}/limine.conf")
-    callCmd(f"cp ./limine/limine-bios.sys {CONFIG['outDir'][0]}/limine.sys")
+    callCmd(f"cp ./limine/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
     callCmd(f"cp ./limine/BOOTX64.EFI {CONFIG['outDir'][0]}/BOOTX64.EFI")
 
 def getInfo():
@@ -485,8 +485,8 @@ def main():
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
-        # if os.path.exists("/dev/sda"):
-        #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf")
+        if os.path.exists("/dev/sda"):
+            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

@@ -55,6 +55,7 @@ switchProc:
     mov fs, ax
     mov gs, ax
 
+    mov rax, [rdi + 168]
     mov rbx, [rdi + 136]
     mov rcx, [rdi + 192]
     mov rdx, [rdi + 120]
@@ -69,10 +70,9 @@ switchProc:
     mov r13, [rdi + 48]
     mov r14, [rdi + 40]
     mov r15, [rdi + 32]
-    mov rax, [rdi + 168]
     mov rdi, [rdi + 96]
 
-    ; int 3
+    ; int3
     ; jmp $
     
     o64 sysret

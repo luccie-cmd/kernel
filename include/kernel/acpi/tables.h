@@ -37,6 +37,12 @@ namespace acpi
         uint64_t Entries[];
     } __attribute__((packed));
 
+    struct RSDT
+    {
+        ACPISDTHeader h;
+        uint32_t Entries[];
+    } __attribute__((packed));
+
     struct GenericAddressStructure
     {
         uint8_t AddressSpace;

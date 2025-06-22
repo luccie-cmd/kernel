@@ -57,15 +57,17 @@ static IDTEntry __attribute__((section(".trampoline.data"))) entries[256];
 extern "C" void                                              loadIDT(uint64_t base, uint16_t limit);
 void                                                         handlePF(io::Registers*);
 void                                                         handleUD(io::Registers*);
+void                                                         handleBP(io::Registers*);
 void                                                         init() {
     loadIDT((uint64_t)entries, sizeof(entries) - 1);
     initGates();
     for (uint8_t i = 0; i < 255; ++i) {
         enableGate(i);
     }
+    std::memset(exceptionHandlers, 0, sizeof(exceptionHandlers) / sizeof(exceptionHandlers[0]));
     enablePageFaultProtection();
     enableUDProtection();
-    std::memset(exceptionHandlers, 0, sizeof(exceptionHandlers) / sizeof(exceptionHandlers[0]));
+    exceptionHandlers[3] = handleBP;
 }
 void registerHandler(uint8_t gate, void* function, uint8_t type) {
     entries[gate] = IDT_ENTRY((uint64_t)function, 0x8, type, 3, 1);
@@ -166,7 +168,7 @@ void handlePF(io::Registers* regs) {
     io::cli();
     disablePageFaultProtection();
     PageFaultError  err  = *(PageFaultError*)(&regs->error_code);
-    mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3);
+    mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM());
     dbg::printf("PPV: %hhu, "
                 "write: %hhu, "
                 "user: %hhu, "
@@ -176,10 +178,6 @@ void handlePF(io::Registers* regs) {
                 "SS: %hhu\n",
                 err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
     if (err.PPV == 0) {
-        if (io::rcr2() == 0) {
-            dbg::print("Cannot map a page at NULL\n");
-            std::abort();
-        }
         uint64_t physicalCR2 = mmu::vmm::getPhysicalAddr(pml4, io::rcr2(), false, true);
         if (physicalCR2 == ONDEMAND_MAP_ADDRESS) {
             task::mapProcess(reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM()),
@@ -205,5 +203,10 @@ void handleUD(io::Registers* regs) {
     dbg::printf("Opcode: 0x%x\n", opcode);
     std::abort();
     enableUDProtection();
+}
+void handleBP(io::Registers* regs) {
+    dbg::printf("BP exception:\n");
+    printRegs(regs);
+    return;
 }
 }; // namespace hal::arch::x64::idt
