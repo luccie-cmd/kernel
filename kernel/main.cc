@@ -10,6 +10,7 @@
 #include <kernel/hal/arch/x64/gdt/gdt.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/mmu.h>
+#include <kernel/objects/elf.h>
 #include <kernel/task/task.h>
 #include <kernel/vfs/vfs.h>
 
@@ -37,14 +38,9 @@ extern "C" void KernelMain() {
     displayDriver   = temp;
     task::pid_t pid = task::getNewPID();
     vfs::mount(0, 0, "/tmpboot");
-    int      handle = vfs::openFile("/tmpboot/hello", 0);
-    uint8_t* buffer = new uint8_t[vfs::getLen(handle)];
-    dbg::printf("Init length: %llu init buffer address 0x%llx\n", vfs::getLen(handle), buffer);
-    task::makeNewProcess(
-        pid, 0x401000, handle,
-        {new task::Mapping(0x401000, 0x0000000000001000, 0x1c, PROTECTION_RW),
-         new task::Mapping(0x402000, 0x0000000000002000, 0xf, PROTECTION_RW | PROTECTION_NOEXEC)});
-    // vfs::umount("/tmpboot");
+    int                      handle  = vfs::openFile("/tmpboot/hello", 0);
+    objects::elf::ElfObject* initObj = objects::elf::loadElfObject(handle);
+    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->mappings);
 
     while (true) {
         task::nextProc();

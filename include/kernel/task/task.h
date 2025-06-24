@@ -5,12 +5,14 @@
 #include <common/io/regs.h>
 #include <cstdint>
 #include <kernel/mmu/vmm/types.h>
+#include <vector>
 
 namespace task {
 struct ProcessMemoryMapping {
     size_t                fileOffset;
     size_t                virtualStart;
-    size_t                length;
+    size_t                fileLength;
+    size_t                memLength;
     size_t                fileIdx;
     int                   permissions;
     ProcessMemoryMapping* next;
@@ -19,6 +21,8 @@ enum struct ThreadStatus {
     Ready,
     Running,
     Blocked,
+    Zombie,
+    Dead,
 };
 struct Thread {
     pid_t          tid;
@@ -50,7 +54,8 @@ struct Process {
 struct Mapping {
     uint64_t virtualStart;
     uint64_t fileOffset;
-    uint64_t length;
+    uint64_t memLength;
+    uint64_t fileLength;
     int      permissions;
 };
 void  initialize();

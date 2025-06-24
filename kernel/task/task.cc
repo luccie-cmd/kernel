@@ -69,7 +69,7 @@ static ProcessMemoryMapping* findMappingInProcess(Process* proc, uint64_t virtua
     dbg::addTrace(__PRETTY_FUNCTION__);
     ProcessMemoryMapping* head = proc->memoryMapping;
     while (head) {
-        if (isInRange(head->virtualStart, head->virtualStart + head->length, virtualAddress)) {
+        if (isInRange(head->virtualStart, head->virtualStart + head->memLength, virtualAddress)) {
             dbg::popTrace();
             return head;
         }
@@ -92,10 +92,16 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
                           PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
         uint64_t offset = vfs::getOffset(mapping->fileIdx);
         vfs::seek(mapping->fileIdx, (virtualAddress - mapping->virtualStart) + mapping->fileOffset);
-        vfs::readFile(mapping->fileIdx,
-                      std::min((uint64_t)PAGE_SIZE, (mapping->fileOffset + mapping->length) -
-                                                        vfs::getOffset(mapping->fileIdx)),
-                      (void*)bufferAddr);
+        if (mapping->fileLength < mapping->memLength) {
+            dbg::printm(MODULE, "TODO: BSS loading\n");
+            std::abort();
+        } else {
+            vfs::readFile(
+                mapping->fileIdx,
+                std::min((uint64_t)PAGE_SIZE, (mapping->fileOffset + mapping->fileLength) -
+                                                  vfs::getOffset(mapping->fileIdx)),
+                (void*)bufferAddr);
+        }
         vfs::seek(mapping->fileIdx, offset);
         uint64_t phys = mmu::pmm::allocate();
         mmu::vmm::mapPage(proc->pml4, phys, virtualAddress, mapping->permissions, MAP_PRESENT);
@@ -163,11 +169,12 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx,
         ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
         memMapping->fileIdx              = fileIdx;
         memMapping->fileOffset           = mapping->fileOffset;
-        memMapping->length               = mapping->length;
+        memMapping->memLength            = mapping->memLength;
+        memMapping->fileLength           = mapping->fileLength;
         memMapping->permissions          = mapping->permissions;
         memMapping->virtualStart         = mapping->virtualStart;
         if (memMapping->virtualStart % PAGE_SIZE == 0) {
-            for (size_t i = 0; i < ALIGNUP(memMapping->length, PAGE_SIZE); i += PAGE_SIZE) {
+            for (size_t i = 0; i < ALIGNUP(memMapping->memLength, PAGE_SIZE); i += PAGE_SIZE) {
                 mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS,
                                   memMapping->virtualStart + i, memMapping->permissions, 0);
             }
@@ -175,6 +182,9 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx,
             dbg::printm(MODULE, "TODO: Memory permisssion sharing\n");
             std::abort();
         }
+        dbg::printm(MODULE,
+                    "Added new mapping to process %llu (VADDR = 0x%llx Mapped Length = 0x%llx)\n",
+                    proc->pid, memMapping->virtualStart, memMapping->memLength);
         memMapping->next    = proc->memoryMapping;
         proc->memoryMapping = memMapping;
     }
@@ -213,6 +223,9 @@ void                nextProc() {
         currentProc = currentProc->next;
         if (currentProc == beginProc) {
             dbg::printm(MODULE, "Ran out of processes to run\n");
+            if (!zombieProcs.empty()) {
+                dbg::printm(MODULE, "No processes left to cleanup zombie procs\n");
+            }
             std::abort();
         }
         Thread* beginThread = currentProc->threads;
@@ -220,7 +233,7 @@ void                nextProc() {
             currentProc->threads = currentProc->threads->next;
             if (currentProc->threads == beginThread) {
                 dbg::printm(MODULE, "Ran out of threads to run, switching to next process\n");
-                std::abort();
+                break;
             }
         }
     }
@@ -254,9 +267,9 @@ void                nextProc() {
         dbg::printm(MODULE, "switchProc(io::Registers*) became unmapped!!!\n");
         std::abort();
     }
-    dbg::printm(MODULE, "Registers for PID %lu TID %lu\n", currentProc->pid, currentThread->tid);
-    printRegs(currentThread->registers);
-    dbg::printf("\n");
+    // dbg::printm(MODULE, "Registers for PID %lu TID %lu\n", currentProc->pid, currentThread->tid);
+    // printRegs(currentThread->registers);
+    // dbg::printf("\n");
     dbg::popTrace();
     switchProc(currentThread->registers,
                               reinterpret_cast<mmu::vmm::PML4*>(reinterpret_cast<uint64_t>(currentProc->pml4) -
@@ -324,7 +337,7 @@ extern "C" void syscallHandler(SyscallRegs* regs) {
     currentThread->registers->cr3      = regs->cr3;
     currentThread->status              = ThreadStatus::Blocked;
     __asm__("mfence" : : : "memory");
-    printRegs(regs);
+    // printRegs(regs);
     switch (regs->rax) {
     // SYS_exit
     case 0x0: {

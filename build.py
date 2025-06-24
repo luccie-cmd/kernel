@@ -87,10 +87,10 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=x86-64', '-mtune=k8', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs', '-mno-sse2avx']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Ofast', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -99,7 +99,7 @@ if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O1"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
-    CONFIG["CFLAGS"] += ["-O3"]
+    CONFIG["CFLAGS"] += ["-Ofast"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
 if "x64" in CONFIG.get("arch"):
@@ -125,11 +125,11 @@ def callCmd(command, print_out=False):
 
 callCmd("rm -rf commands.txt")
 
-# if not compareFiles('build.py', '.build-cache/build.py'):
-#     if not os.path.exists(".build-cache"):
-#         callCmd(f"mkdir -p .build-cache")
-#     callCmd(f"cp 'build.py' .build-cache/build.py")
-#     force_rebuild = True
+if not compareFiles('build.py', '.build-cache/build.py'):
+    if not os.path.exists(".build-cache"):
+        callCmd(f"mkdir -p .build-cache")
+    callCmd(f"cp 'build.py' .build-cache/build.py")
+    force_rebuild = True
 
 
 def checkExtension(file: str, valid_extensions: list[str]):

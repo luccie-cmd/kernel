@@ -21,6 +21,7 @@ extern "C" void abort() {
     displayDriver = temp;
     dbg::print("STACK TRACE:\n");
     dbg::printStackTrace();
+    io::sti();
     while (1) {
         // io::cli();
         __asm__("hlt");
