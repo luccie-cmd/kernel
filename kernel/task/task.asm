@@ -1,5 +1,6 @@
 global switchProc
 global syscallEntry
+global jumpSignal
 extern kernelCR3
 extern tssRSP0
 extern tempValue
@@ -8,6 +9,7 @@ section .trampoline.text
 syscallEntry:
     mov [tempValue], rsp
     mov rsp, [tssRSP0]
+    sub rsp, 8
     push rax
     mov rax, cr3
     push rax
@@ -76,3 +78,23 @@ switchProc:
     ; jmp $
     
     o64 sysret
+
+jumpSignal:
+    mov cr3, rsi
+    mfence
+    jmp .flush
+.flush:
+    push 0x23
+    lea rax, [rel .reload_CS]
+    push rax
+    retfq
+.reload_CS:
+    mov ax, 0x1B
+    mov ds, ax
+    mov es, ax
+    mov fs, ax
+    mov gs, ax
+    mov ss, ax
+    call rdi
+    mov rax, [kernelCR3]
+    mov cr3, rax

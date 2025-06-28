@@ -12,3 +12,5 @@ pci.ids
 *.pyc
 *.old
 foodchain.*
+temp*
+a.out

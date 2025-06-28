@@ -70,6 +70,35 @@ uint64_t allocVirtual(uint64_t size) {
     node* current = __head;
     node* prev    = nullptr;
     while (current) {
+        if (current->size == size) {
+            uint64_t addr = (uint64_t)current;
+            if (current->size > size) {
+                node* newNode = (node*)(addr + size);
+                newNode->size = current->size - size;
+                newNode->next = current->next;
+                if (prev != nullptr) {
+                    prev->next = newNode;
+                } else {
+                    __head = newNode;
+                }
+            } else {
+                if (prev != nullptr) {
+                    prev->next = current->next;
+                } else {
+                    __head = current->next;
+                }
+            }
+            allocatedPages += size / PAGE_SIZE;
+            dbg::printm(MODULE, "Perfect fit found, returning 0x%llx\n", addr - vmm::getHHDM());
+            dbg::popTrace();
+            return addr - vmm::getHHDM();
+        }
+        prev    = current;
+        current = current->next;
+    }
+    current = __head;
+    prev    = nullptr;
+    while (current) {
         if (current->size >= size) {
             uint64_t addr = (uint64_t)current;
             if (current->size > size) {

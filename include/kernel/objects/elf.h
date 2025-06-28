@@ -5,17 +5,13 @@
 
 namespace objects::elf {
 struct ElfObject {
-    uint8_t type;
-    uint64_t startAddr;
-    uint64_t entryPoint;
-    uint64_t dynamicSection;
-    uint64_t gotAddr;
-    uint64_t pltAddr;
-    uint64_t dynsymAddr;
-    uint64_t dynstrAddr;
-    uint64_t relaAddr;
+    uint8_t                     type;
+    uint64_t                    startAddr;
+    uint64_t                    entryPoint;
+    task::Mapping*              dynamicSection;
+    uint64_t                    relaAddr;
     std::vector<task::Mapping*> mappings;
-    std::vector<ElfObject*> dependencies;
+    std::vector<ElfObject*>     dependencies;
 };
 ElfObject* loadElfObject(int handle);
 }; // namespace objects::elf

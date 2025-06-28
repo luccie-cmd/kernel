@@ -49,15 +49,15 @@ void DisplayDriver::setScreenY(size_t y) {
     this->screenY = y;
 }
 void DisplayDriver::init(pci::device* dev) {
-    (void)dev;
     dbg::addTrace(__PRETTY_FUNCTION__);
-    dbg::printm(MODULE, "Display driver shouldn't be initialized with PCI device!!!\n");
-    for (;;);
+    dbg::printm(MODULE, "TODO: Initialize display driver (%llx:%llx)\n", dev->vendorID,
+                dev->deviceID);
+    return;
 }
 void DisplayDriver::deinit() {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    dbg::printm(MODULE, "Display driver shouldn't be deinitialized with PCI device!!!\n");
-    for (;;);
+    dbg::printm(MODULE, "TODO: Deinitialize display driver\n");
+    return;
 }
 
 void DisplayDriver::drawCharacter(uint8_t display, char c) {
@@ -249,9 +249,9 @@ void DisplayDriver::readPixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_
     dbg::popTrace();
 }
 DisplayDriver* loadDisplayDriver(pci::device* device) {
-    (void)device;
     dbg::addTrace(__PRETTY_FUNCTION__);
     DisplayDriver* driver = new DisplayDriver();
+    driver->init(device);
     dbg::popTrace();
     return driver;
 }

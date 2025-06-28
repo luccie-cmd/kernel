@@ -342,7 +342,10 @@ isrCommon:
 
     ; Push the address of the structure onto the stack
     lea rdi, [rsp]   ; Address of the saved registers
+
+    sub rsp, 8
     call handleInt
+    add rsp, 8
 
     xor rax, rax
     pop rax

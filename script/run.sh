@@ -1,6 +1,6 @@
 if [ "$2" == "release" ]; then
 qemu-system-x86_64 \
-    -m 1G \
+    -m 10M \
     -debugcon file:debug.log \
     -global isa-debugcon.iobase=0xe9 \
     -no-reboot \

@@ -38,9 +38,10 @@ extern "C" void KernelMain() {
     displayDriver   = temp;
     task::pid_t pid = task::getNewPID();
     vfs::mount(0, 0, "/tmpboot");
-    int                      handle  = vfs::openFile("/tmpboot/hello", 0);
+    int                      handle  = vfs::openFile("/tmpboot/init", 0);
     objects::elf::ElfObject* initObj = objects::elf::loadElfObject(handle);
-    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->mappings);
+    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->mappings,
+                         initObj->dynamicSection);
 
     while (true) {
         task::nextProc();
