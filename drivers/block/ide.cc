@@ -203,12 +203,20 @@ int  IDEDriver::poll(uint8_t channel, bool advanced) {
     }
     return 0;
 }
-bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) {
+bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, volatile uint8_t* buffer) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (drive + 1 > this->drives) {
         dbg::printm(MODULE, "Warning: Cannot access drive %d (Max allowed: %llu)\n", drive,
                     this->drives);
         return false;
+    }
+    if (buffer == 0) {
+        dbg::printm(MODULE, "ERROR: Buffer is unaligned!!!\n");
+        std::abort();
+    }
+    if (!iscanonical(buffer)) {
+        dbg::printm(MODULE, "ERROR: Buffer is not canonical!!!\n");
+        std::abort();
     }
     uint8_t  lba_mode, cmd;
     uint8_t  lba_io[6];
@@ -275,18 +283,18 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer
                         lba + sectors, sectors);
             std::abort();
         }
-        __asm__ volatile("pushw %ax");
-        __asm__ volatile("mov %es, %ax");
-        __asm__ volatile("pushw %ax");
-        __asm__ volatile("mov %%ax, %%es" : : "a"(0x10));
-        __asm__ volatile("rep insw" : : "c"(words), "d"(bus), "D"(buffer));
-        __asm__ volatile("popw %ax");
-        __asm__ volatile("mov %ax, %es");
-        __asm__ volatile("popw %ax");
+        // __asm__ volatile("pushw %ax" : : : "memory");
+        // __asm__ volatile("mov %es, %ax" : : : "memory", "ax");
+        // __asm__ volatile("pushw %ax" : : : "memory");
+        // __asm__ volatile("mov %%ax, %%es" : : "a"(0x10) : "memory", "ax");
+        __asm__ volatile("rep insw" : : "c"(words), "d"(bus), "D"(buffer) : "memory");
+        // __asm__ volatile("popw %ax" : : : "memory", "ax");
+        // __asm__ volatile("mov %ax, %es" : : : "memory", "ax");
+        // __asm__ volatile("popw %ax" : : : "memory", "ax");
         forceReadVolatile(words);
         forceReadVolatile(bus);
         forceReadVolatile(buffer);
-        buffer = (void*)((uint8_t*)buffer + (words * 2));
+        buffer = (volatile uint8_t*)((uint8_t*)buffer + (words * 2));
     }
     dbg::popTrace();
     return true;

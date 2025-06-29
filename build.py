@@ -64,6 +64,7 @@ ALLOWED_CONFIG = [
     ["outDir", [], True],
     ["analyzer", ["yes", "no"], True],
     ["imageSize", [], False],
+    ["usan", ["yes", "no"], True],
 ]
 if not checkConfig(CONFIG, ALLOWED_CONFIG):
     print("Invalid config file.")
@@ -87,7 +88,7 @@ if OLD_CONFIG != CONFIG:
 CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
 CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
-CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs', '-mno-sse2avx']
+CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
 CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Ofast', '-mcmodel=kernel', '-fno-lto']
@@ -104,6 +105,10 @@ else:
 
 if "x64" in CONFIG.get("arch"):
     CONFIG["CFLAGS"] += ["-m64"]
+
+if "yes" in CONFIG.get("usan"):
+    CONFIG["CFLAGS"] += ['-fsanitize=undefined']
+    CONFIG["LDFLAGS"] += ['-fsanitize=undefined']
 
 if "gcc" in CONFIG.get("compiler"):
     if "yes" in CONFIG.get("analyzer"):
@@ -148,7 +153,7 @@ def buildC(file):
     options = CONFIG["CFLAGS"].copy()
     if "main.c" in file and "yes" in CONFIG.get("analyzer"):
         options.remove("-fanalyzer")
-    options.append("-std=c11")
+    options.append("-std=gnu11")
     command = compiler + " " + file
     for option in options:
         command += " " + option
@@ -165,7 +170,7 @@ def buildCXX(file):
         compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
-    options.append("-std=c++23")
+    options.append("-std=gnu++23")
     command = compiler + " " + file
     for option in options:
         command += " " + option

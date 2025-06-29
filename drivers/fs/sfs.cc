@@ -11,7 +11,8 @@ SFSDriver::SFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> 
     dbg::addTrace(__PRETTY_FUNCTION__);
     this->__fs_type  = FSType::SFS;
     this->superBlock = new SuperBlockBlock;
-    if (!drvDisk.first->read(drvDisk.second, entry->startLBA, 1, this->superBlock)) {
+    if (!drvDisk.first->read(drvDisk.second, entry->startLBA, 1,
+                             (volatile uint8_t*)this->superBlock)) {
         dbg::printm(MODULE, "Couldn't read superblock\n");
         std::abort();
     }
@@ -20,7 +21,8 @@ SFSDriver::SFSDriver(vfs::PartitionEntry* entry, std::pair<MSCDriver*, uint8_t> 
         std::abort();
     }
     this->rootDir = new DirectoryBlock;
-    if (!drvDisk.first->read(drvDisk.second, this->superBlock->rootDirLBA, 1, this->rootDir)) {
+    if (!drvDisk.first->read(drvDisk.second, this->superBlock->rootDirLBA, 1,
+                             (volatile uint8_t*)this->rootDir)) {
         dbg::printm(MODULE, "Couldn't read root directory\n");
         std::abort();
     }
@@ -141,14 +143,15 @@ int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
     uint64_t readLBA = lastDirBlock->header.currentLBA;
     while (readLBA) {
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
-                                               lastDirBlock)) {
+                                               (volatile uint8_t*)lastDirBlock)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
             std::abort();
         }
         for (uint32_t i = 0; i < lastDirBlock->blocksCount; ++i) {
             FileBlock* fileBlock = new FileBlock;
             if (!this->getDiskDevice().first->read(this->getDiskDevice().second,
-                                                   lastDirBlock->blocksLBA[i], 1, fileBlock)) {
+                                                   lastDirBlock->blocksLBA[i], 1,
+                                                   (volatile uint8_t*)fileBlock)) {
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", lastDirBlock->blocksLBA[i]);
                 std::abort();
             }
@@ -157,7 +160,8 @@ int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
             }
             NameBlock* nameBlock = new NameBlock;
             if (!this->getDiskDevice().first->read(this->getDiskDevice().second,
-                                                   fileBlock->nameBlock, 1, nameBlock)) {
+                                                   fileBlock->nameBlock, 1,
+                                                   (volatile uint8_t*)nameBlock)) {
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", fileBlock->nameBlock);
                 std::abort();
             }
@@ -180,7 +184,8 @@ void SFSDriver::read(int file, size_t length, void* buffer) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t   fileLBA   = this->files.at(file)->lba;
     FileBlock* fileBlock = new FileBlock;
-    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1, fileBlock)) {
+    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1,
+                                           (volatile uint8_t*)fileBlock)) {
         dbg::printm(MODULE, "Failed to read LBA %llu\n", fileLBA);
         std::abort();
     }
@@ -192,7 +197,7 @@ void SFSDriver::read(int file, size_t length, void* buffer) {
     while (readLBA && length) {
         uint16_t count = 0;
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
-                                               dataBlock)) {
+                                               (volatile uint8_t*)dataBlock)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
             std::abort();
         }
@@ -210,7 +215,8 @@ void SFSDriver::write(int file, size_t length, const void* buffer) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t   fileLBA   = this->files.at(file)->lba;
     FileBlock* fileBlock = new FileBlock;
-    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1, fileBlock)) {
+    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1,
+                                           (volatile uint8_t*)fileBlock)) {
         dbg::printm(MODULE, "Failed to read LBA %llu\n", fileLBA);
         std::abort();
     }
@@ -219,7 +225,7 @@ void SFSDriver::write(int file, size_t length, const void* buffer) {
     delete fileBlock;
     while (writeLBA) {
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, writeLBA, 1,
-                                               dataBlock)) {
+                                               (volatile uint8_t*)dataBlock)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", writeLBA);
             std::abort();
         }
@@ -253,7 +259,8 @@ uint64_t SFSDriver::getLengthOfFile(int file) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t   fileLBA   = this->files.at(file)->lba;
     FileBlock* fileBlock = new FileBlock;
-    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1, fileBlock)) {
+    if (!this->getDiskDevice().first->read(this->getDiskDevice().second, fileLBA, 1,
+                                           (volatile uint8_t*)fileBlock)) {
         dbg::printm(MODULE, "Failed to read LBA %llu\n", fileLBA);
         std::abort();
     }
@@ -264,7 +271,7 @@ uint64_t SFSDriver::getLengthOfFile(int file) {
         uint16_t   i         = 0;
         DataBlock* dataBlock = new DataBlock;
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
-                                               dataBlock)) {
+                                               (volatile uint8_t*)dataBlock)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
             std::abort();
         }
@@ -346,7 +353,7 @@ void SFSDriver::create(const char* path) {
 NameBlock* SFSDriver::readNameBlock(uint64_t nameBlockLBA) {
     NameBlock* nameBlock = new NameBlock;
     if (!this->getDiskDevice().first->read(this->getDiskDevice().second, nameBlockLBA, 1,
-                                           nameBlock)) {
+                                           (volatile uint8_t*)nameBlock)) {
         dbg::printm(MODULE, "Failed to read LBA %llu\n", nameBlockLBA);
         std::abort();
     }
@@ -437,7 +444,8 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t readLBA = current->header.currentLBA;
     while (readLBA) {
-        if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1, current)) {
+        if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
+                                               (volatile uint8_t*)current)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
             std::abort();
         }
@@ -447,7 +455,8 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
             }
             DirectoryBlock* dirBlock = new DirectoryBlock;
             if (!this->getDiskDevice().first->read(this->getDiskDevice().second,
-                                                   current->blocksLBA[i], 1, dirBlock)) {
+                                                   current->blocksLBA[i], 1,
+                                                   (volatile uint8_t*)dirBlock)) {
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", current->blocksLBA[i]);
                 std::abort();
             }
@@ -457,7 +466,8 @@ DirectoryBlock* SFSDriver::openDir(DirectoryBlock* current, const char* delim) {
             }
             NameBlock* nameBlock = new NameBlock;
             if (!this->getDiskDevice().first->read(this->getDiskDevice().second,
-                                                   dirBlock->nameBlock, 1, dirBlock)) {
+                                                   dirBlock->nameBlock, 1,
+                                                   (volatile uint8_t*)dirBlock)) {
                 dbg::printm(MODULE, "Failed to read LBA %llu\n", current->blocksLBA[i]);
                 std::abort();
             }
@@ -482,7 +492,7 @@ const char* SFSDriver::collectName(NameBlock* nameBlock) {
     uint64_t readLBA  = nameBlock->header.currentLBA;
     while (readLBA) {
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
-                                               nameBlock)) {
+                                               (volatile uint8_t*)nameBlock)) {
             dbg::printm(MODULE, "Failed to read LBA %llu\n", readLBA);
             std::abort();
         }

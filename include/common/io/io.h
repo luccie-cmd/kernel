@@ -4,6 +4,7 @@
 #define DBG_PORT 0xE9
 #define ALIGNUP(data, align) (((data) + (align) - 1) & ~((align) - 1))
 #define ALIGNDOWN(data, align) ((data) & ~((align) - 1))
+#define iscanonical(addr) ((((uint64_t)(addr) >> 48) == 0) || (((uint64_t)(addr) >> 48) == 0xFFFF))
 
 template<typename T>
 inline void forceReadVolatile(const T& var) {

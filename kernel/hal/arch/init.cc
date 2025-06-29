@@ -16,15 +16,19 @@
 #define MSR_CSTAR 0xC0000083
 #define MSR_SYSCALL_MASK 0xC0000084
 
-extern uint64_t* __bss_start;
-extern uint64_t* __bss_end;
+extern uint64_t __bss_start[];
+extern uint64_t __bss_end[];
 
 namespace hal::arch {
 extern "C" void initX64();
 void            earlyInit() {
     initX64();
     io::cli();
-    std::memset(__bss_start, 0, (uint64_t)(__bss_end) - (uint64_t)(__bss_start));
+    if (__bss_start == 0) {
+        dbg::printf("ERROR: BSS wasn't properly set\n");
+        std::abort();
+    }
+    std::memset(__bss_start, 0, __bss_end - __bss_start);
     x64::idt::init();
     x64::gdt::init();
     io::sti();

@@ -58,6 +58,7 @@ uint8_t* parseGUID(uint8_t* GUID) {
     newGUID[8]       = GUID[8];
     newGUID[9]       = GUID[9];
     newGUID[10]      = GUID[10];
+    newGUID[11]      = GUID[11];
     newGUID[12]      = GUID[12];
     newGUID[13]      = GUID[13];
     newGUID[14]      = GUID[14];
@@ -92,7 +93,7 @@ void readGPT(uint8_t disk) {
     drivers::MSCDriver*                     blockDriver = drvDisk.first;
     uint8_t                                 newDisk     = drvDisk.second;
     PartitionTableHeader*                   PTH         = new PartitionTableHeader;
-    if (!blockDriver->read(newDisk, 1, 1, PTH)) {
+    if (!blockDriver->read(newDisk, 1, 1, (volatile uint8_t*)PTH)) {
         dbg::printm(MODULE, "Failed to read partition table header\n");
         std::abort();
     }
@@ -102,7 +103,7 @@ void readGPT(uint8_t disk) {
         std::abort();
     }
     uint8_t* buffer = new uint8_t[15872];
-    if (!blockDriver->read(newDisk, 2, 31, buffer)) {
+    if (!blockDriver->read(newDisk, 2, 31, (volatile uint8_t*)buffer)) {
         dbg::printm(MODULE, "Failed to read partition entries\n");
         std::abort();
     }

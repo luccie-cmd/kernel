@@ -61,7 +61,7 @@ namespace drivers::block{
         public:
             NVMeDriver();
             ~NVMeDriver();
-            bool read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
+            bool read(uint8_t drive, uint64_t lba, uint32_t sectors, volatile uint8_t* buffer);
             bool write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer);
             void init(pci::device* device);
             void deinit();

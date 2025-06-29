@@ -116,12 +116,12 @@ void NVMeDriver::init(pci::device* device) {
     }
     dbg::popTrace();
 }
-bool NVMeDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) {
+bool NVMeDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, volatile uint8_t* buffer) {
     if (drive != this->nsid) {
         dbg::printm(MODULE, "Warning drive doesn't correspond to NSID\n");
     }
     dbg::addTrace(__PRETTY_FUNCTION__);
-    bool result = this->sendCmdIO(0x02, buffer, lba, sectors);
+    bool result = this->sendCmdIO(0x02, (void*)buffer, lba, sectors);
     dbg::popTrace();
     return result;
 }

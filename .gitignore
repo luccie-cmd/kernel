@@ -14,3 +14,4 @@ pci.ids
 foodchain.*
 temp*
 a.out
+ubsan.asm

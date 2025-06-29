@@ -44,8 +44,8 @@ static void puts(const char* str) {
 void print(const char* str) {
     puts(str);
 }
-char str[8192];
-void printv(const char* fmt, va_list args) {
+char __attribute__((aligned(4))) str[8192];
+void                             printv(const char* fmt, va_list args) {
     std::memset(str, 0, sizeof(str));
     std::vsnprintf(str, sizeof(str), fmt, args);
     print(str);
@@ -62,8 +62,8 @@ extern "C" void dbgPrintf(const char* fmt, ...) {
     printv(fmt, args);
     va_end(args);
 }
-char outStr[8192];
-void printm(const char* module, const char* fmt, ...) {
+char __attribute__((aligned(4))) outStr[8192];
+void                             printm(const char* module, const char* fmt, ...) {
     const char* fmtString = "%s: %s";
     std::memset(str, 0, sizeof(str));
     std::memset(outStr, 0, sizeof(outStr));
