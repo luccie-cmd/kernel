@@ -15,6 +15,7 @@ namespace heap{
         size_t size;
         size_t freedSize;
         size_t allocSize;
+        // size_t addedPadding;
         bool free;
         node* prev;
         node* next;

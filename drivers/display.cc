@@ -10,7 +10,7 @@
 extern drivers::DisplayDriver* displayDriver;
 
 namespace drivers {
-static volatile limine_framebuffer_request
+static limine_framebuffer_request
     __attribute__((used, retain, section(".limine_requests"))) fbRequest = {
         .id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0, .response = nullptr};
 DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY) {
@@ -52,11 +52,13 @@ void DisplayDriver::init(pci::device* dev) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::printm(MODULE, "TODO: Initialize display driver (%llx:%llx)\n", dev->vendorID,
                 dev->deviceID);
+    dbg::popTrace();
     return;
 }
 void DisplayDriver::deinit() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     dbg::printm(MODULE, "TODO: Deinitialize display driver\n");
+    dbg::popTrace();
     return;
 }
 
@@ -162,9 +164,8 @@ void DisplayDriver::scrollBack(uint8_t displayIdx, uint64_t lines) {
     for (uint64_t y = 0; y < height - lines; ++y) {
         std::memmove(fb + y * pitch, fb + (y + lines) * pitch, pitch);
     }
-    for (uint64_t y = height - lines; y < height; ++y) {
-        std::memset(fb + y * pitch, 0, pitch);
-    }
+    const uint64_t remaining = height - lines;
+    std::memset(fb + remaining * pitch, 0, lines * pitch);
     dbg::popTrace();
 }
 void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint32_t rgba) {
@@ -186,7 +187,7 @@ void DisplayDriver::writePixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8
         return;
     }
     uint64_t offset    = (y * display->width + x) * (display->bpp / 8);
-    auto     pixelAddr = reinterpret_cast<volatile uint8_t*>(this->buffer[displayIdx]) + offset;
+    auto     pixelAddr = reinterpret_cast<uint8_t*>(this->buffer[displayIdx]) + offset;
     uint8_t  newR      = (r * a) / 255;
     uint8_t  newG      = (g * a) / 255;
     uint8_t  newB      = (b * a) / 255;
@@ -196,12 +197,12 @@ void DisplayDriver::writePixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8
     uint32_t rMask     = (1 << display->red_mask_size) - 1;
     uint32_t gMask     = (1 << display->green_mask_size) - 1;
     uint32_t bMask     = (1 << display->blue_mask_size) - 1;
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(rMask << rShift);
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(gMask << gShift);
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) &= ~(bMask << bShift);
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) |= (newR & rMask) << rShift;
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) |= (newG & gMask) << gShift;
-    *reinterpret_cast<volatile uint32_t*>(pixelAddr) |= (newB & bMask) << bShift;
+    *reinterpret_cast<uint32_t*>(pixelAddr) &= ~(rMask << rShift);
+    *reinterpret_cast<uint32_t*>(pixelAddr) &= ~(gMask << gShift);
+    *reinterpret_cast<uint32_t*>(pixelAddr) &= ~(bMask << bShift);
+    *reinterpret_cast<uint32_t*>(pixelAddr) |= (newR & rMask) << rShift;
+    *reinterpret_cast<uint32_t*>(pixelAddr) |= (newG & gMask) << gShift;
+    *reinterpret_cast<uint32_t*>(pixelAddr) |= (newB & bMask) << bShift;
     dbg::popTrace();
 }
 void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint32_t* rgba) {
@@ -230,9 +231,9 @@ void DisplayDriver::readPixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_
         dbg::popTrace();
         return;
     }
-    uint64_t          offset       = (y * display->width + x) * (display->bpp / 8);
-    volatile uint8_t* pixelAddress = (volatile uint8_t*)(this->buffer[displayIdx]) + offset;
-    uint32_t          pixelValue   = 0;
+    uint64_t offset       = (y * display->width + x) * (display->bpp / 8);
+    uint8_t* pixelAddress = (uint8_t*)(this->buffer[displayIdx]) + offset;
+    uint32_t pixelValue   = 0;
     for (uint64_t i = 0; i < display->bpp / 8; ++i) {
         pixelValue |= pixelAddress[i] << (i * 8);
     }

@@ -18,34 +18,37 @@ struct __attribute__((packed)) SFSBlockHeader {
     SFSBlockTypes type;
     uint64_t      currentLBA;
 };
-struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) SuperBlockBlock {
+struct __attribute__((packed)) SuperBlockBlock {
     SFSBlockHeader header;
     uint64_t       rootDirLBA;
+    uint8_t padding[495];
 };
 static_assert(sizeof(SuperBlockBlock) == 512, "SuperBlockBlock alignment is messed up");
-struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) DirectoryBlock {
+struct __attribute__((packed)) DirectoryBlock {
     SFSBlockHeader header;
     uint64_t       nextDirBlock;
     uint64_t       nameBlock;
     uint32_t       blocksCount;
     uint64_t       blocksLBA[60];
+    uint8_t padding[3];
 };
 static_assert(sizeof(DirectoryBlock) == 512, "DirectoryBlock alignment is messed up");
-struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) FileBlock {
+struct __attribute__((packed)) FileBlock {
     SFSBlockHeader header;
     uint64_t       nameBlock;
     uint64_t       dataBlock;
     uint32_t       permissions;
+    uint8_t padding[483];
 };
 static_assert(sizeof(FileBlock) == 512, "FileBlock alignment is messed up");
-struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) NameBlock {
+struct __attribute__((packed)) NameBlock {
     SFSBlockHeader header;
     uint64_t       nextName;
     uint16_t       length;
     uint8_t        characters[493];
 };
 static_assert(sizeof(NameBlock) == 512, "NameBlock alignment is messed up");
-struct __attribute__((packed)) __attribute__((aligned(SECTOR_SIZE))) DataBlock {
+struct __attribute__((packed)) DataBlock {
     SFSBlockHeader header;
     uint64_t       nextData;
     uint8_t        data[495];

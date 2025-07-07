@@ -91,7 +91,7 @@ CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Ofast', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -100,7 +100,7 @@ if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O1"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
-    CONFIG["CFLAGS"] += ["-Ofast"]
+    CONFIG["CFLAGS"] += ["-O2"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
 if "x64" in CONFIG.get("arch"):
@@ -108,12 +108,13 @@ if "x64" in CONFIG.get("arch"):
 
 if "yes" in CONFIG.get("usan"):
     CONFIG["CFLAGS"] += ['-fsanitize=undefined']
-    CONFIG["LDFLAGS"] += ['-fsanitize=undefined']
+    if "clang" not in CONFIG.get("compiler"):
+        CONFIG["LDFLAGS"] += ['-fsanitize=undefined']
 
 if "gcc" in CONFIG.get("compiler"):
     if "yes" in CONFIG.get("analyzer"):
         CONFIG["CFLAGS"].append("-fanalyzer")
-    CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=1000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']
+    CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=10000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']
     CONFIG["CFLAGS"] += ['-Wno-aggressive-loop-optimizations']
 if "clang" in CONFIG.get("compiler"):
     CONFIG["CFLAGS"] += ['-Wno-ignored-attributes']
@@ -148,12 +149,12 @@ def getExtension(file):
 
 def buildC(file):
     compiler = CONFIG.get("compiler")[0]
-    if CONFIG.get("compiler")[0] == "gcc":
-        compiler += "-11"
+    # if CONFIG.get("compiler")[0] == "gcc":
+    #     compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     if "main.c" in file and "yes" in CONFIG.get("analyzer"):
         options.remove("-fanalyzer")
-    options.append("-std=gnu11")
+    options.append("-std=c11")
     command = compiler + " " + file
     for option in options:
         command += " " + option
@@ -166,11 +167,11 @@ def buildCXX(file):
     if compiler == "gcc":
         compiler = "g"
     compiler += "++"
-    if CONFIG.get("compiler")[0] == "gcc":
-        compiler += "-11"
+    # if CONFIG.get("compiler")[0] == "gcc":
+    #     compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
-    options.append("-std=gnu++23")
+    options.append("-std=c++26")
     command = compiler + " " + file
     for option in options:
         command += " " + option
@@ -204,6 +205,7 @@ def buildAR(dir: str, out_file: str):
 
 def buildKernel(kernel_dir: str):
     files = glob.glob(kernel_dir+'/**', recursive=True)
+    files = sorted(files, key=str.lower)
     CONFIG["INCPATHS"] += [f"-I{kernel_dir}"]
     for file in files:
         if not os.path.isfile(file):
@@ -228,6 +230,9 @@ def buildKernel(kernel_dir: str):
         code = 0
         CONFIG["CFLAGS"] += CONFIG["INCPATHS"]
         CONFIG["ASFLAGS"] += CONFIG["INCPATHS"]
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
         if getExtension(file) == "c":
             code = buildC(file)
         elif getExtension(file) == "asm":
@@ -245,10 +250,6 @@ def buildKernel(kernel_dir: str):
         if code != 0:
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
-
-        if getExtension(file) == "cc" or getExtension(file) == "c":
-            print(f"FMT   {file}")
-            callCmd(f"clang-format -i {file}")
 
 def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
@@ -347,12 +348,13 @@ def buildImage(out_file, boot_file, kernel_file, files):
     makeFileSystem(LOOP_DEVICE)
     mountFs(LOOP_DEVICE, boot_file, kernel_file, files)
     if "limine-uefi" in CONFIG["bootloader"]:
-        callCmd(f"./limine/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
+        callCmd(f"./limine/bin/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
 
 def buildStaticLib(directory, out_file):
     os.makedirs(CONFIG["outDir"][0]+'/'+directory, exist_ok=True)
     CONFIG["INCPATHS"] += [f'-I{directory}']
     files = glob.glob(directory+'/**', recursive=True)
+    files = sorted(files, key=str.lower)
     for file in files:
         if not os.path.isfile(file):
             continue
@@ -408,19 +410,22 @@ def setupLimine():
     build_limine: bool = False
     if not os.path.exists("limine"):
         build_limine = True
-    elif not os.path.exists("limine/BOOTX64.EFI"):
+    elif not os.path.exists("limine/bin/BOOTX64.EFI"):
         build_limine = True
     if build_limine:
         print("Building limine")
         callCmd("rm -rf limine")
-        callCmd("git clone https://github.com/limine-bootloader/limine.git --branch=v9.x-binary --depth=1", True)
+        callCmd("git clone https://github.com/limine-bootloader/limine.git --depth=1", True)
+        callCmd("cp ./util/common.mk ./limine/common/common.mk")
         os.chdir("limine")
-        callCmd("sudo make install")
+        callCmd("./bootstrap")
+        callCmd("./configure --enable-uefi-x86-64 --enable-bios")
+        callCmd("make")
         os.chdir("..")
         callCmd("rm -rf ./limine/commands.txt")
     callCmd(f"cp ./util/limine.conf {CONFIG['outDir'][0]}/limine.conf")
-    callCmd(f"cp ./limine/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
-    callCmd(f"cp ./limine/BOOTX64.EFI {CONFIG['outDir'][0]}/BOOTX64.EFI")
+    callCmd(f"cp ./limine/bin/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
+    callCmd(f"cp ./limine/bin/BOOT* {CONFIG['outDir'][0]}/")
 
 def getInfo():
     callCmd("rm -f info.txt")
@@ -489,9 +494,9 @@ def main():
         linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
         print("> Getting info")
         getInfo()
-        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
+        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
         if os.path.exists("/dev/sda"):
-            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOTX64.EFI", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
+            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

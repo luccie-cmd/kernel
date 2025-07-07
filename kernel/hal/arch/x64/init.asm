@@ -8,6 +8,15 @@ initX64:
     push rcx
     push rdx
 
+    mov eax, 7
+    cpuid
+    test ebx, 1 << 0
+    jz .afterFSGSBaseEnable
+    mov rax, cr4
+    or rax, (1 << 16)
+    mov cr4, rax
+.afterFSGSBaseEnable:
+
     ; CPUID.1
     mov eax, 1
     cpuid

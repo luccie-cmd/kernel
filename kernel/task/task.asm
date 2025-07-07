@@ -46,16 +46,24 @@ switchProc:
     mfence
     jmp .flush
 .flush:
-    mov rcx, 0xC0000080
+    mov r15, rdx
+
+    mov ecx, 0xC0000080
 	rdmsr
-    or rax, 1
+    or eax, 1
 	wrmsr
 
-    mov rax, 0x1B
+    mov ax, 0x1B
     mov ds, ax
     mov es, ax
     mov fs, ax
     mov gs, ax
+
+    mov rdx, r15
+    mov ecx, 0xC0000100
+    mov eax, edx
+    shr rdx, 32
+    wrmsr
 
     mov rax, [rdi + 168]
     mov rbx, [rdi + 136]

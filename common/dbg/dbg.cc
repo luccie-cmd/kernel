@@ -44,8 +44,8 @@ static void puts(const char* str) {
 void print(const char* str) {
     puts(str);
 }
-char __attribute__((aligned(4))) str[8192];
-void                             printv(const char* fmt, va_list args) {
+char str[8192];
+void printv(const char* fmt, va_list args) {
     std::memset(str, 0, sizeof(str));
     std::vsnprintf(str, sizeof(str), fmt, args);
     print(str);
@@ -62,8 +62,8 @@ extern "C" void dbgPrintf(const char* fmt, ...) {
     printv(fmt, args);
     va_end(args);
 }
-char __attribute__((aligned(4))) outStr[8192];
-void                             printm(const char* module, const char* fmt, ...) {
+char outStr[8192];
+void printm(const char* module, const char* fmt, ...) {
     const char* fmtString = "%s: %s";
     std::memset(str, 0, sizeof(str));
     std::memset(outStr, 0, sizeof(outStr));
@@ -77,10 +77,20 @@ void                             printm(const char* module, const char* fmt, ...
 static const char* stackTraces[8192];
 static uint16_t    nstackTraces = 0;
 void               addTrace(const char* func) {
+    if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
+        std::memset(stackTraces, 0, sizeof(stackTraces));
+        nstackTraces = 0;
+        dbg::printf("ERROR: Too many stack traces\n");
+        std::abort();
+    }
     stackTraces[nstackTraces++] = func;
 }
 void popTrace() {
-    nstackTraces--;
+    if (nstackTraces == 0) {
+        dbg::printf("WARNING: Attempted to pop from empty stack trace\n");
+        return;
+    }
+    --nstackTraces;
 }
 void printStackTrace() {
     for (uint16_t i = 0; i < nstackTraces; ++i) {

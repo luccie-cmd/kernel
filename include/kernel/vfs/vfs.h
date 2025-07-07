@@ -22,9 +22,9 @@ namespace vfs{
     bool isInitialized();
     void initialize();
     void readGPT(uint8_t disk);
-    void mount(uint8_t disk, uint8_t partition, const char* mountLoc);
-    void mount(const char* file, const char* mountLoc);
-    void umount(const char* mountLocation);
+    bool mount(uint8_t disk, uint8_t partition, const char* mountLoc);
+    bool mount(const char* file, const char* mountLoc);
+    bool umount(const char* mountLocation);
     uint64_t openFile(const char* path, uint64_t flags);
     uint64_t getOffset(uint64_t handle);
     void seek(uint64_t handle, uint64_t offset);

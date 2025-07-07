@@ -16,6 +16,7 @@ size_t sysExit(SyscallRegs* regs) {
     // Last thread
     if (currentThread->next == currentThread && currentProc->threads == currentThread) {
         dbg::printf("TODO: Free process resources\n");
+        dbg::printf("Process %u has exited (code %u)\n", currentProc->pid, exitCode);
         if (currentProc->parent) {
             if (currentProc->parent->waitingFor == currentProc->pid) {
                 currentProc->parent->waitingFor = 0;
@@ -28,8 +29,8 @@ size_t sysExit(SyscallRegs* regs) {
         currentProc->exitCode = exitCode;
         zombieProcs.push(currentProc);
     } else {
-        dbg::printf("TODO: Support multiple thread exit\n");
-        std::abort();
+        currentThread->status   = ThreadStatus::Dead;
+        currentThread->exitCode = exitCode;
     }
     dbg::printf("TODO: Free thread resources\n");
     dbg::popTrace();

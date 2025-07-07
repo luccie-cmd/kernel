@@ -1,10 +1,14 @@
+#include <cassert>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <cstring>
 #include <elf.h>
+#include <kernel/mmu/mmu.h>
 #include <kernel/mmu/vmm/vmm.h>
 #include <kernel/objects/elf.h>
 #include <kernel/vfs/vfs.h>
 #include <queue>
+#include <string>
 #define MODULE "ELF Loader"
 
 namespace objects::elf {
@@ -15,7 +19,19 @@ static bool verifyHeader(Elf64_Ehdr* hdr) {
     }
     return true;
 }
-ElfObject* loadElfObject(int handle) {
+static const char* makeStringFromStrTab(uint8_t* strtab, uint64_t size, uint64_t index) {
+    std::vector<char> buffer;
+    for (size_t i = index; i < size; ++i) {
+        buffer.push_back(strtab[i]);
+        if (strtab[i] == 0) {
+            break;
+        }
+    }
+    char* retBuffer = new char[buffer.size()];
+    std::memcpy(retBuffer, buffer.data(), buffer.size());
+    return retBuffer;
+}
+ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     char bitNess;
     vfs::seek(handle, 4);
@@ -31,9 +47,14 @@ ElfObject* loadElfObject(int handle) {
         dbg::printm(MODULE, "ELF Header couldn't be verified\n");
         std::abort();
     }
+    if (header->e_type == ET_DYN && PHDRAddend == 0) {
+        delete header;
+        dbg::popTrace();
+        return loadElfObject(handle, 0x401000);
+    }
     ElfObject* obj     = new ElfObject;
     obj->type          = header->e_type;
-    obj->entryPoint    = header->e_entry;
+    obj->entryPoint    = header->e_entry + PHDRAddend;
     Elf64_Off phOffset = header->e_phoff;
     vfs::seek(handle, phOffset);
     Elf64_Half  phentsize = header->e_phentsize;
@@ -42,15 +63,15 @@ ElfObject* loadElfObject(int handle) {
     for (Elf64_Half i = 0; i < phnum; i++) {
         Elf64_Phdr* phdr = new Elf64_Phdr;
         vfs::readFile(handle, phentsize, phdr);
-        if (phdr->p_type != PT_LOAD && phdr->p_type != PT_DYNAMIC) {
-            delete phdr;
-            continue;
-        }
         dbg::printm(MODULE,
                     "PHDR[%u]: Type: 0x%x, VAddr: 0x%lx, PAddr: 0x%lx, FileSz: 0x%lx, MemSz: "
                     "0x%lx, Flags: 0x%x, Align: 0x%lx, Offset: 0x%lx\n",
                     i, phdr->p_type, phdr->p_vaddr, phdr->p_paddr, phdr->p_filesz, phdr->p_memsz,
                     phdr->p_flags, phdr->p_align, phdr->p_offset);
+        if (phdr->p_type != PT_LOAD && phdr->p_type != PT_DYNAMIC) {
+            delete phdr;
+            continue;
+        }
         if (phdr->p_type == PT_LOAD) {
             task::Mapping* mapping = new task::Mapping;
             mapping->fileLength    = phdr->p_filesz;
@@ -62,7 +83,7 @@ ElfObject* loadElfObject(int handle) {
             if ((phdr->p_flags & PF_R) != 0 || (phdr->p_flags & PF_W) != 0) {
                 mapping->permissions |= PROTECTION_RW;
             }
-            mapping->virtualStart = phdr->p_vaddr;
+            mapping->virtualStart = phdr->p_vaddr + PHDRAddend;
             mapping->alignment    = phdr->p_align;
             obj->mappings.push_back(mapping);
             delete phdr;
@@ -79,7 +100,9 @@ ElfObject* loadElfObject(int handle) {
     }
     if (!dynPhdr) {
         dbg::printm(MODULE, "No dynamic program header found\n");
-        std::abort();
+        delete header;
+        dbg::popTrace();
+        return obj;
     }
     task::Mapping* mapping = new task::Mapping;
     mapping->fileLength    = dynPhdr->p_filesz;
@@ -92,21 +115,70 @@ ElfObject* loadElfObject(int handle) {
     vfs::seek(handle, dynPhdr->p_offset);
     size_t                  entryCount = dynPhdr->p_filesz / sizeof(Elf64_Dyn);
     std::queue<Elf64_Xword> dtNeededEntries;
+    Elf64_Addr              strtabVirtual = 0;
+    Elf64_Xword             strtabSize    = 0;
+    Elf64_Addr              symtabVirtual = 0;
+    Elf64_Addr              relaVirtual   = 0;
+    Elf64_Xword             relaSize      = 0;
+    Elf64_Addr              hashVirtual   = 0;
     for (size_t j = 0; j < entryCount; ++j) {
         Elf64_Dyn* dyn = new Elf64_Dyn;
         vfs::readFile(handle, sizeof(Elf64_Dyn), dyn);
+        dbg::printm(MODULE, "DYN[%lu] Tag: %lu Val: (0x%lx %lu)\n", j, dyn->d_tag, dyn->d_un.d_ptr,
+                    dyn->d_un.d_val);
         if (dyn->d_tag == DT_NULL) {
             delete dyn;
             break;
+        }
+        if (dyn->d_tag >= DT_LOOS) {
+            delete dyn;
+            continue;
         }
         switch (dyn->d_tag) {
         case DT_NEEDED: {
             dtNeededEntries.push(dyn->d_un.d_val);
         } break;
         case DT_FINI:
-        case DT_INIT: {
-            dbg::printm(MODULE, "TODO: Add support for DYN[%u]: Type: 0x%x, Value: 0x%lx\n", j,
+        case DT_FINI_ARRAY:
+        case DT_FINI_ARRAYSZ:
+        case DT_INIT:
+        case DT_INIT_ARRAY:
+        case DT_INIT_ARRAYSZ: {
+            dbg::printm(MODULE, "TODO: Add support init and fini Type: 0x%x, Value: 0x%lx\n",
                         dyn->d_tag, dyn->d_un.d_ptr);
+        } break;
+        case DT_STRTAB: {
+            strtabVirtual = dyn->d_un.d_ptr;
+        } break;
+        case DT_STRSZ: {
+            strtabSize = dyn->d_un.d_val;
+        } break;
+        case DT_SYMTAB: {
+            symtabVirtual = dyn->d_un.d_ptr;
+        } break;
+        case DT_SYMENT: {
+            if (dyn->d_un.d_val != 0x18) {
+                dbg::printm(MODULE, "Symbol entry size isn't 24 bytes long!!!\n");
+                std::abort();
+            }
+        } break;
+        case DT_RELA: {
+            relaVirtual = dyn->d_un.d_ptr;
+        } break;
+        case DT_RELASZ: {
+            relaSize = dyn->d_un.d_val;
+        } break;
+        case DT_RELAENT: {
+            if (dyn->d_un.d_val != 0x18) {
+                dbg::printm(MODULE, "Rela entry size isn't 24 bytes long!!!\n");
+                std::abort();
+            }
+        } break;
+        case DT_HASH: {
+            hashVirtual = dyn->d_un.d_ptr;
+        } break;
+        // Optionals:
+        case DT_DEBUG: {
         } break;
         default: {
             dbg::printm(MODULE, "TODO: Handle DYN[%u]: Type: 0x%x, Value: 0x%lx\n", j, dyn->d_tag,
@@ -116,6 +188,59 @@ ElfObject* loadElfObject(int handle) {
         }
         delete dyn;
     }
+    if (hashVirtual == 0) {
+        dbg::printm(MODULE, "No hash virtual address specified!!!\n");
+        std::abort();
+    }
+    if (strtabSize == 0) {
+        dbg::printm(MODULE, "No strtab size found!!!\n");
+        std::abort();
+    }
+    uint64_t strtabFileOffset = 0;
+    for (task::Mapping* phdr : obj->mappings) {
+        if (strtabVirtual >= phdr->virtualStart &&
+            strtabVirtual < phdr->virtualStart + phdr->fileLength) {
+            size_t offsetInSegment = strtabVirtual - phdr->virtualStart;
+            strtabFileOffset       = phdr->fileOffset + offsetInSegment;
+            break;
+        }
+    }
+    uint8_t* strtab = new uint8_t[strtabSize];
+    vfs::seek(handle, strtabFileOffset);
+    vfs::readFile(handle, strtabSize, strtab);
+    while (!dtNeededEntries.empty()) {
+        size_t index = dtNeededEntries.front();
+        dtNeededEntries.pop();
+        if (index >= strtabSize) {
+            dbg::printm(MODULE, "DT_NEEDED attempted access (0x%llx) from out of range string\n",
+                        index);
+            std::abort();
+        }
+        const char* file = makeStringFromStrTab(strtab, strtabSize, index);
+        assert(file != nullptr);
+        assert(strlen(file) > 0);
+        std::string prefix = "/libs/";
+        std::string path   = prefix + file;
+        assert(path.size() > 0);
+        int libHandle = vfs::openFile(path.c_str(), 0);
+        if (libHandle == -1) {
+            dbg::printm(MODULE, "Unable to find needed dependency `%s`\n", path.c_str());
+            delete obj;
+            return nullptr;
+        }
+        dbg::printm(MODULE, "TODO: Read file `%llu`\n", libHandle);
+        std::abort();
+    }
+    if (relaVirtual == 0 || relaSize == 0) {
+        dbg::printm(MODULE, "WARNING No rela found!\n");
+    } else {
+        dbg::printm(MODULE, "TODO: Add symbol table address 0x%llx to ElfObject\n", symtabVirtual);
+        dbg::printm(MODULE, "TODO: Add hash table address 0x%llx to ElfObject\n", hashVirtual);
+        dbg::printm(MODULE, "TODO: Add rela table address 0x%llx to ElfObject (%llu bytes)\n",
+                    relaVirtual, relaSize);
+        std::abort();
+    }
+    delete[] strtab;
     delete dynPhdr;
     delete header;
     dbg::popTrace();

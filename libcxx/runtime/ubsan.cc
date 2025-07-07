@@ -15,7 +15,7 @@
 #define LINE_MASK (~(1U << REPORTED_BIT))
 #endif
 
-#define IS_ALIGNED(x, a) (((x) & ((typeof(x))(a) - 1)) == 0)
+#define IS_ALIGNED(x, a) (((x) & ((decltype(x))(a) - 1)) == 0)
 #define VALUE_LENGTH 40
 #define BIT(nr) ((1UL) << (nr))
 
@@ -158,6 +158,15 @@ struct alignment_assumption_data {
     struct type_descriptor* type;
 };
 
+struct nonnull_return_data_v1 {
+    struct source_location location;
+};
+
+struct function_type_mismatch_data {
+    struct source_location location;
+    struct type_descriptor type;
+};
+
 static inline bool test_and_set_bit(int bit, uint64_t* addr) {
     uint32_t mask    = 1U << (bit % 32);
     bool     was_set = (*addr & mask) != 0;
@@ -248,16 +257,12 @@ static void ubsan_prologue(struct source_location* loc, const char* reason) {
 
     printf("UBSAN: %s in %s:%d:%d\n", reason, loc->file_name, loc->line & LINE_MASK,
            loc->column & COLUMN_MASK);
-
-    printf("%s in %s", reason, loc->file_name);
 }
 
 static void ubsan_epilogue(void) {
     printf("---[ end trace ]---\n");
 
     in_ubsan--;
-
-    printf("UBSAN\n");
     abort();
 }
 
@@ -280,20 +285,20 @@ static void handle_overflow(struct overflow_data* data, void* lhs, void* rhs, ch
     ubsan_epilogue();
 }
 
-void __ubsan_handle_add_overflow(void* data, void* lhs, void* rhs) {
-    handle_overflow(data, lhs, rhs, '+');
+extern "C" void __ubsan_handle_add_overflow(void* data, void* lhs, void* rhs) {
+    handle_overflow((struct overflow_data*)data, lhs, rhs, '+');
 }
-void __ubsan_handle_sub_overflow(void* data, void* lhs, void* rhs) {
-    handle_overflow(data, lhs, rhs, '-');
+extern "C" void __ubsan_handle_sub_overflow(void* data, void* lhs, void* rhs) {
+    handle_overflow((struct overflow_data*)data, lhs, rhs, '-');
 }
-void __ubsan_handle_mul_overflow(void* data, void* lhs, void* rhs) {
-    handle_overflow(data, lhs, rhs, '*');
+extern "C" void __ubsan_handle_mul_overflow(void* data, void* lhs, void* rhs) {
+    handle_overflow((struct overflow_data*)data, lhs, rhs, '*');
 }
-void __ubsan_handle_pointer_overflow(void* data, void* lhs, void* rhs) {
-    handle_overflow(data, lhs, rhs, '&');
+extern "C" void __ubsan_handle_pointer_overflow(void* data, void* lhs, void* rhs) {
+    handle_overflow((struct overflow_data*)data, lhs, rhs, '&');
 }
-void __ubsan_handle_negate_overflow(void* _data, void* old_val) {
-    struct overflow_data* data = _data;
+extern "C" void __ubsan_handle_negate_overflow(void* _data, void* old_val) {
+    struct overflow_data* data = (struct overflow_data*)_data;
     char                  old_val_str[VALUE_LENGTH];
 
     if (suppress_report(&data->location)) return;
@@ -307,9 +312,9 @@ void __ubsan_handle_negate_overflow(void* _data, void* old_val) {
 
     ubsan_epilogue();
 }
-void __ubsan_handle_divrem_overflow(void* _data, void* lhs, void* rhs) {
+extern "C" void __ubsan_handle_divrem_overflow(void* _data, void* lhs, void* rhs) {
     (void)lhs;
-    struct overflow_data* data = _data;
+    struct overflow_data* data = (struct overflow_data*)_data;
     char                  rhs_val_str[VALUE_LENGTH];
 
     if (suppress_report(&data->location)) return;
@@ -366,16 +371,16 @@ static void ubsan_type_mismatch_common(struct type_mismatch_data_common* data, u
     else
         handle_object_size_mismatch(data, ptr);
 }
-// void __ubsan_handle_implicit_conversion(void* _data, void* lhs, void* rhs) {}
-void __ubsan_handle_type_mismatch(struct type_mismatch_data* data, void* ptr) {
+// extern "C" void __ubsan_handle_implicit_conversion(void* _data, void* lhs, void* rhs) {}
+extern "C" void __ubsan_handle_type_mismatch(struct type_mismatch_data* data, void* ptr) {
     struct type_mismatch_data_common common_data = {.location        = &data->location,
                                                     .type            = data->type,
                                                     .alignment       = data->alignment,
                                                     .type_check_kind = data->type_check_kind};
     ubsan_type_mismatch_common(&common_data, (unsigned long)ptr);
 }
-void __ubsan_handle_type_mismatch_v1(void* _data, void* ptr) {
-    struct type_mismatch_data_v1*    data        = _data;
+extern "C" void __ubsan_handle_type_mismatch_v1(void* _data, void* ptr) {
+    struct type_mismatch_data_v1*    data        = (struct type_mismatch_data_v1*)_data;
     struct type_mismatch_data_common common_data = {.location        = &data->location,
                                                     .type            = data->type,
                                                     .alignment       = 1UL << data->log_alignment,
@@ -383,8 +388,8 @@ void __ubsan_handle_type_mismatch_v1(void* _data, void* ptr) {
 
     ubsan_type_mismatch_common(&common_data, (unsigned long)ptr);
 }
-void __ubsan_handle_out_of_bounds(void* _data, void* index) {
-    struct out_of_bounds_data* data = _data;
+extern "C" void __ubsan_handle_out_of_bounds(void* _data, void* index) {
+    struct out_of_bounds_data* data = (struct out_of_bounds_data*)_data;
     char                       index_str[VALUE_LENGTH];
 
     if (suppress_report(&data->location)) return;
@@ -395,8 +400,8 @@ void __ubsan_handle_out_of_bounds(void* _data, void* index) {
     printf("index %s is out of range for type %s\n", index_str, data->array_type->type_name);
     ubsan_epilogue();
 }
-void __ubsan_handle_shift_out_of_bounds(void* _data, void* lhs, void* rhs) {
-    struct shift_out_of_bounds_data* data     = _data;
+extern "C" void __ubsan_handle_shift_out_of_bounds(void* _data, void* lhs, void* rhs) {
+    struct shift_out_of_bounds_data* data     = (struct shift_out_of_bounds_data*)_data;
     struct type_descriptor*          rhs_type = data->rhs_type;
     struct type_descriptor*          lhs_type = data->lhs_type;
     char                             rhs_str[VALUE_LENGTH];
@@ -424,14 +429,14 @@ void __ubsan_handle_shift_out_of_bounds(void* _data, void* lhs, void* rhs) {
 
     ubsan_epilogue();
 }
-void __ubsan_handle_builtin_unreachable(void* _data) {
-    struct unreachable_data* data = _data;
+extern "C" void __ubsan_handle_builtin_unreachable(void* _data) {
+    struct unreachable_data* data = (struct unreachable_data*)_data;
     ubsan_prologue(&data->location, "unreachable");
     printf("calling __builtin_unreachable()\n");
     ubsan_epilogue();
 }
-void __ubsan_handle_load_invalid_value(void* _data, void* val) {
-    struct invalid_value_data* data = _data;
+extern "C" void __ubsan_handle_load_invalid_value(void* _data, void* val) {
+    struct invalid_value_data* data = (struct invalid_value_data*)_data;
     char                       val_str[VALUE_LENGTH];
 
     if (suppress_report(&data->location)) return;
@@ -444,9 +449,9 @@ void __ubsan_handle_load_invalid_value(void* _data, void* val) {
 
     ubsan_epilogue();
 }
-void __ubsan_handle_alignment_assumption(void* _data, unsigned long ptr, unsigned long align,
-                                         unsigned long offset) {
-    struct alignment_assumption_data* data = _data;
+extern "C" void __ubsan_handle_alignment_assumption(void* _data, unsigned long ptr,
+                                                    unsigned long align, unsigned long offset) {
+    struct alignment_assumption_data* data = (struct alignment_assumption_data*)_data;
     unsigned long                     real_ptr;
 
     if (suppress_report(&data->location)) return;
@@ -467,11 +472,37 @@ void __ubsan_handle_alignment_assumption(void* _data, unsigned long ptr, unsigne
 
     ubsan_epilogue();
 }
-void __ubsan_handle_nonnull_arg(void* _data) {
-    struct nonnull_arg_data* data = _data;
+extern "C" void __ubsan_handle_nonnull_arg(void* _data) {
+    struct nonnull_arg_data* data = (struct nonnull_arg_data*)_data;
     ubsan_prologue(&data->location, "nonnull-argument");
     printf("null pointer passed to nonnull argument defined at ");
     printf("%s:%d:%d\n", data->attr_location.file_name, data->attr_location.line & LINE_MASK,
            data->attr_location.column & COLUMN_MASK);
+    ubsan_epilogue();
+}
+extern "C" void __ubsan_handle_nonnull_return_v1(nonnull_return_data_v1* data,
+                                                 source_location*        loc) {
+    ubsan_prologue(loc, "nonnull-return");
+    printf("%s:%d:%d\n", data->location.file_name, data->location.line & LINE_MASK,
+           data->location.column & COLUMN_MASK);
+    ubsan_epilogue();
+}
+extern "C" void __ubsan_handle_float_cast_overflow(overflow_data* data, void* from) {
+    char old_val_str[VALUE_LENGTH];
+    if (suppress_report(&data->location)) return;
+    ubsan_prologue(&data->location, "negation-overflow");
+    val_to_string(old_val_str, sizeof(old_val_str), data->type, from);
+    printf("%s is outside the range of representable values of type %s\n", old_val_str,
+           data->type->type_name);
+    ubsan_epilogue();
+}
+extern "C" void __ubsan_handle_function_type_mismatch(function_type_mismatch_data* data,
+                                                      void*                        from) {
+    char old_val_str[VALUE_LENGTH];
+    if (suppress_report(&data->location)) return;
+    ubsan_prologue(&data->location, "negation-overflow");
+    val_to_string(old_val_str, sizeof(old_val_str), &data->type, from);
+    printf("call to function %s through pointer to incorrect function type %s\n", old_val_str,
+           data->type.type_name);
     ubsan_epilogue();
 }

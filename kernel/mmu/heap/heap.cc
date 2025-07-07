@@ -60,34 +60,6 @@ void* allocate(size_t size, size_t align) {
     }
     current = __head;
     while (current) {
-        if (current->free && current->size == alignedLength) {
-            if (current->size > alignedLength + sizeof(node)) {
-                node* newNode      = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current) +
-                                                             sizeof(node) + alignedLength);
-                newNode->size      = current->size - alignedLength - sizeof(node);
-                newNode->free      = true;
-                newNode->next      = current->next;
-                newNode->prev      = current;
-                newNode->freedSize = 0;
-                newNode->allocSize = current->size - alignedLength - sizeof(node);
-                if (current->next) {
-                    current->next->prev = newNode;
-                }
-                current->next = newNode;
-                current->size = alignedLength;
-            }
-            current->freedSize = 0;
-            current->allocSize = alignedLength;
-            current->free      = false;
-            void* addr =
-                reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current) + sizeof(node));
-            dbg::popTrace();
-            return addr;
-        }
-        current = current->next;
-    }
-    current = __head;
-    while (current) {
         if (current->free && current->size >= alignedLength) {
             if (current->size > alignedLength + sizeof(node)) {
                 node* newNode      = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current) +
@@ -127,12 +99,13 @@ void free(void* ptr, size_t size, size_t align) {
     bool  found   = false;
     node* current = __head;
     while (current) {
-        if (current->freedSize == current->allocSize) {
-            current->freedSize = current->allocSize;
-            current->free      = true;
+        if (!current->free && current->freedSize > current->allocSize) {
+            dbg::printm(MODULE, "current->free not set but freedSize > allocSize");
+            std::abort();
         }
         if (current == (node*)((uint64_t)ptr - sizeof(node))) {
             found = true;
+            break;
         }
         current = current->next;
     }
@@ -185,7 +158,7 @@ void free(void* ptr, size_t size, size_t align) {
     }
     dbg::popTrace();
 }
-size_t getNextPowerOfTwo(size_t size) {
+static size_t getNextPowerOfTwo(size_t size) {
     if (size <= 1) return 1;
     size_t power = 1;
     while (power < size) {
@@ -193,7 +166,7 @@ size_t getNextPowerOfTwo(size_t size) {
     }
     return power;
 }
-size_t getAlignSize(size_t size) {
+static size_t getAlignSize(size_t size) {
     const size_t CACHE_LINE_SIZE = 64;
     size_t       alignedSize     = getNextPowerOfTwo(size);
     if (alignedSize < CACHE_LINE_SIZE) {

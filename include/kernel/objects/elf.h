@@ -12,8 +12,19 @@ struct ElfObject {
     uint64_t                    relaAddr;
     std::vector<task::Mapping*> mappings;
     std::vector<ElfObject*>     dependencies;
+    ~ElfObject(){
+        if (this->dynamicSection){
+        delete this->dynamicSection;
+        }
+        for (task::Mapping* mapping : this->mappings){
+            delete mapping;
+        }
+        for (ElfObject* obj : this->dependencies){
+            delete obj;
+        }
+    }
 };
-ElfObject* loadElfObject(int handle);
+ElfObject* loadElfObject(int handle, size_t PHDRAddend);
 }; // namespace objects::elf
 
 #endif // _KERNEL_OBJECTS_ELF_H_

@@ -125,23 +125,25 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
                         virtualAddress, proc->pid);
             std::abort();
         }
-        bool needsDynamicLinking =
-            proc->dynamicMapping->virtualStart != 0 &&
-            (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) >
-                proc->dynamicMapping->virtualStart &&
-            proc->dynamicMapping->virtualStart >= base &&
-            (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) <=
-                (base + PAGE_SIZE);
-        if (needsDynamicLinking) {
-            size_t beginDynamicHandling =
-                std::max(proc->dynamicMapping->virtualStart,
-                         ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE));
-            size_t endDynamicHandling =
-                std::min((proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength),
-                         ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE) + PAGE_SIZE);
-            dbg::printm(MODULE, "TOOD: Dynamic mapping (From 0x%llx to 0x%llx)\n",
-                        beginDynamicHandling, endDynamicHandling);
-            std::abort();
+        if (proc->dynamicMapping) {
+            bool needsDynamicLinking =
+                proc->dynamicMapping->virtualStart != 0 &&
+                (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) >
+                    proc->dynamicMapping->virtualStart &&
+                proc->dynamicMapping->virtualStart >= base &&
+                (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) <=
+                    (base + PAGE_SIZE);
+            if (needsDynamicLinking) {
+                size_t beginDynamicHandling =
+                    std::max(proc->dynamicMapping->virtualStart,
+                             ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE));
+                size_t endDynamicHandling =
+                    std::min((proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength),
+                             ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE) + PAGE_SIZE);
+                dbg::printm(MODULE, "TOOD: Dynamic mapping (From 0x%llx to 0x%llx)\n",
+                            beginDynamicHandling, endDynamicHandling);
+                std::abort();
+            }
         }
         uint64_t phys = mmu::pmm::allocate();
         mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), phys, base,
@@ -182,6 +184,9 @@ void attachThread(pid_t pid, uint64_t entryPoint) {
     thread->registers->rip      = entryPoint;
     thread->registers->rflags   = 0x202;
     thread->status              = ThreadStatus::Ready;
+    thread->fsBase              = mmu::pmm::allocate();
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)thread->fsBase, (uint64_t)thread->fsBase,
+                      PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
     if (proc->threads == nullptr) {
         thread->next  = thread;
         proc->threads = thread;
@@ -200,25 +205,25 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<
     if (!isInitialized()) {
         initialize();
     }
+    Process* proc = new Process;
+    proc->pid     = pid;
+    proc->state   = ProcessState::Ready;
+    proc->pml4    = mmu::vmm::getPML4(pid);
     if (!dynamicMapping) {
-        dbg::printm(MODULE, "ERROR: No dynamic mapping section was passed in\n");
-        std::abort();
+        dbg::printm(MODULE, "WARNING: No dynamic mapping section was passed in\n");
+    } else {
+        proc->dynamicMapping               = new ProcessMemoryMapping;
+        proc->dynamicMapping->fileIdx      = fileIdx;
+        proc->dynamicMapping->fileOffset   = dynamicMapping->fileOffset;
+        proc->dynamicMapping->memLength    = dynamicMapping->memLength;
+        proc->dynamicMapping->fileLength   = dynamicMapping->fileLength;
+        proc->dynamicMapping->permissions  = dynamicMapping->permissions;
+        proc->dynamicMapping->virtualStart = dynamicMapping->virtualStart;
+        proc->dynamicMapping->alignment    = dynamicMapping->alignment;
+        dbg::printm(MODULE, "Added dynamic mapping section spanning from 0x%llx to 0x%llx\n",
+                    proc->dynamicMapping->virtualStart,
+                    proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength);
     }
-    Process* proc                      = new Process;
-    proc->pid                          = pid;
-    proc->state                        = ProcessState::Ready;
-    proc->pml4                         = mmu::vmm::getPML4(pid);
-    proc->dynamicMapping               = new ProcessMemoryMapping;
-    proc->dynamicMapping->fileIdx      = fileIdx;
-    proc->dynamicMapping->fileOffset   = dynamicMapping->fileOffset;
-    proc->dynamicMapping->memLength    = dynamicMapping->memLength;
-    proc->dynamicMapping->fileLength   = dynamicMapping->fileLength;
-    proc->dynamicMapping->permissions  = dynamicMapping->permissions;
-    proc->dynamicMapping->virtualStart = dynamicMapping->virtualStart;
-    proc->dynamicMapping->alignment    = dynamicMapping->alignment;
-    dbg::printm(MODULE, "Added dynamic mapping section spanning from 0x%llx to 0x%llx\n",
-                proc->dynamicMapping->virtualStart,
-                proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength);
     proc->threads = nullptr;
     for (Mapping* mapping : mappings) {
         ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
@@ -274,7 +279,8 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<
     attachThread(pid, entryPoint);
     dbg::popTrace();
 }
-extern "C" __attribute__((noreturn)) void switchProc(io::Registers* regs, mmu::vmm::PML4* pml4);
+extern "C" __attribute__((noreturn)) void switchProc(io::Registers* regs, mmu::vmm::PML4* pml4,
+                                                     uint64_t fsBase);
 extern "C" uint64_t                       __trampoline_text_start;
 extern "C" uint64_t                       __trampoline_text_end;
 extern "C" uint64_t                       __trampoline_data_start;
@@ -297,7 +303,7 @@ void                                      nextProc() {
             std::abort();
         }
         Thread* beginThread = currentProc->threads;
-        while (currentProc->threads->status == ThreadStatus::Blocked) {
+        while (currentProc->threads->status != ThreadStatus::Ready) {
             currentProc->threads = currentProc->threads->next;
             if (currentProc->threads == beginThread) {
                 dbg::printm(MODULE, "Ran out of threads to run, switching to next process\n");
@@ -305,7 +311,9 @@ void                                      nextProc() {
             }
         }
     }
-    currentThread = currentProc->threads;
+    currentThread         = currentProc->threads;
+    currentProc->state    = ProcessState::Running;
+    currentThread->status = ThreadStatus::Running;
     if (!currentProc->hasStarted) {
         currentProc->hasStarted = true;
         uint64_t trampoline_va = (uint64_t)&__trampoline_text_start;
@@ -341,7 +349,8 @@ void                                      nextProc() {
     dbg::popTrace();
     switchProc(currentThread->registers,
                                                     reinterpret_cast<mmu::vmm::PML4*>(reinterpret_cast<uint64_t>(currentProc->pml4) -
-                                                                                      mmu::vmm::getHHDM()));
+                                                                                      mmu::vmm::getHHDM()),
+                                                    currentThread->fsBase);
 }
 void printRfl(uint64_t rflags) {
     if (rflags & 0x00000001) dbg::print("CF ");
@@ -382,7 +391,7 @@ void blockProcess(Process* proc) {
     dbg::printm(MODULE, "TODO: Block process %lu\n", proc->pid);
 }
 void sendSignal(Process* proc, size_t signal) {
-    if (proc->state != ProcessState::Ready || proc->state != ProcessState::Running) {
+    if (proc->state != ProcessState::Ready && proc->state != ProcessState::Running) {
         dbg::printm(MODULE, "Attempted to send signal to blocked or zombie process\n");
         std::abort();
     }
@@ -409,6 +418,7 @@ std::unordered_map<size_t, sysFunc> sysFunctions = {{SYSCALL_EXIT, syscall::sysE
                                                     {SYSCALL_WRITESCREEN, sysWriteScreen}};
 extern "C" void                     syscallHandler(syscall::SyscallRegs* regs) {
     dbg::addTrace(__PRETTY_FUNCTION__);
+    currentThread->status              = ThreadStatus::Blocked;
     currentThread->registers->rax      = regs->rax;
     currentThread->registers->rbx      = regs->rbx;
     currentThread->registers->rip      = regs->rip;
@@ -426,20 +436,16 @@ extern "C" void                     syscallHandler(syscall::SyscallRegs* regs) {
     currentThread->registers->r15      = regs->r15;
     currentThread->registers->rflags   = regs->rflags;
     currentThread->registers->cr3      = regs->cr3;
-    currentThread->status              = ThreadStatus::Blocked;
     __asm__("mfence" : : : "memory");
-    // if (sysFunctions.find(regs->rax) == sysFunctions.end()) {
-    //     dbg::printm(MODULE,
-    //                                     "TODO: Process used invalid (Or unimplemented) syscall,
-    //                                     sending SIGABORT\n");
-    //     std::abort();
-    // }
-    // sysFunc func                  = sysFunctions.at(regs->rax);
-    // currentThread->registers->rax = func(regs);
-    printRegs(regs);
-    dbg::printf("\n");
-    printRegs(currentThread->registers);
-    std::abort();
+    if (sysFunctions.find(regs->rax) == sysFunctions.end()) {
+        printRegs(regs);
+        dbg::printm(MODULE,
+                                        "TODO: Process used invalid (Or unimplemented) syscall, sending SIGABORT\n");
+        sendSignal(currentProc, SIGABORT);
+        __builtin_unreachable();
+    }
+    sysFunc func                  = sysFunctions.at(regs->rax);
+    currentThread->registers->rax = func(regs);
     dbg::popTrace();
     nextProc();
 }

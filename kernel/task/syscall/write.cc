@@ -11,11 +11,12 @@ namespace task::syscall {
 size_t sysWrite(SyscallRegs* regs) {
     // TODO: Sanity checks
     dbg::addTrace(__PRETTY_FUNCTION__);
-    Process* currentProc = getCurrentProc();
-    size_t   fd          = regs->rdi;
-    uint64_t userBuffer  = regs->rsi;
-    size_t   length      = regs->rdx;
-    char*    buffer      = new char[length + 1];
+    Process* currentProc   = getCurrentProc();
+    Thread*  currentThread = getCurrentThread();
+    size_t   fd            = regs->rdi;
+    uint64_t userBuffer    = regs->rsi;
+    size_t   length        = regs->rdx;
+    char*    buffer        = new char[length + 1];
     for (size_t i = 0; i < ALIGNUP(length, PAGE_SIZE); i += PAGE_SIZE, userBuffer += PAGE_SIZE) {
         uint64_t physicalAddr =
             mmu::vmm::getPhysicalAddr(currentProc->pml4, userBuffer, true, true);
@@ -42,6 +43,7 @@ size_t sysWrite(SyscallRegs* regs) {
     } else {
         vfs::writeFile(fd, length, buffer);
     }
+    currentThread->status = ThreadStatus::Ready;
     dbg::popTrace();
     return length;
 }

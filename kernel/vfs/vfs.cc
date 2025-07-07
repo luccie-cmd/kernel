@@ -155,7 +155,7 @@ std::pair<MountPoint*, size_t> findMountpoint() {
     dbg::popTrace();
     return {mp, mountPoints.size() - 1};
 }
-void mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
+bool mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
@@ -176,7 +176,7 @@ void mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
         dbg::printm(MODULE,
                     "Attempted to load partition %hhd but only %lld partitions were found\n",
                     partition, partitionEntries.at(disk).size());
-        std::abort();
+        return false;
     }
     auto               drvDisk = translateVirtualDiskToPhysicalDisk(disk);
     drivers::FSDriver* fileSystemdriver =
@@ -184,7 +184,7 @@ void mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
     if (!fileSystemdriver) {
         dbg::printm(MODULE, "Failed to load file system driver!!!\n");
         dbg::popTrace();
-        return;
+        return false;
     }
     std::pair<MountPoint*, size_t> mp = findMountpoint();
     mp.first->fileSystemDriver        = fileSystemdriver;
@@ -200,19 +200,23 @@ void mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
     mountPoints.at(mp.second) = mp.first;
     dbg::printm(MODULE, "Successfully mounted %hhu:%hhu to %s\n", disk, partition, mountLocation);
     dbg::popTrace();
+    return true;
 }
-void umount(const char* path) {
+bool umount(const char* path) {
+    bool unmounted = false;
     for (MountPoint* mp : mountPoints) {
         if (mp->mounted == false || mp->fileSystemDriver == nullptr || mp->mountPath == nullptr) {
             continue;
         }
         if (std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0) {
-
             mp->mounted = false;
+            unmounted   = true;
             delete mp->fileSystemDriver;
+            break;
         }
     }
-    dbg::printm(MODULE, "Successfully unmounted %s\n", path);
+    dbg::printm(MODULE, "%s unmounted %s\n", unmounted ? "Successfully" : "Unsuccessfully", path);
+    return unmounted;
 }
 uint64_t openFile(const char* path, uint64_t flags) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -234,8 +238,8 @@ uint64_t openFile(const char* path, uint64_t flags) {
         }
     }
     if (handle == static_cast<uint64_t>(-1) || mpIdx == static_cast<uint64_t>(-1)) {
-        dbg::printm(MODULE, "Unable to find file `%s`\n", path);
-        std::abort();
+        dbg::popTrace();
+        return -1;
     }
     VFSFile* vfsFile               = newVFSFile(mpIdx, handle);
     vfsFile->pathWithoutMountPoint = pathWithoutMountPoint;

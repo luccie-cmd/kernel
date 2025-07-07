@@ -7,6 +7,7 @@
 #include <functional>
 #include <kernel/mmu/vmm/types.h>
 #include <vector>
+#define SIGABORT 1
 
 namespace task {
 struct ProcessMemoryMapping {
@@ -29,7 +30,9 @@ enum struct ThreadStatus {
 struct Thread {
     pid_t          tid;
     io::Registers* registers;
+    uint64_t       fsBase;
     uint8_t        fpuState[512];
+    uint8_t        exitCode;
     ThreadStatus   status;
     Thread*        next;
 };

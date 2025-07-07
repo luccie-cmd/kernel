@@ -195,6 +195,9 @@ void handlePF(io::Registers* regs) {
     dbg::printf("Handled pagefault for address 0x%llx\n", io::rcr2() & PAGE_MASK);
     enablePageFaultProtection();
     io::sti();
+    if (err.user) {
+        task::nextProc();
+    }
 }
 void handleUD(io::Registers* regs) {
     disableUDProtection();
