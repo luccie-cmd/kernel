@@ -8,18 +8,19 @@ struct ElfObject {
     uint8_t                     type;
     uint64_t                    startAddr;
     uint64_t                    entryPoint;
-    task::Mapping*              dynamicSection;
     uint64_t                    relaAddr;
     std::vector<task::Mapping*> mappings;
     std::vector<ElfObject*>     dependencies;
-    ~ElfObject(){
-        if (this->dynamicSection){
-        delete this->dynamicSection;
-        }
-        for (task::Mapping* mapping : this->mappings){
+    // Elf64_Addr                  symtabVirtual;
+    // Elf64_Addr                  hashVirtual;
+    Elf64_Addr  relaVirtual;
+    Elf64_Xword relaSize;
+    Elf64_Addr  baseAddr;
+    ~ElfObject() {
+        for (task::Mapping* mapping : this->mappings) {
             delete mapping;
         }
-        for (ElfObject* obj : this->dependencies){
+        for (ElfObject* obj : this->dependencies) {
             delete obj;
         }
     }

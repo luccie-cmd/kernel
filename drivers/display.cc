@@ -26,11 +26,9 @@ DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY) {
         dbg::printm(
             MODULE, "Loaded display %lux%lux%lu\n", fbRequest.response->framebuffers[i]->width,
             fbRequest.response->framebuffers[i]->height, fbRequest.response->framebuffers[i]->bpp);
-        this->infos.push_back(fbRequest.response->framebuffers[i]);
-    }
-    this->buffer = new uint8_t*[this->infos.size()];
-    for (size_t i = 0; i < this->infos.size(); ++i) {
-        this->buffer[i] = (uint8_t*)this->infos.at(i)->address;
+        limine_framebuffer* fb       = fbRequest.response->framebuffers[i];
+        std::Spinlock*      spinlock = new std::Spinlock();
+        this->infos.push_back({spinlock, fb});
     }
     this->setDriverName("Display driver");
     dbg::popTrace();
@@ -61,7 +59,6 @@ void DisplayDriver::deinit() {
     dbg::popTrace();
     return;
 }
-
 void DisplayDriver::drawCharacter(uint8_t display, char c) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     for (uint8_t y = 0; y < CHAR_HEIGHT + MARGIN; ++y) {
@@ -80,7 +77,7 @@ void DisplayDriver::drawCharacter(uint8_t display, char c) {
     dbg::popTrace();
 }
 void DisplayDriver::drawChar(uint8_t displayIdx, char c) {
-    limine_framebuffer* display = this->infos.at(displayIdx);
+    limine_framebuffer* display = this->infos.at(displayIdx).second;
     switch (c) {
     case '\n': {
         this->screenY += CHAR_HEIGHT + MARGIN;
@@ -148,17 +145,20 @@ void DisplayDriver::drawChar(uint8_t displayIdx, char c) {
 }
 void DisplayDriver::scrollBack(uint8_t displayIdx, uint64_t lines) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* display = this->infos.at(displayIdx);
+    limine_framebuffer* display = this->infos.at(displayIdx).second;
+    this->infos.at(displayIdx).first->lock();
     if (!display || lines == 0 || display->height == 0) {
+        this->infos.at(displayIdx).first->unlock();
         dbg::popTrace();
         return;
     }
     if (lines >= display->height) {
-        std::memset(this->buffer[displayIdx], 0, display->pitch * display->height);
+        std::memset(display->address, 0, display->pitch * display->height);
+        this->infos.at(displayIdx).first->unlock();
         dbg::popTrace();
         return;
     }
-    uint8_t* fb     = static_cast<uint8_t*>(this->buffer[displayIdx]);
+    uint8_t* fb     = static_cast<uint8_t*>(display->address);
     uint32_t pitch  = display->pitch;
     uint64_t height = display->height;
     for (uint64_t y = 0; y < height - lines; ++y) {
@@ -166,6 +166,7 @@ void DisplayDriver::scrollBack(uint8_t displayIdx, uint64_t lines) {
     }
     const uint64_t remaining = height - lines;
     std::memset(fb + remaining * pitch, 0, lines * pitch);
+    this->infos.at(displayIdx).first->unlock();
     dbg::popTrace();
 }
 void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint32_t rgba) {
@@ -177,17 +178,19 @@ void DisplayDriver::writePixel(uint8_t display, uint64_t x, uint64_t y, uint32_t
 void DisplayDriver::writePixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_t r, uint8_t g,
                                uint8_t b, uint8_t a) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* display = this->infos.at(displayIdx);
+    limine_framebuffer* display = this->infos.at(displayIdx).second;
+    this->infos.at(displayIdx).first->lock();
     if (x > display->width || y > display->height) {
         DisplayDriver* temp = displayDriver;
         displayDriver       = nullptr;
         dbg::printf("X %llu or Y %llu pos oob", x, y);
         displayDriver = temp;
+        this->infos.at(displayIdx).first->unlock();
         dbg::popTrace();
         return;
     }
     uint64_t offset    = (y * display->width + x) * (display->bpp / 8);
-    auto     pixelAddr = reinterpret_cast<uint8_t*>(this->buffer[displayIdx]) + offset;
+    auto     pixelAddr = reinterpret_cast<uint8_t*>(display->address) + offset;
     uint8_t  newR      = (r * a) / 255;
     uint8_t  newG      = (g * a) / 255;
     uint8_t  newB      = (b * a) / 255;
@@ -203,6 +206,7 @@ void DisplayDriver::writePixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8
     *reinterpret_cast<uint32_t*>(pixelAddr) |= (newR & rMask) << rShift;
     *reinterpret_cast<uint32_t*>(pixelAddr) |= (newG & gMask) << gShift;
     *reinterpret_cast<uint32_t*>(pixelAddr) |= (newB & bMask) << bShift;
+    this->infos.at(displayIdx).first->unlock();
     dbg::popTrace();
 }
 void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint32_t* rgba) {
@@ -218,7 +222,7 @@ void DisplayDriver::readPixel(uint8_t display, uint64_t x, uint64_t y, uint32_t*
 void DisplayDriver::readPixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_t* r, uint8_t* g,
                               uint8_t* b, uint8_t* a) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    limine_framebuffer* display = this->infos.at(displayIdx);
+    limine_framebuffer* display = this->infos.at(displayIdx).second;
     if (x > display->width || y > display->height) {
         *r                  = 0;
         *g                  = 0;
@@ -232,7 +236,7 @@ void DisplayDriver::readPixel(uint8_t displayIdx, uint64_t x, uint64_t y, uint8_
         return;
     }
     uint64_t offset       = (y * display->width + x) * (display->bpp / 8);
-    uint8_t* pixelAddress = (uint8_t*)(this->buffer[displayIdx]) + offset;
+    uint8_t* pixelAddress = (uint8_t*)(display->address) + offset;
     uint32_t pixelValue   = 0;
     for (uint64_t i = 0; i < display->bpp / 8; ++i) {
         pixelValue |= pixelAddress[i] << (i * 8);

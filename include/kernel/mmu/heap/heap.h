@@ -11,14 +11,16 @@
 
 namespace mmu{
 namespace heap{
-    struct node{
+    struct __attribute__((packed)) node{
+        uint64_t prePadding[5];
         size_t size;
         size_t freedSize;
         size_t allocSize;
-        // size_t addedPadding;
-        bool free;
         node* prev;
         node* next;
+        uint8_t free;
+        uint8_t padding[7];
+        uint64_t postPadding[5];
     };
     void initialize(uint64_t pmm_size, uint64_t vmm_max);
     bool isInitialized();

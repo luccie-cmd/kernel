@@ -1,6 +1,6 @@
 config: 'release'
 arch: 'x64'
-compiler: 'clang'
+compiler: 'gcc'
 rootFS: 'ext2'
 bootloader: 'limine-uefi'
 outDir: 'bin'

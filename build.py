@@ -85,13 +85,13 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
-CONFIG["CFLAGS"] += ['-ffreestanding', '-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
+CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-nostdlib', '-ggdb']
+CONFIG["CFLAGS"] += ['-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -100,7 +100,7 @@ if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O1"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
-    CONFIG["CFLAGS"] += ["-O2"]
+    CONFIG["CFLAGS"] += ["-O3"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
 if "x64" in CONFIG.get("arch"):
@@ -171,7 +171,7 @@ def buildCXX(file):
     #     compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
-    options.append("-std=c++26")
+    options.append("-std=c++23")
     command = compiler + " " + file
     for option in options:
         command += " " + option
@@ -224,15 +224,15 @@ def buildKernel(kernel_dir: str):
             exit(code)
         if not force_rebuild and compareFiles("./tmp.txt", os.path.abspath(f"./.build-cache/{basename}/cache/{file}")):
             continue
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
         callCmd(f"mkdir -p {CONFIG['outDir'][0]}/{os.path.dirname(file)}")
         callCmd(f"mkdir -p ./.build-cache/{basename}/cache/{os.path.dirname(file)}")
         callCmd(f"cp ./tmp.txt ./.build-cache/{basename}/cache/{file}")
         code = 0
         CONFIG["CFLAGS"] += CONFIG["INCPATHS"]
         CONFIG["ASFLAGS"] += CONFIG["INCPATHS"]
-        if getExtension(file) == "cc" or getExtension(file) == "c":
-            print(f"FMT   {file}")
-            callCmd(f"clang-format -i {file}")
         if getExtension(file) == "c":
             code = buildC(file)
         elif getExtension(file) == "asm":
@@ -370,6 +370,9 @@ def buildStaticLib(directory, out_file):
             exit(code)
         if not force_rebuild and compareFiles("./tmp.txt", os.path.abspath(f"./.build-cache/{basename}/cache/{file}")):
             continue
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
         callCmd(f"mkdir -p {CONFIG['outDir'][0]}/{os.path.dirname(file)}")
         callCmd(f"mkdir -p ./.build-cache/{basename}/cache/{os.path.dirname(file)}")
         callCmd(f"cp ./tmp.txt ./.build-cache/{basename}/cache/{file}")
@@ -393,10 +396,6 @@ def buildStaticLib(directory, out_file):
         if code != 0:
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
-        
-        if getExtension(file) == "cc" or getExtension(file) == "c":
-            print(f"FMT   {file}")
-            callCmd(f"clang-format -i {file}")
 
     buildAR(f"{CONFIG["outDir"][0]}/{directory}", out_file)
 
@@ -495,8 +494,8 @@ def main():
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
-        if os.path.exists("/dev/sda"):
-            buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
+        # if os.path.exists("/dev/sda"):
+        #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

@@ -1,5 +1,4 @@
 #include <common/dbg/dbg.h>
-#include <csignal>
 #include <kernel/task/syscall.h>
 #include <kernel/task/task.h>
 #include <queue>
@@ -15,24 +14,10 @@ size_t sysExit(SyscallRegs* regs) {
     uint8_t  exitCode      = regs->rdi;
     // Last thread
     if (currentThread->next == currentThread && currentProc->threads == currentThread) {
-        dbg::printf("TODO: Free process resources\n");
-        dbg::printf("Process %u has exited (code %u)\n", currentProc->pid, exitCode);
-        if (currentProc->parent) {
-            if (currentProc->parent->waitingFor == currentProc->pid) {
-                currentProc->parent->waitingFor = 0;
-                currentProc->parent->waitStatus = exitCode;
-                unblockProcess(currentProc->parent);
-            }
-            sendSignal(currentProc->parent, SIGCHLD);
-        }
-        currentProc->state    = ProcessState::Zombie;
-        currentProc->exitCode = exitCode;
-        zombieProcs.push(currentProc);
+        cleanProc(currentProc->pid, exitCode);
     } else {
-        currentThread->status   = ThreadStatus::Dead;
-        currentThread->exitCode = exitCode;
+        cleanThread(currentProc->pid, currentThread->tid, exitCode);
     }
-    dbg::printf("TODO: Free thread resources\n");
     dbg::popTrace();
     return 0;
 }

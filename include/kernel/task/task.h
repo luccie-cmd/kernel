@@ -4,10 +4,12 @@
 
 #include <common/io/regs.h>
 #include <cstdint>
+#include <elf.h>
 #include <functional>
 #include <kernel/mmu/vmm/types.h>
 #include <vector>
 #define SIGABORT 1
+#define SIGCHILD 2
 
 namespace task {
 struct ProcessMemoryMapping {
@@ -56,7 +58,8 @@ struct Process {
     Process*                                  parent;
     ProcessMemoryMapping*                     memoryMapping;
     Thread*                                   threads;
-    ProcessMemoryMapping*                     dynamicMapping;
+    std::vector<Elf64_Rela*>                  relas;
+    Elf64_Addr                                baseAddr;
     std::unordered_map<size_t, signalHandler> signals;
 };
 struct Mapping {
@@ -75,11 +78,13 @@ pid_t getNewPID();
 //                                                                                          file
 //                                                                                          offset},
 //                                                                                          length}
-void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<Mapping*> mappings,
-                    Mapping* dynamicMapping);
-void attachThread(pid_t pid, uint64_t entryPoint);
-void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress);
-void nextProc();
+void     makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr baseAddr,
+                        std::vector<Mapping*> mappings, Elf64_Addr relaVirtual, Elf64_Xword relaSize);
+void     attachThread(pid_t pid, uint64_t entryPoint);
+void     mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress);
+void     nextProc();
+void     cleanProc(pid_t pid, uint8_t exitCode);
+void     cleanThread(pid_t pid, pid_t tid, uint8_t exitCode);
 Process* getCurrentProc();
 Thread*  getCurrentThread();
 void     unblockProcess(Process* proc);

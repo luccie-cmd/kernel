@@ -1,5 +1,6 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/spinlock.h>
 #include <cstring>
 #include <kernel/hal/arch/x64/gdt/gdt.h>
 #include <kernel/mmu/mmu.h>
@@ -18,12 +19,10 @@ Process*             currentProc   = nullptr;
 Thread*              currentThread = nullptr;
 std::queue<Process*> zombieProcs;
 pid_t                pids = 1;
-extern "C" void      syscallEntry();
 void                 initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     initialized = true;
     pids        = 10;
-    io::wrmsr(0xC0000082, (uint64_t)syscallEntry);
     dbg::popTrace();
 }
 bool isInitialized() {
@@ -64,6 +63,20 @@ static Process* findProcByPID(pid_t pid) {
     }
     return head;
 }
+static Thread* findThreadByTID(pid_t pid, pid_t tid) {
+    Process* proc = findProcByPID(pid);
+    Thread*  ret  = proc->threads;
+    while (ret->tid != tid) {
+        ret = ret->next;
+        if (ret == proc->threads) {
+            dbg::printm(MODULE,
+                        "Circular dependency exceeded, thread %llu not found in process %llu\n",
+                        tid, pid);
+            std::abort();
+        }
+    }
+    return ret;
+}
 static inline bool isInRange(uint64_t start, uint64_t end, uint64_t address) {
     return (address >= start && address < end);
 }
@@ -79,6 +92,17 @@ static ProcessMemoryMapping* findMappingInProcess(Process* proc, uint64_t virtua
     }
     dbg::popTrace();
     return nullptr;
+}
+static std::vector<Elf64_Rela*> findRelasInPage(Process* proc, uint64_t virtualAddr) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    std::vector<Elf64_Rela*> newRelas;
+    for (Elf64_Rela* rela : proc->relas) {
+        if (isInRange(virtualAddr, virtualAddr + PAGE_SIZE, rela->r_offset)) {
+            newRelas.push_back(rela);
+        }
+    }
+    dbg::popTrace();
+    return newRelas;
 }
 void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -125,24 +149,20 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
                         virtualAddress, proc->pid);
             std::abort();
         }
-        if (proc->dynamicMapping) {
-            bool needsDynamicLinking =
-                proc->dynamicMapping->virtualStart != 0 &&
-                (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) >
-                    proc->dynamicMapping->virtualStart &&
-                proc->dynamicMapping->virtualStart >= base &&
-                (proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength) <=
-                    (base + PAGE_SIZE);
-            if (needsDynamicLinking) {
-                size_t beginDynamicHandling =
-                    std::max(proc->dynamicMapping->virtualStart,
-                             ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE));
-                size_t endDynamicHandling =
-                    std::min((proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength),
-                             ALIGNDOWN(proc->dynamicMapping->virtualStart, PAGE_SIZE) + PAGE_SIZE);
-                dbg::printm(MODULE, "TOOD: Dynamic mapping (From 0x%llx to 0x%llx)\n",
-                            beginDynamicHandling, endDynamicHandling);
+        std::vector<Elf64_Rela*> toHandleRelas = findRelasInPage(proc, base);
+        for (Elf64_Rela* rela : toHandleRelas) {
+            switch (ELF64_R_TYPE(rela->r_info)) {
+            case R_X86_64_RELATIVE: {
+                *(uint64_t*)(bufferAddr + (rela->r_offset & 0xFFF)) =
+                    proc->baseAddr + rela->r_addend;
+            } break;
+            default: {
+                dbg::printm(MODULE,
+                            "TODO: Handle rela 0x%llx type: %llu sym: %llu addend: 0x%llx\n",
+                            rela->r_offset, ELF64_R_TYPE(rela->r_info), ELF64_R_SYM(rela->r_info),
+                            rela->r_addend);
                 std::abort();
+            } break;
             }
         }
         uint64_t phys = mmu::pmm::allocate();
@@ -152,11 +172,7 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
         std::memcpy((void*)base, bufferAddr, PAGE_SIZE);
         mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), base);
         mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)bufferAddr);
-        mmu::pmm::free((uint64_t)bufferAddr);
-        dbg::printm(MODULE,
-                    "On demand map for process %llu 0x%llx to 0x%llx physical (using 0x%llx as "
-                    "temporary)\n",
-                    proc->pid, virtualAddress, phys, bufferAddr);
+        mmu::pmm::free((uint64_t)bufferAddr, PAGE_SIZE);
     }
     dbg::popTrace();
 }
@@ -199,8 +215,21 @@ void attachThread(pid_t pid, uint64_t entryPoint) {
         current->next = thread;
     }
 }
-void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<Mapping*> mappings,
-                    Mapping* dynamicMapping) {
+void __attribute__((section(".trampoline.text"))) defaultSignalHandler(size_t signal) {
+    switch (signal) {
+    case SIGABORT: {
+        cleanProc(getCurrentProc()->pid, 1);
+        nextProc();
+        __builtin_unreachable();
+    } break;
+    default: {
+        dbg::printm(MODULE, "TODO: Handle signal %lu\n", signal);
+        std::abort();
+    }
+    }
+}
+void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr baseAddr,
+                    std::vector<Mapping*> mappings, Elf64_Addr relaVirtual, Elf64_Xword relaSize) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
@@ -209,22 +238,12 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<
     proc->pid     = pid;
     proc->state   = ProcessState::Ready;
     proc->pml4    = mmu::vmm::getPML4(pid);
-    if (!dynamicMapping) {
-        dbg::printm(MODULE, "WARNING: No dynamic mapping section was passed in\n");
-    } else {
-        proc->dynamicMapping               = new ProcessMemoryMapping;
-        proc->dynamicMapping->fileIdx      = fileIdx;
-        proc->dynamicMapping->fileOffset   = dynamicMapping->fileOffset;
-        proc->dynamicMapping->memLength    = dynamicMapping->memLength;
-        proc->dynamicMapping->fileLength   = dynamicMapping->fileLength;
-        proc->dynamicMapping->permissions  = dynamicMapping->permissions;
-        proc->dynamicMapping->virtualStart = dynamicMapping->virtualStart;
-        proc->dynamicMapping->alignment    = dynamicMapping->alignment;
-        dbg::printm(MODULE, "Added dynamic mapping section spanning from 0x%llx to 0x%llx\n",
-                    proc->dynamicMapping->virtualStart,
-                    proc->dynamicMapping->virtualStart + proc->dynamicMapping->memLength);
+    proc->signals.insert({SIGABORT, (signalHandler)defaultSignalHandler});
+    if (!relaVirtual) {
+        dbg::printm(MODULE, "WARNING: No RELA address was passed in\n");
     }
-    proc->threads = nullptr;
+    proc->baseAddr = baseAddr;
+    proc->threads  = nullptr;
     for (Mapping* mapping : mappings) {
         ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
         memMapping->fileIdx              = fileIdx;
@@ -261,6 +280,18 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, std::vector<
         memMapping->next    = proc->memoryMapping;
         proc->memoryMapping = memMapping;
     }
+    if (relaVirtual) {
+        ProcessMemoryMapping* mapping = findMappingInProcess(proc, relaVirtual);
+        for (size_t i = 0; i < relaSize; i += sizeof(Elf64_Rela)) {
+            Elf64_Rela* rela = new Elf64_Rela;
+            vfs::seek(mapping->fileIdx, (relaVirtual - proc->baseAddr) + mapping->fileOffset +
+                                            i * sizeof(Elf64_Rela));
+            vfs::readFile(mapping->fileIdx, sizeof(Elf64_Rela), rela);
+            rela->r_offset += proc->baseAddr;
+            proc->relas.push_back(rela);
+        }
+        dbg::printm(MODULE, "Added %llu rela entries\n", proc->relas.size());
+    }
     if (globalParent == nullptr) {
         globalParent = proc;
     }
@@ -285,12 +316,16 @@ extern "C" uint64_t                       __trampoline_text_start;
 extern "C" uint64_t                       __trampoline_text_end;
 extern "C" uint64_t                       __trampoline_data_start;
 extern "C" uint64_t                       __trampoline_data_end;
+std::Spinlock                             currentProcLock;
+std::Spinlock                             currentThreadLock;
 extern "C" void                           printRegs(io::Registers* regs);
 void                                      nextProc() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
     }
+    currentProcLock.lock();
+    currentThreadLock.lock();
     Process* beginProc = currentProc;
     while (currentProc->state == ProcessState::Blocked ||
            currentProc->state == ProcessState::Zombie) {
@@ -299,8 +334,12 @@ void                                      nextProc() {
             dbg::printm(MODULE, "Ran out of processes to run\n");
             if (!zombieProcs.empty()) {
                 dbg::printm(MODULE, "No processes left to cleanup zombie procs\n");
+                std::abort();
             }
-            std::abort();
+            currentProcLock.unlock();
+            currentThreadLock.unlock();
+            dbg::popTrace();
+            return;
         }
         Thread* beginThread = currentProc->threads;
         while (currentProc->threads->status != ThreadStatus::Ready) {
@@ -347,10 +386,13 @@ void                                      nextProc() {
     // printRegs(currentThread->registers);
     // dbg::printf("\n");
     dbg::popTrace();
-    switchProc(currentThread->registers,
-                                                    reinterpret_cast<mmu::vmm::PML4*>(reinterpret_cast<uint64_t>(currentProc->pml4) -
-                                                                                      mmu::vmm::getHHDM()),
-                                                    currentThread->fsBase);
+    io::Registers*  regs = currentThread->registers;
+    mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(
+        reinterpret_cast<uint64_t>(currentProc->pml4) - mmu::vmm::getHHDM());
+    uint64_t fsBase = currentThread->fsBase;
+    currentProcLock.unlock();
+    currentThreadLock.unlock();
+    switchProc(regs, pml4, fsBase);
 }
 void printRfl(uint64_t rflags) {
     if (rflags & 0x00000001) dbg::print("CF ");
@@ -399,9 +441,29 @@ void sendSignal(Process* proc, size_t signal) {
         dbg::printm(MODULE, "Attempted to send invalid signal %llu\n", signal);
         std::abort();
     }
-    dbg::printm(MODULE, "TODO: Send signal\n");
-    std::abort();
     proc->signals.at(signal)(signal);
+}
+void cleanProc(pid_t pid, uint8_t exitCode) {
+    dbg::printf("TODO: Free process resources\n");
+    Process* exitProc = findProcByPID(pid);
+    dbg::printf("Process %u has exited (code %u)\n", exitProc->pid, exitCode);
+    if (exitProc->parent) {
+        if (exitProc->parent->waitingFor == exitProc->pid) {
+            exitProc->parent->waitingFor = 0;
+            exitProc->parent->waitStatus = exitCode;
+            unblockProcess(exitProc->parent);
+        }
+        sendSignal(exitProc->parent, SIGCHILD);
+    }
+    exitProc->state    = ProcessState::Zombie;
+    exitProc->exitCode = exitCode;
+    zombieProcs.push(exitProc);
+}
+void cleanThread(pid_t pid, pid_t tid, uint8_t exitCode) {
+    dbg::printf("TODO: Free thread resources\n");
+    Thread* exitThread   = findThreadByTID(pid, tid);
+    exitThread->status   = ThreadStatus::Dead;
+    exitThread->exitCode = exitCode;
 }
 size_t sysWriteScreen(syscall::SyscallRegs* regs) {
     syscall::SyscallRegs* tempRegs = new syscall::SyscallRegs;
@@ -437,6 +499,9 @@ extern "C" void                     syscallHandler(syscall::SyscallRegs* regs) {
     currentThread->registers->rflags   = regs->rflags;
     currentThread->registers->cr3      = regs->cr3;
     __asm__("mfence" : : : "memory");
+    // dbg::printf("\nRegs:\n");
+    // printRegs(regs);
+    // dbg::printf("\n");
     if (sysFunctions.find(regs->rax) == sysFunctions.end()) {
         printRegs(regs);
         dbg::printm(MODULE,

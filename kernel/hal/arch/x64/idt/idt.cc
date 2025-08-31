@@ -169,14 +169,14 @@ void handlePF(io::Registers* regs) {
     disablePageFaultProtection();
     PageFaultError  err  = *(PageFaultError*)(&regs->error_code);
     mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM());
-    dbg::printf("PPV: %hhu, "
-                "write: %hhu, "
-                "user: %hhu, "
-                "rsvw: %hhu, "
-                "insF: %hhu, "
-                "PKV: %hhu, "
-                "SS: %hhu\n",
-                err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
+    // dbg::printf("PPV: %hhu, "
+    //             "write: %hhu, "
+    //             "user: %hhu, "
+    //             "rsvw: %hhu, "
+    //             "insF: %hhu, "
+    //             "PKV: %hhu, "
+    //             "SS: %hhu\n",
+    //             err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
     if (err.PPV == 0) {
         uint64_t physicalCR2 = mmu::vmm::getPhysicalAddr(pml4, io::rcr2(), false, true);
         if (physicalCR2 == ONDEMAND_MAP_ADDRESS) {
@@ -192,7 +192,6 @@ void handlePF(io::Registers* regs) {
         dbg::printf("TODO: Handle other types of page faults!!!\n");
         std::abort();
     }
-    dbg::printf("Handled pagefault for address 0x%llx\n", io::rcr2() & PAGE_MASK);
     enablePageFaultProtection();
     io::sti();
     if (err.user) {

@@ -5,6 +5,7 @@
  */
 
 #include <common/dbg/dbg.h>
+#include <common/io/io.h>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -16,6 +17,9 @@
 #define MODULE "MMU HEAP"
 #define PMM_SIZE MEGABYTE
 #define VMM_MAX 2 * MEGABYTE
+static constexpr uint64_t PADDING_PATTERN    = 0xBEBEBEBEBEBEBEBEULL;
+static constexpr size_t   MINIMUM_ALIGN_SIZE = sizeof(mmu::heap::node);
+#define PRINT_PADDING 1
 
 namespace mmu::heap {
 static bool     __initialized = false;
@@ -23,139 +27,168 @@ static node*    __head        = nullptr;
 static uint64_t __pmmSize, __vmmMax;
 void            initialize(uint64_t pmm_size, uint64_t vmm_max) {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    __pmmSize         = pmm_size;
-    __vmmMax          = vmm_max;
-    uint64_t base     = pmm::allocVirtual(__pmmSize) + vmm::getHHDM();
-    __head            = (node*)base;
+    __pmmSize     = pmm_size;
+    __vmmMax      = vmm_max;
+    uint64_t base = pmm::allocVirtual(__pmmSize) + vmm::getHHDM();
+    __head        = (node*)base;
+    memset(__head->prePadding, PADDING_PATTERN & 0xFF, sizeof(__head->prePadding));
+    memset(__head->postPadding, PADDING_PATTERN & 0xFF, sizeof(__head->postPadding));
     __head->free      = true;
     __head->freedSize = 0;
-    __head->allocSize = pmm_size;
-    __head->size      = pmm_size;
+    __head->allocSize = pmm_size - sizeof(node);
+    __head->size      = pmm_size - sizeof(node);
     __head->next      = nullptr;
     __head->prev      = nullptr;
     __initialized     = true;
     dbg::popTrace();
 }
+static bool validateNode(const node* n) {
+    for (unsigned i = 0; i < 5; ++i) {
+        if (n->prePadding[i] != PADDING_PATTERN) {
+            return false;
+        }
+    }
+    for (unsigned i = 0; i < 5; ++i) {
+        if (n->postPadding[i] != PADDING_PATTERN) {
+            return false;
+        }
+    }
+    if (n->allocSize > n->size || n->freedSize > n->allocSize) {
+        return false;
+    }
+    return true;
+}
+void printNode(node* n) {
+    dbg::printm(MODULE, "Node %p:\n", n);
+    dbg::printm(MODULE, "  Size: %zu, Alloc: %zu, Freed: %zu\n", n->size, n->allocSize,
+                n->freedSize);
+    dbg::printm(MODULE, "  Status: %s\n", n->free ? "FREE" : "ALLOCATED");
+    dbg::printm(MODULE, "  Range: [%p, %p]\n", n,
+                reinterpret_cast<uint8_t*>(n) + sizeof(node) + n->size);
+#if PRINT_PADDING
+    dbg::printf("Pre padding:\n    ");
+    for (uint64_t i = 0; i < sizeof(n->prePadding); ++i) {
+        dbg::printf("%02.2hhx ", ((uint8_t*)n->prePadding)[i]);
+        if ((i + 1) % 8 == 0) {
+            dbg::printf("\n    ");
+        }
+    }
+    dbg::printf("Post padding:\n    ");
+    for (uint64_t i = 0; i < sizeof(n->postPadding); ++i) {
+        dbg::printf("%02.2hhx ", ((uint8_t*)n->postPadding)[i]);
+        if ((i + 1) % 8 == 0) {
+            dbg::printf("\n    ");
+        }
+    }
+#endif
+}
+static void sanityCheck() {
+    node* current = __head;
+    while (current) {
+        if (!validateNode(current)) {
+            dbg::printm(MODULE, "Invalid node at %p\n", current);
+            printNode(current);
+            std::abort();
+        }
+        if (current->next && current->next->prev != current) {
+            dbg::printm(MODULE, "Linked list corruption detected!\n");
+            std::abort();
+        }
+        current = current->next;
+    }
+}
 bool isInitialized() {
     return __initialized;
 }
+
 void* allocate(size_t size, size_t align) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize(PMM_SIZE, VMM_MAX);
     }
-    size_t ALIGN_SIZE    = align;
-    size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
-    node*  current       = __head;
-    while (current && current->next) {
-        if (current->free && current->next->free) {
-            current->size += sizeof(node) + current->next->size;
-            current->next = current->next->next;
-            if (current->next) {
-                current->next->prev = current;
-            }
-        } else {
-            current = current->next;
-        }
+    sanityCheck();
+    if (size == 0) {
+        dbg::printm(MODULE, "Allocation size cannot be zero\n");
+        return nullptr;
     }
-    current = __head;
+    if (align < MINIMUM_ALIGN_SIZE && (align & MINIMUM_ALIGN_SIZE) != 0) {
+        align = ALIGNUP(align, MINIMUM_ALIGN_SIZE);
+    }
+    size_t alignedSize = ALIGNUP(size, align);
+    node*  current     = __head;
     while (current) {
-        if (current->free && current->size >= alignedLength) {
-            if (current->size > alignedLength + sizeof(node)) {
-                node* newNode      = reinterpret_cast<node*>(reinterpret_cast<uint8_t*>(current) +
-                                                             sizeof(node) + alignedLength);
-                newNode->size      = current->size - alignedLength - sizeof(node);
-                newNode->free      = true;
-                newNode->next      = current->next;
-                newNode->prev      = current;
+        if (!validateNode(current)) {
+            dbg::printm(MODULE, "Corrupted block detected at %p\n", current);
+            printNode(current);
+            std::abort();
+        }
+        if (current->free && current->size >= alignedSize) {
+            if (current->size > alignedSize + sizeof(node)) {
+                node* newNode =
+                    reinterpret_cast<node*>((uint64_t)current + sizeof(node) + alignedSize);
                 newNode->freedSize = 0;
-                newNode->allocSize = current->size - alignedLength - sizeof(node);
-                if (current->next) {
-                    current->next->prev = newNode;
-                }
+                newNode->allocSize = current->size - alignedSize - sizeof(node);
+                newNode->size      = current->size - alignedSize - sizeof(node);
+                newNode->free      = true;
+                memset(newNode->prePadding, PADDING_PATTERN & 0xFF, sizeof(newNode->prePadding));
+                memset(newNode->postPadding, PADDING_PATTERN & 0xFF, sizeof(newNode->postPadding));
+
+                newNode->prev = current;
+                newNode->next = current->next;
                 current->next = newNode;
-                current->size = alignedLength;
+                if (newNode->next && newNode->next->prev) {
+                    newNode->next->prev = newNode;
+                }
             }
-            current->freedSize = 0;
-            current->allocSize = alignedLength;
+            current->allocSize = alignedSize;
+            current->size      = alignedSize;
             current->free      = false;
-            void* addr =
-                reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(current) + sizeof(node));
+            current->freedSize = 0;
+            sanityCheck();
             dbg::popTrace();
-            return addr;
+            return reinterpret_cast<void*>((uint64_t)current + sizeof(node));
         }
         current = current->next;
     }
-    dbg::printm(MODULE, "Could not find suitable block with size %ld\n", alignedLength);
-    dbg::printm(MODULE, "TODO: Extending of heap\n");
+    dbg::printm(MODULE, "TODO: Extend the heap to fit a block of size %llu\n", alignedSize);
     std::abort();
 }
 void free(void* ptr, size_t size, size_t align) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
-        dbg::printm(MODULE, "Called free before initialized\n");
+        dbg::printm(MODULE, "Free called before allocator initialized\n");
         std::abort();
     }
-    bool  found   = false;
-    node* current = __head;
-    while (current) {
-        if (!current->free && current->freedSize > current->allocSize) {
-            dbg::printm(MODULE, "current->free not set but freedSize > allocSize");
-            std::abort();
-        }
-        if (current == (node*)((uint64_t)ptr - sizeof(node))) {
-            found = true;
-            break;
-        }
-        current = current->next;
-    }
-    if (!found) {
-        dbg::printm(MODULE,
-                    "Tried freeing a node that was allocated elsewhere (ptr: 0x%llx ptr2: 0x%llx "
-                    "size: 0x%llx)\n",
-                    ptr, (uint64_t)ptr - sizeof(node), size);
+    sanityCheck();
+    if (!ptr) {
+        dbg::printm(MODULE, "Free called with nullptr\n");
         std::abort();
     }
-    size_t ALIGN_SIZE    = align;
-    size_t alignedLength = (size + ALIGN_SIZE - 1) & ~(ALIGN_SIZE - 1);
-    node*  freeNode      = reinterpret_cast<node*>((uintptr_t)ptr - sizeof(node));
-    if (freeNode->free) {
-        dbg::printm(MODULE, "Called free on an already free node\n");
+    node* block = reinterpret_cast<node*>((uintptr_t)ptr - sizeof(node));
+    if (!validateNode(block)) {
+        dbg::printm(MODULE, "Corrupted block detected at %p\n", block);
+        printNode(block);
         std::abort();
     }
-    if (freeNode->allocSize < alignedLength + freeNode->freedSize) {
-        dbg::printm(MODULE, "Called free with larger then supposed to size\n");
-        dbg::printm(
-            MODULE,
-            "Freenode allocSize: 0x%llx freedSize: 0x%llx size: 0x%llx calledSize: 0x%llx\n",
-            freeNode->allocSize, freeNode->freedSize, freeNode->size, size);
+    if (block->free) {
+        dbg::printm(MODULE, "Double free detected\n");
         std::abort();
     }
-    if (alignedLength == freeNode->size || alignedLength == 0) {
-        freeNode->freedSize = freeNode->allocSize;
-    } else {
-        freeNode->freedSize += alignedLength;
+    if (block->allocSize != block->size) {
+        dbg::printm(MODULE, "Corrupted block detected (block->allocSize != block->size)\n");
+        std::abort();
     }
-    current = __head;
-    while (current) {
-        if (current->freedSize == current->allocSize) {
-            current->freedSize = current->allocSize;
-            current->free      = true;
-        }
-        current = current->next;
+    size_t alignedSize = ALIGNUP(size, align);
+    if (alignedSize > block->allocSize - block->freedSize) {
+        dbg::printm(MODULE, "Invalid free size (requested = %zu, allocated = %zu)\n", alignedSize,
+                    block->allocSize);
+        std::abort();
     }
-    current = __head;
-    while (current && current->next) {
-        if (current->free && current->next->free) {
-            current->size += sizeof(node) + current->next->size;
-            current->next = current->next->next;
-            if (current->next) {
-                current->next->prev = current;
-            }
-        } else {
-            current = current->next;
-        }
+    block->freedSize += alignedSize;
+    if (block->freedSize == block->allocSize) {
+        block->free = true;
     }
+    sanityCheck();
     dbg::popTrace();
 }
 static size_t getNextPowerOfTwo(size_t size) {
@@ -167,10 +200,9 @@ static size_t getNextPowerOfTwo(size_t size) {
     return power;
 }
 static size_t getAlignSize(size_t size) {
-    const size_t CACHE_LINE_SIZE = 64;
-    size_t       alignedSize     = getNextPowerOfTwo(size);
-    if (alignedSize < CACHE_LINE_SIZE) {
-        alignedSize = CACHE_LINE_SIZE;
+    size_t alignedSize = getNextPowerOfTwo(size);
+    if (alignedSize < MINIMUM_ALIGN_SIZE) {
+        alignedSize = MINIMUM_ALIGN_SIZE;
     }
     return alignedSize;
 }
@@ -184,9 +216,10 @@ void free(void* ptr) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         dbg::printm(MODULE, "Called free before initialized\n");
-        std::abort();
+        return;
     }
-    free(ptr, 0);
+    node* block = reinterpret_cast<node*>((uintptr_t)ptr - sizeof(node));
+    free(ptr, block->allocSize);
     dbg::popTrace();
 }
 void printInfo() {
@@ -195,9 +228,9 @@ void printInfo() {
     node*    current = __head;
     while (current) {
         if (current->free) {
-            freeMemory += current->size;
+            freeMemory += current->freedSize == 0 ? current->size : current->freedSize;
         } else {
-            allocatedMemory += current->size;
+            allocatedMemory += current->allocSize;
         }
         blocks++;
         current = current->next;

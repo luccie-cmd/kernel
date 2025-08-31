@@ -7,6 +7,7 @@
 #include <../limine/limine.h>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/spinlock.h>
 #include <cstdlib>
 #include <cstring>
 #include <kernel/mmu/mmu.h>
@@ -25,6 +26,8 @@ limine_hhdm_request __attribute__((section(".limine_requests"))) hhdm_request = 
     .response = nullptr,
 };
 static std::unordered_map<pid_t, uint64_t> __CR3LookupTable;
+static std::Spinlock                       lookupSpinlock;
+static std::Spinlock                       mapSpinlock;
 void                                       initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (hhdm_request.response == nullptr) {
@@ -49,9 +52,12 @@ PML4* getPML4(task::pid_t pid) {
         __CR3LookupTable[pid] = io::rcr3();
     }
     if (__CR3LookupTable[pid] == 0) {
+        lookupSpinlock.lock();
         uint64_t cr3 = pmm::allocate();
         std::memset((void*)(cr3 + __HHDMoffset), 0, PAGE_SIZE);
         __CR3LookupTable[pid] = cr3;
+        lookupSpinlock.unlock();
+        dbg::printm(MODULE, "New CR3 for PID %lu: 0x%lx\n", pid, cr3);
     }
     uint64_t cr3 = __CR3LookupTable[pid];
     cr3 &= ~(0xfff);
@@ -87,6 +93,7 @@ static vmm_address getVMMfromVA(uint64_t vaddr) {
     return result;
 }
 void unmapPage(PML4* pml4, size_t virtualAddr) {
+    mapSpinlock.lock();
     virtualAddr &= ~(0xFFF);
     vmm_address vma = getVMMfromVA(virtualAddr);
     if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
@@ -111,6 +118,7 @@ void unmapPage(PML4* pml4, size_t virtualAddr) {
     pte[vma.pte].papn_ppn = 0;
     pte[vma.pte].present  = 0;
     io::invalpg((void*)virtualAddr);
+    mapSpinlock.unlock();
 }
 void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int map) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -119,14 +127,15 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     }
     virtualAddr &= ~(0xFFF);
     physicalAddr &= ~(0xFFF);
-    // dbg::printm(MODULE, "Mapping virtual address 0x%lx to physical address 0x%lx in CR3 %lp\n",
-    //             virtualAddr, physicalAddr, pml4);
+    dbg::printm(MODULE, "Mapping virtual address 0x%lx to physical address 0x%lx in CR3 %lp\n",
+                virtualAddr, physicalAddr, pml4);
     if (getPhysicalAddr(pml4, virtualAddr, true, false) == physicalAddr && physicalAddr != 0) {
         dbg::printm(MODULE,
                     "Attempted to double map address 0x%llx to 0x%llx (current address = 0x%llx)\n",
                     virtualAddr, physicalAddr, getPhysicalAddr(pml4, virtualAddr, true, false));
         std::abort();
     }
+    mapSpinlock.lock();
     vmm_address vma         = getVMMfromVA(virtualAddr);
     bool        kernelPage  = (prot & PROTECTION_KERNEL) != 0;
     bool        readWrite   = (prot & PROTECTION_RW) != 0;
@@ -208,6 +217,7 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     pte[vma.pte].ats1       = 0;
     pte[vma.pte].pkeys      = 0;
     io::invalpg((void*)virtualAddr);
+    mapSpinlock.unlock();
     dbg::popTrace();
 }
 void mapPage(size_t virtualAddr) {
@@ -218,6 +228,7 @@ void mapPage(size_t virtualAddr) {
     dbg::popTrace();
 }
 uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePresent) {
+    mapSpinlock.lock();
     dbg::addTrace(__PRETTY_FUNCTION__);
     addr = ALIGNDOWN(addr, PAGE_SIZE);
 
@@ -227,6 +238,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
             dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", addr);
         }
         dbg::popTrace();
+        mapSpinlock.unlock();
         return 0;
     }
     PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
@@ -235,6 +247,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
             dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", addr);
         }
         dbg::popTrace();
+        mapSpinlock.unlock();
         return 0;
     }
     PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
@@ -243,6 +256,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
             dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", addr);
         }
         dbg::popTrace();
+        mapSpinlock.unlock();
         return 0;
     }
     PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
@@ -251,10 +265,12 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
             dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", addr);
         }
         dbg::popTrace();
+        mapSpinlock.unlock();
         return 0;
     }
     uint64_t retAddr = pte[vma.pte].papn_ppn << 12;
     dbg::popTrace();
+    mapSpinlock.unlock();
     return retAddr;
 }
 

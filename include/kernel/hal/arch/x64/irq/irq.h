@@ -5,7 +5,9 @@
 
 namespace hal::arch::x64::irq
 {
-void init();
+void initLAPIC();
+void initIOAPIC();
+void procLocalInit(void*);
 // Overrides an IRQ that should always be on the same vector (PIT, PS/2, NIC)
 void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func);
 // Requests an  IRQ and returns its vector

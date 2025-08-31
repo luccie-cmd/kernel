@@ -50,11 +50,12 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     if (header->e_type == ET_DYN && PHDRAddend == 0) {
         delete header;
         dbg::popTrace();
-        return loadElfObject(handle, 0x401000);
+        return loadElfObject(handle, 0x400000);
     }
     ElfObject* obj     = new ElfObject;
     obj->type          = header->e_type;
     obj->entryPoint    = header->e_entry + PHDRAddend;
+    obj->baseAddr      = PHDRAddend;
     Elf64_Off phOffset = header->e_phoff;
     vfs::seek(handle, phOffset);
     Elf64_Half  phentsize = header->e_phentsize;
@@ -104,14 +105,6 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
         dbg::popTrace();
         return obj;
     }
-    task::Mapping* mapping = new task::Mapping;
-    mapping->fileLength    = dynPhdr->p_filesz;
-    mapping->fileOffset    = dynPhdr->p_offset;
-    mapping->memLength     = dynPhdr->p_memsz;
-    mapping->permissions   = PROTECTION_NOEXEC | PROTECTION_RW;
-    mapping->virtualStart  = dynPhdr->p_vaddr;
-    mapping->alignment     = dynPhdr->p_align;
-    obj->dynamicSection    = mapping;
     vfs::seek(handle, dynPhdr->p_offset);
     size_t                  entryCount = dynPhdr->p_filesz / sizeof(Elf64_Dyn);
     std::queue<Elf64_Xword> dtNeededEntries;
@@ -234,11 +227,12 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     if (relaVirtual == 0 || relaSize == 0) {
         dbg::printm(MODULE, "WARNING No rela found!\n");
     } else {
+        // obj->symtabVirtual = PHDRAddend + symtabVirtual;
+        // obj->hashVirtual = PHDRAddend + hashVirtual;
+        obj->relaVirtual = PHDRAddend + relaVirtual;
+        obj->relaSize    = relaSize;
         dbg::printm(MODULE, "TODO: Add symbol table address 0x%llx to ElfObject\n", symtabVirtual);
         dbg::printm(MODULE, "TODO: Add hash table address 0x%llx to ElfObject\n", hashVirtual);
-        dbg::printm(MODULE, "TODO: Add rela table address 0x%llx to ElfObject (%llu bytes)\n",
-                    relaVirtual, relaSize);
-        std::abort();
     }
     delete[] strtab;
     delete dynPhdr;

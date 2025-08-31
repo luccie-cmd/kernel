@@ -6,4 +6,3 @@ changeRSP:
     mov rsp, rdi
     push rdx
     ret
-    

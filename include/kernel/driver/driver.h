@@ -5,7 +5,7 @@
 #include <kernel/hal/pci/pci.h>
 
 namespace driver{
-    enum struct driverType : int {
+    enum struct driverType : uint64_t {
         BLOCK,
         FILESYSTEM,
         DISPLAY,

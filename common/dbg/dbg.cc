@@ -14,9 +14,9 @@ const char* messages[8192];
 uint16_t    messagesCount = 0;
 static void putchar(const char c) {
     io::outb(DBG_PORT, c);
-    if (displayDriver != nullptr) {
-        displayDriver->drawChar(0, c);
-    }
+    // if (displayDriver != nullptr) {
+    //     displayDriver->drawChar(0, c);
+    // }
 }
 static void puts(const char* str) {
     while (*str) {
@@ -44,11 +44,14 @@ static void puts(const char* str) {
 void print(const char* str) {
     puts(str);
 }
-char str[8192];
-void printv(const char* fmt, va_list args) {
+char          str[8192];
+std::Spinlock strLock;
+void          printv(const char* fmt, va_list args) {
+    strLock.lock();
     std::memset(str, 0, sizeof(str));
     std::vsnprintf(str, sizeof(str), fmt, args);
     print(str);
+    strLock.unlock();
 }
 void printf(const char* fmt, ...) {
     std::va_list args;
@@ -62,8 +65,10 @@ extern "C" void dbgPrintf(const char* fmt, ...) {
     printv(fmt, args);
     va_end(args);
 }
-char outStr[8192];
-void printm(const char* module, const char* fmt, ...) {
+char          outStr[8192];
+std::Spinlock outStrlock;
+void          printm(const char* module, const char* fmt, ...) {
+    outStrlock.lock();
     const char* fmtString = "%s: %s";
     std::memset(str, 0, sizeof(str));
     std::memset(outStr, 0, sizeof(outStr));
@@ -73,34 +78,36 @@ void printm(const char* module, const char* fmt, ...) {
     vsnprintf(outStr, sizeof(outStr), str, args);
     print(outStr);
     va_end(args);
+    outStrlock.unlock();
 }
-static const char* stackTraces[8192];
-static uint16_t    nstackTraces = 0;
-void               addTrace(const char* func) {
-    if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
-        std::memset(stackTraces, 0, sizeof(stackTraces));
-        nstackTraces = 0;
-        dbg::printf("ERROR: Too many stack traces\n");
-        std::abort();
-    }
-    stackTraces[nstackTraces++] = func;
+// static const char* stackTraces[8192];
+// static uint16_t    nstackTraces = 0;
+void addTrace(const char* func) {
+    (void)func;
+    // if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
+    //     std::memset(stackTraces, 0, sizeof(stackTraces));
+    //     nstackTraces = 0;
+    //     dbg::printf("ERROR: Too many stack traces\n");
+    //     std::abort();
+    // }
+    // stackTraces[nstackTraces++] = func;
 }
 void popTrace() {
-    if (nstackTraces == 0) {
-        dbg::printf("WARNING: Attempted to pop from empty stack trace\n");
-        return;
-    }
-    --nstackTraces;
+    // if (nstackTraces == 0) {
+    //     dbg::printf("WARNING: Attempted to pop from empty stack trace\n");
+    //     return;
+    // }
+    // --nstackTraces;
 }
 void printStackTrace() {
-    for (uint16_t i = 0; i < nstackTraces; ++i) {
-        const char* trace = stackTraces[i];
-        if (trace == nullptr) {
-            break;
-        }
-        print(trace);
-        putchar('\n');
-    }
+    // for (uint16_t i = 0; i < nstackTraces; ++i) {
+    //     const char* trace = stackTraces[i];
+    //     if (trace == nullptr) {
+    //         break;
+    //     }
+    //     print(trace);
+    //     putchar('\n');
+    // }
 }
 std::vector<const char*> getMessages() {
     return {};

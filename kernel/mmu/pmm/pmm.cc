@@ -48,18 +48,23 @@ void         initialize() {
 bool isInitialized() {
     return __initialized;
 }
-void free(uint64_t addr) {
-    dbg::addTrace(__PRETTY_FUNCTION__);
+void free(uint64_t addr, uint64_t size) {
+    size          = ALIGNUP(size, PAGE_SIZE);
+    node* newNode = (node*)(addr + mmu::vmm::getHHDM());
+    newNode->size = size;
     node* current = __head;
-    while (current->next != nullptr) {
+    node* prev    = nullptr;
+    while (current && current < newNode) {
+        prev    = current;
         current = current->next;
     }
-    node* newNode = (node*)(addr + vmm::getHHDM());
-    newNode->size = current->size;
-    newNode->next = current->next;
-    current->next = newNode;
-    allocatedPages -= 1;
-    dbg::popTrace();
+    newNode->next = current;
+    if (prev) {
+        prev->next = newNode;
+    } else {
+        __head = newNode;
+    }
+    allocatedPages -= size / PAGE_SIZE;
 }
 uint64_t allocVirtual(uint64_t size) {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -69,35 +74,6 @@ uint64_t allocVirtual(uint64_t size) {
     size          = ALIGNUP(size, PAGE_SIZE);
     node* current = __head;
     node* prev    = nullptr;
-    while (current) {
-        if (current->size == size) {
-            uint64_t addr = (uint64_t)current;
-            if (current->size > size) {
-                node* newNode = (node*)(addr + size);
-                newNode->size = current->size - size;
-                newNode->next = current->next;
-                if (prev != nullptr) {
-                    prev->next = newNode;
-                } else {
-                    __head = newNode;
-                }
-            } else {
-                if (prev != nullptr) {
-                    prev->next = current->next;
-                } else {
-                    __head = current->next;
-                }
-            }
-            allocatedPages += size / PAGE_SIZE;
-            dbg::printm(MODULE, "Perfect fit found, returning 0x%llx\n", addr - vmm::getHHDM());
-            dbg::popTrace();
-            return addr - vmm::getHHDM();
-        }
-        prev    = current;
-        current = current->next;
-    }
-    current = __head;
-    prev    = nullptr;
     while (current) {
         if (current->size >= size) {
             uint64_t addr = (uint64_t)current;

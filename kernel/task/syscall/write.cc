@@ -1,5 +1,6 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <cstdlib>
 #include <cstring>
 #include <kernel/mmu/mmu.h>
 #include <kernel/task/syscall.h>

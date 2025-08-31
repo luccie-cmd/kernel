@@ -13,15 +13,18 @@
 #include <kernel/objects/elf.h>
 #include <kernel/task/task.h>
 #include <kernel/vfs/vfs.h>
+#define STACK_SIZE 64
 
 drivers::DisplayDriver* displayDriver;
 extern void (*__init_array[])();
 extern void (*__init_array_end[])();
 
 void AbiCallCtors() {
+    dbg::addTrace(__PRETTY_FUNCTION__);
     for (std::size_t i = 0; &__init_array[i] != __init_array_end; i++) {
         __init_array[i]();
     }
+    dbg::popTrace();
 }
 
 extern "C" void changeRSP(uint64_t newRSP, uint64_t size);
@@ -38,17 +41,22 @@ extern "C" std::vector<std::pair<void*, const char*>> funcAddrTable;
 //     uint64_t size = vfs::getLen(mapHandle);
 // }
 
+limine_smp_request __attribute__((section(".limine_requests"))) smp_request = {
+    .id = LIMINE_SMP_REQUEST, .revision = 0, .response = nullptr, .flags = 0};
+
 extern "C" void KernelMain() {
+    io::cli();
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    uint64_t newRSP = mmu::pmm::allocVirtual(64 * PAGE_SIZE) + mmu::vmm::getHHDM();
-    changeRSP(newRSP, 64 * PAGE_SIZE - 16);
     AbiCallCtors();
-    if (!vfs::mount(0, 0, "/tmpboot")) {
-        dbg::printf("ERROR WHILE LOADING INIT (Unable to mount boot partition)\n");
-        std::abort();
+    uint64_t newRSP = mmu::pmm::allocVirtual(STACK_SIZE * PAGE_SIZE);
+    for (size_t i = 0; i < STACK_SIZE; ++i) {
+        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), newRSP + (i * PAGE_SIZE),
+                          newRSP + (i * PAGE_SIZE),
+                          PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
     }
-    // populateFuncAddrTable();
+    changeRSP(newRSP, STACK_SIZE * PAGE_SIZE - 64);
+    // populateFuncAddrTable();`
     displayDriver = new drivers::DisplayDriver();
     hal::arch::midInit();
     drivers::DisplayDriver* temp = reinterpret_cast<drivers::DisplayDriver*>(
@@ -57,6 +65,10 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
+    if (!vfs::mount(0, 0, "/tmpboot")) {
+        dbg::printf("ERROR WHILE LOADING INIT (Unable to mount boot partition)\n");
+        std::abort();
+    }
     if (!vfs::mount(0, 1, "/")) {
         dbg::printf("ERROR WHILE LOADING INIT (Unable to mount root partition)\n");
         std::abort();
@@ -72,8 +84,15 @@ extern "C" void KernelMain() {
         std::abort();
     }
     task::pid_t pid = task::getNewPID();
-    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->mappings,
-                         initObj->dynamicSection);
+    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->baseAddr, initObj->mappings,
+                         initObj->relaVirtual, initObj->relaSize);
+
+    for (size_t i = 0; i < smp_request.response->cpu_count; ++i) {
+        if (smp_request.response->bsp_lapic_id != smp_request.response->cpus[i]->lapic_id) {
+            smp_request.response->cpus[i]->goto_address =
+                (void (*)(limine_smp_info*))hal::arch::x64::irq::procLocalInit;
+        }
+    }
 
     while (true) {
         task::nextProc();

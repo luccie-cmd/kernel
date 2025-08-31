@@ -20,6 +20,10 @@ void __throw_bad_function_call() {
     dbg::printf("%s\n", __PRETTY_FUNCTION__);
     std::abort();
 }
+void __throw_system_error(int e) {
+    dbg::printf("%s:%d\n", __PRETTY_FUNCTION__, e);
+    std::abort();
+}
 void __throw_logic_error(char const* fmt) {
     dbg::printf("%s:%s\n", __PRETTY_FUNCTION__, fmt);
     std::abort();
