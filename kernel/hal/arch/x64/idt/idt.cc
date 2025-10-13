@@ -7,6 +7,7 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <common/io/regs.h>
+#include <common/spinlock.h>
 #include <cstdlib>
 #include <cstring>
 #include <kernel/hal/arch/x64/idt/idt.h>
@@ -64,7 +65,6 @@ void                                                         init() {
     for (uint8_t i = 0; i < 255; ++i) {
         enableGate(i);
     }
-    std::memset(exceptionHandlers, 0, sizeof(exceptionHandlers) / sizeof(exceptionHandlers[0]));
     enablePageFaultProtection();
     enableUDProtection();
     exceptionHandlers[3] = handleBP;
@@ -106,7 +106,9 @@ void printRfl(uint64_t rflags) {
     if (rflags & 0x80000000) dbg::print("AI ");
     dbg::print("\n");
 }
+std::Spinlock   printLock;
 extern "C" void printRegs(io::Registers* regs) {
+    printLock.lock();
     dbg::printf("\tv=0x%016.16llx e=0b%016.16llb\n", regs->interrupt_number, regs->error_code);
     dbg::printf("RAX=0x%016.16llx RBX=0x%016.16llx RCX=0x%016.16llx RDX=0x%016.16llx\n", regs->rax,
                 regs->rbx, regs->rcx, regs->rdx);
@@ -125,6 +127,7 @@ extern "C" void printRegs(io::Registers* regs) {
     dbg::printf("GS =0x%02.2llx\n", regs->gs);
     dbg::printf("SS =0x%02.2llx\n", regs->ss);
     dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
+    printLock.unlock();
 }
 extern "C" void handleInt(io::Registers* regs) {
     if (regs->interrupt_number < 0x20) {
@@ -166,7 +169,6 @@ static mmu::vmm::vmm_address getVMMfromVA(uint64_t vaddr) {
 }
 void handlePF(io::Registers* regs) {
     io::cli();
-    disablePageFaultProtection();
     PageFaultError  err  = *(PageFaultError*)(&regs->error_code);
     mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM());
     // dbg::printf("PPV: %hhu, "
@@ -183,16 +185,33 @@ void handlePF(io::Registers* regs) {
             task::mapProcess(reinterpret_cast<mmu::vmm::PML4*>(regs->cr3 + mmu::vmm::getHHDM()),
                              io::rcr2());
         } else {
+            dbg::printf("PPV: %hhu, "
+                        "write: %hhu, "
+                        "user: %hhu, "
+                        "rsvw: %hhu, "
+                        "insF: %hhu, "
+                        "PKV: %hhu, "
+                        "SS: %hhu\n",
+                        err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
+            printRegs(regs);
             dbg::printf("TODO: Exit program as it has attempted to use an invalid address 0x%llx "
                         "(Physical 0x%llx)\n",
                         io::rcr2(), physicalCR2);
             std::abort();
         }
     } else {
+        dbg::printf("PPV: %hhu, "
+                    "write: %hhu, "
+                    "user: %hhu, "
+                    "rsvw: %hhu, "
+                    "insF: %hhu, "
+                    "PKV: %hhu, "
+                    "SS: %hhu\n",
+                    err.PPV, err.write, err.user, err.rsvw, err.insF, err.PKV, err.SS);
+        printRegs(regs);
         dbg::printf("TODO: Handle other types of page faults!!!\n");
         std::abort();
     }
-    enablePageFaultProtection();
     io::sti();
     if (err.user) {
         task::nextProc();

@@ -41,14 +41,14 @@ void operator delete[](void* ptr) {
     mmu::heap::free(ptr);
     dbg::popTrace();
 }
-void operator delete(void* ptr, size_t size) {
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    mmu::heap::free(ptr, size);
-    dbg::popTrace();
-}
 void operator delete(void* ptr) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     mmu::heap::free(ptr);
+    dbg::popTrace();
+}
+void operator delete(void* ptr, size_t size) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    mmu::heap::free(ptr, size);
     dbg::popTrace();
 }
 void operator delete(void* ptr, size_t size, std::align_val_t align) {

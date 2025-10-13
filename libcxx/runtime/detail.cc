@@ -1,6 +1,7 @@
+#include <bits/hashtable_policy.h>
 #include <hashtable.h>
 
-extern const unsigned long __prime_list[] = // 256 + 1 or 256 + 48 + 1
+const unsigned long __prime_list[] = // 256 + 1 or 256 + 48 + 1
     {2ul,          3ul,          5ul,          7ul,          11ul,         13ul,
      17ul,         19ul,         23ul,         29ul,         31ul,         37ul,
      41ul,         43ul,         47ul,         53ul,         59ul,         61ul,

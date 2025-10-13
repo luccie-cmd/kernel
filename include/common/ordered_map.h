@@ -1,13 +1,17 @@
 #if !defined(_ASSEMBLER_ORDERED_MAP_H_)
 #define _ASSEMBLER_ORDERED_MAP_H_
 #include <cstdio>
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
+namespace std {
 template <typename Key, typename Value>
 class OrderedMap {
   public:
-    OrderedMap() {}
+    OrderedMap() {
+        this->_M_values = {};
+    }
     OrderedMap(std::initializer_list<std::pair<Key, Value>> pairs) {
         this->_M_values = pairs;
     }
@@ -33,7 +37,7 @@ class OrderedMap {
         return _M_values.size();
     }
     bool contains(Key k) {
-        for (std::pair<Key, Value>& kvPair : _M_values) {
+        for (std::pair<Key, Value> kvPair : _M_values) {
             if (kvPair.first == k) {
                 return true;
             }
@@ -50,5 +54,6 @@ class OrderedMap {
   private:
     std::vector<std::pair<Key, Value>> _M_values;
 };
+} // namespace std
 
 #endif // _ASSEMBLER_ORDERED_MAP_H_

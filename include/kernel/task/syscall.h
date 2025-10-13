@@ -8,7 +8,7 @@
 
 namespace task::syscall {
 struct SyscallRegs {
-    uint64_t rbx, rip, rdx, rbp, rsi, rdi, r8, r9, r10, rflags, r12, r13, r14, r15, cr3, rax;
+    uint64_t rbx, rip, rdx, rbp, rsi, rdi, r8, r9, rflags, r12, r13, r14, r15, rax;
 } __attribute__((packed));
 size_t sysWrite(SyscallRegs* regs);
 size_t sysExit(SyscallRegs* regs);

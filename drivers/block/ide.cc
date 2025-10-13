@@ -283,16 +283,14 @@ bool IDEDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, volatile uin
                         lba + sectors, sectors);
             std::abort();
         }
-        // __asm__ volatile("pushw %ax" : : : "memory");
-        // __asm__ volatile("mov %es, %ax" : : : "memory", "ax");
-        // __asm__ volatile("pushw %ax" : : : "memory");
-        // __asm__ volatile("mov %%ax, %%es" : : "a"(0x10) : "memory", "ax");
+        // __asm__ volatile("pushw %%ax" : : : "memory");
+        // __asm__ volatile("mov %%es, %%ax" : : : "memory", "ax");
+        // __asm__ volatile("pushw %%ax" : : : "memory");
+        // __asm__ volatile("mov %%ax, %%es" : : "a"(0x10) : "memory");
         __asm__ volatile("rep insw" : : "c"(words), "d"(bus), "D"(buffer) : "memory");
-        // __asm__ volatile("popw %ax" : : : "memory", "ax");
-        // __asm__ volatile("mov %ax, %es" : : : "memory", "ax");
-        // __asm__ volatile("popw %ax" : : : "memory", "ax");
-        forceReadVolatile(words);
-        forceReadVolatile(bus);
+        // __asm__ volatile("popw %%ax" : : : "memory", "ax");
+        // __asm__ volatile("mov %%ax, %%es" : : : "memory", "ax");
+        // __asm__ volatile("popw %%ax" : : : "memory", "ax");
         forceReadVolatile(buffer);
         buffer = (volatile uint8_t*)((uint8_t*)buffer + (words * 2));
     }
@@ -371,14 +369,15 @@ bool IDEDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffe
                         lba + sectors, sectors);
             std::abort();
         }
-        __asm__ volatile("pushw %ax");
-        __asm__ volatile("mov %ds, %ax");
-        __asm__ volatile("pushw %ax");
-        __asm__ volatile("mov %%ax, %%ds" : : "a"(0x10));
+        // __asm__ volatile("pushw %ax");
+        // __asm__ volatile("mov %ds, %ax");
+        // __asm__ volatile("pushw %ax");
+        // __asm__ volatile("mov %%ax, %%ds" : : "a"(0x10));
         __asm__ volatile("rep outsw" : : "c"(words), "d"(bus), "S"(buffer));
-        __asm__ volatile("popw %ax");
-        __asm__ volatile("mov %ax, %ds");
-        __asm__ volatile("popw %ax");
+        // __asm__ volatile("popw %ax");
+        // __asm__ volatile("mov %ax, %ds");
+        // __asm__ volatile("popw %ax");
+        forceReadVolatile(buffer);
         buffer = (void*)((uint8_t*)buffer + (words * 2));
     }
     this->writeReg(channel, ATA_REG_COMMAND,
@@ -436,11 +435,11 @@ void IDEDriver::readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t 
     if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, 0x80 | channels[channel].nIEN);
     }
-    __asm__ volatile("pushw %ax");
-    __asm__ volatile("mov %es, %ax");
-    __asm__ volatile("pushw %ax");
-    __asm__ volatile("mov %ds, %ax");
-    __asm__ volatile("mov %ax, %es");
+    // __asm__ volatile("pushw %ax");
+    // __asm__ volatile("mov %es, %ax");
+    // __asm__ volatile("pushw %ax");
+    // __asm__ volatile("mov %ds, %ax");
+    // __asm__ volatile("mov %ax, %es");
     if (reg < 0x08) {
         io::insl(channels[channel].base + reg - 0x00, buffer, quads);
     } else if (reg < 0x0C) {
@@ -450,9 +449,9 @@ void IDEDriver::readBuffer(uint8_t channel, uint8_t reg, void* buffer, uint32_t 
     } else if (reg < 0x16) {
         io::insl(channels[channel].bmide + reg - 0x0E, buffer, quads);
     }
-    __asm__ volatile("popw %ax");
-    __asm__ volatile("mov %ax, %es");
-    __asm__ volatile("popw %ax");
+    // __asm__ volatile("popw %ax");
+    // __asm__ volatile("mov %ax, %es");
+    // __asm__ volatile("popw %ax");
     if (reg > 0x07 && reg < 0x0C) {
         this->writeReg(channel, ATA_REG_CONTROL, channels[channel].nIEN);
     }

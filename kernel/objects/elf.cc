@@ -78,6 +78,7 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
             mapping->fileLength    = phdr->p_filesz;
             mapping->fileOffset    = phdr->p_offset;
             mapping->memLength     = phdr->p_memsz;
+            mapping->permissions   = 0;
             if ((phdr->p_flags & PF_X) == 0) {
                 mapping->permissions |= PROTECTION_NOEXEC;
             }

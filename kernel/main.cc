@@ -44,19 +44,30 @@ extern "C" std::vector<std::pair<void*, const char*>> funcAddrTable;
 limine_smp_request __attribute__((section(".limine_requests"))) smp_request = {
     .id = LIMINE_SMP_REQUEST, .revision = 0, .response = nullptr, .flags = 0};
 
+extern "C" void initX64();
+
 extern "C" void KernelMain() {
+    initX64();
+    AbiCallCtors();
     io::cli();
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    AbiCallCtors();
-    uint64_t newRSP = mmu::pmm::allocVirtual(STACK_SIZE * PAGE_SIZE);
+    uint64_t base = mmu::pmm::allocVirtual((STACK_SIZE + 2) * PAGE_SIZE);
+    dbg::printf("Stack guard low: 0x%lx", base);
+    dbg::printf("Stack guard high: 0x%lx", base + (STACK_SIZE + 1) * PAGE_SIZE);
+    mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), base, base,
+                      PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, 0);
+    mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), base + (STACK_SIZE + 1) * PAGE_SIZE,
+                      base + (STACK_SIZE + 1) * PAGE_SIZE,
+                      PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, 0);
     for (size_t i = 0; i < STACK_SIZE; ++i) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), newRSP + (i * PAGE_SIZE),
-                          newRSP + (i * PAGE_SIZE),
+        uint64_t va = base + PAGE_SIZE + (i * PAGE_SIZE);
+        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), va, va,
                           PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
     }
-    changeRSP(newRSP, STACK_SIZE * PAGE_SIZE - 64);
-    // populateFuncAddrTable();`
+    uint64_t newRSP = base + PAGE_SIZE;
+    changeRSP(newRSP, STACK_SIZE * PAGE_SIZE - 256);
+    // populateFuncAddrTable();
     displayDriver = new drivers::DisplayDriver();
     hal::arch::midInit();
     drivers::DisplayDriver* temp = reinterpret_cast<drivers::DisplayDriver*>(

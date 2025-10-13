@@ -5,6 +5,9 @@
  */
 
 #include <common/dbg/dbg.h>
+#include <common/io/io.h>
+#include <common/spinlock.h>
+#include <cstdlib>
 #include <kernel/hal/arch/x64/gdt/gdt.h>
 #include <kernel/mmu/mmu.h>
 #define GDT_ACCESS_ACCESSED 1 << 0
@@ -32,69 +35,110 @@
         0       /* base2 */                                                                        \
     }
 
-hal::arch::x64::gdt::TSS tss __attribute__((aligned(4096), section(".trampoline.data")));
-uint64_t __attribute__((section(".trampoline.data"))) tssRSP0;
+hal::arch::x64::gdt::TSS* tss = nullptr;
 namespace hal::arch::x64::gdt {
-static GDTEntry __attribute__((section(".trampoline.data"))) entries[] = {
-    GDT_ENTRY(0, 0),
-    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
-                  GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(0),
-              GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY), // Kernel 64 bit code
-    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(0),
-              GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // Kernel 64 bit data
-    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW | GDT_ACCESS_DPL(3),
-              GDT_FLAG_GRANULARITY | GDT_FLAG_SIZE), // User 64 bit data
-    GDT_ENTRY(GDT_ACCESS_PRESENT | GDT_ACCESS_REGULAR_SEGMENT | GDT_ACCESS_RW |
-                  GDT_ACCESS_EXECUTABLE | GDT_ACCESS_DPL(3),
-              GDT_FLAGS_LONG | GDT_FLAG_GRANULARITY), // User 64 bit code
-    {0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0},
-};
 void initTSS() {
-    uint32_t tss_limit = sizeof(TSS) - 1;
-    uint64_t tss_base  = reinterpret_cast<uint64_t>(&tss);
-    entries[5]         = {
-                .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
-                .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
-                .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
-                .access       = 0x89,
-                .limit_middle = 0,
-                .flags        = 0,
-                .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
-    };
-    entries[6] = {
-        .limit_low    = static_cast<uint16_t>(tss_base >> 32),
-        .base_low     = static_cast<uint16_t>(tss_base >> 48),
-        .base_middle  = 0,
-        .access       = 0,
-        .limit_middle = 0,
-        .flags        = 0,
-        .base_high    = 0,
-    };
-    tss.iomap_base = sizeof(TSS);
+    tss->iomap_base = sizeof(TSS);
 }
-extern "C" void loadGDT(uint64_t base, uint16_t limit);
+void setRSP0() {
+    uint64_t stack1Physical   = mmu::pmm::allocate();
+    uint64_t ISTstackPhysical = mmu::pmm::allocate();
+    tss->rsp0                 = stack1Physical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+    tss->ist1                 = ISTstackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
+    dbg::printf("Set TSS->RSP0 to physical address 0x%llx\n", tss->rsp0);
+    dbg::printf("Set TSS->IST1 to physical address 0x%llx\n", tss->ist1);
+}
+std::Spinlock initLock;
+struct GDTR {
+    uint16_t limit;
+    uint64_t base;
+} __attribute__((packed));
+extern "C" void loadGDT(GDTR* gdtr);
 void            init() {
-    tssRSP0 = 0;
+    initLock.lock();
+    GDTEntry* entries =
+        (GDTEntry*)(mmu::pmm::allocVirtual(7 * sizeof(GDTEntry)) + mmu::vmm::getHHDM());
+    tss                = (TSS*)(mmu::pmm::allocate() + mmu::vmm::getHHDM());
+    uint32_t tss_limit = sizeof(TSS) - 1;
+    uint64_t tss_base  = reinterpret_cast<uint64_t>(tss);
+    entries[0]         = GDT_ENTRY(0, 0);
+    entries[1]         = GDT_ENTRY(0x9A, 0xa); // Kernel 64 bit code
+    entries[2]         = GDT_ENTRY(0x93, 0xc); // Kernel 64 bit data
+    entries[3]         = GDT_ENTRY(0xFA, 0xa); // User 64 bit code
+    entries[4]         = GDT_ENTRY(0xF3, 0xc); // User 64 bit data
+    entries[5]         = {
+                           .limit_low    = static_cast<uint16_t>(tss_limit & 0xFFFF),
+                           .base_low     = static_cast<uint16_t>(tss_base & 0xFFFF),
+                           .base_middle  = static_cast<uint8_t>((tss_base >> 16) & 0xFF),
+                           .access       = 0x89,
+                           .limit_middle = static_cast<uint8_t>((tss_limit >> 16) & 0xF),
+                           .flags        = 0,
+                           .base_high    = static_cast<uint8_t>((tss_base >> 24) & 0xFF),
+    };
+
+    entries[6] = {
+                   .limit_low    = static_cast<uint16_t>((tss_base >> 32) & 0xFFFF),
+                   .base_low     = static_cast<uint16_t>((tss_base >> 48) & 0xFFFF),
+                   .base_middle  = 0,
+                   .access       = 0,
+                   .limit_middle = 0,
+                   .flags        = 0,
+                   .base_high    = 0,
+    };
+    GDTR* gdt  = (GDTR*)(mmu::pmm::allocate() + mmu::vmm::getHHDM());
+    gdt->base  = (uint64_t)entries;
+    gdt->limit = 7 * sizeof(GDTEntry) - 1;
     initTSS();
-    loadGDT((uint64_t)entries, sizeof(entries) - 1);
+    loadGDT(gdt);
+    setRSP0();
+    mapStacksToProc(KERNEL_PID, mmu::vmm::getPML4(KERNEL_PID));
+    initLock.unlock();
 }
-void setRSP0(task::pid_t pid) {
-    if (tssRSP0 == 0) {
-        uint64_t stackPhysical    = mmu::pmm::allocate();
-        uint64_t ISTstackPhysical = mmu::pmm::allocate();
-        tss.rsp0                  = stackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
-        tssRSP0                   = tss.rsp0;
-        tss.ist1                  = ISTstackPhysical + mmu::vmm::getHHDM() + PAGE_SIZE - 16;
-        dbg::printf("Set TSS.RSP0 to physical address 0x%llx\n", tss.rsp0);
-        dbg::printf("Set TSS.IST1 to physical address 0x%llx\n", tss.ist1);
-    }
+void mapStacksToProc(task::pid_t pid, mmu::vmm::PML4* pml4) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
+    GDTR     gdtr;
+    uint16_t tr;
+    __asm__ volatile("sgdt %0" : "=m"(gdtr));
+    __asm__ volatile("str %0" : "=a"(tr));
+    GDTEntry* tssEntryLow  = (GDTEntry*)((uint64_t*)(gdtr.base + tr));
+    GDTEntry* tssEntryHigh = (GDTEntry*)((uint64_t*)(gdtr.base + tr + 8));
+    GDTEntry* userCS       = (GDTEntry*)(gdtr.base + 0x18);
+    GDTEntry* userDS       = (GDTEntry*)(gdtr.base + 0x20);
+    GDTEntry* kernelCS     = (GDTEntry*)(gdtr.base + 0x08);
+    GDTEntry* kernelDS     = (GDTEntry*)(gdtr.base + 0x10);
+    dbg::printf("Kernel CS access, flags = %hx %hx\n", kernelCS->access, kernelCS->flags);
+    dbg::printf("Kernel DS access, flags = %hx %hx\n", kernelDS->access, kernelDS->flags);
+    dbg::printf("User CS access, flags = %hx %hx\n", userCS->access, userCS->flags);
+    dbg::printf("User DS access, flags = %hx %hx\n", userDS->access, userDS->flags);
+    dbg::printf("Mapping proc %llu (Checking: %s)\n", pid, pid != KERNEL_PID ? "true" : "false");
+    uint64_t tssValue =
+        ((uint64_t)tssEntryHigh->base_low << 48) | ((uint64_t)tssEntryHigh->limit_low << 32) |
+        ((uint64_t)tssEntryLow->base_high << 24) | ((uint64_t)tssEntryLow->base_middle << 16) |
+        ((uint64_t)tssEntryLow->base_low);
+    TSS* tempTss = (TSS*)(tssValue);
     if (pid != KERNEL_PID) {
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                          tss.rsp0 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
-        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), tss.ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                          tss.ist1 - PAGE_SIZE + 16, PROTECTION_RW, MAP_PRESENT);
+        if (mmu::vmm::getPhysicalAddr(pml4, (uint64_t)tempTss, false, false) == 0) {
+            mmu::vmm::mapPage(pml4, ((uint64_t)tempTss) - mmu::vmm::getHHDM(), (uint64_t)tempTss,
+                              PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
+        }
+        dbg::printf("Mapped GDTR.BASE: 0x%llx Actual GDTR.BASE: 0x%llx\n",
+                    mmu::vmm::getPhysicalAddr(pml4, gdtr.base, false, false), gdtr.base);
+        if (mmu::vmm::getPhysicalAddr(pml4, gdtr.base, false, false) == 0) {
+            mmu::vmm::mapPage(pml4, gdtr.base - mmu::vmm::getHHDM(), gdtr.base,
+                              PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
+        }
+        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->rsp0 - PAGE_SIZE + 16, false, false) == 0) {
+            mmu::vmm::mapPage(pml4, tempTss->rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                              tempTss->rsp0 - PAGE_SIZE + 16,
+                              PROTECTION_RW | PROTECTION_KERNEL | PROTECTION_NOEXEC, MAP_PRESENT);
+        }
+        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->ist1 - PAGE_SIZE + 16, false, false) == 0) {
+            mmu::vmm::mapPage(pml4, tempTss->ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
+                              tempTss->ist1 - PAGE_SIZE + 16,
+                              PROTECTION_RW | PROTECTION_KERNEL | PROTECTION_NOEXEC, MAP_PRESENT);
+        }
     }
+    dbg::popTrace();
 }
 }; // namespace hal::arch::x64::gdt
 

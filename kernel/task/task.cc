@@ -1,17 +1,19 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <common/spinlock.h>
+#include <cstdlib>
 #include <cstring>
 #include <kernel/hal/arch/x64/gdt/gdt.h>
+#include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/mmu.h>
 #include <kernel/task/syscall.h>
 #include <kernel/task/task.h>
 #include <kernel/vfs/vfs.h>
 #include <queue>
+
 #define MODULE "Task manager"
 
-uint64_t __attribute__((section(".trampoline.data")))  tempValue;
-uint64_t* __attribute__((section(".trampoline.data"))) tempStack;
+uint64_t __attribute__((section(".trampoline.data"))) tempValue;
 namespace task {
 bool                 initialized   = false;
 Process*             globalParent  = nullptr;
@@ -19,10 +21,24 @@ Process*             currentProc   = nullptr;
 Thread*              currentThread = nullptr;
 std::queue<Process*> zombieProcs;
 pid_t                pids = 1;
+std::Spinlock        currentProcLock;
+std::Spinlock        currentThreadLock;
+struct GSbase {
+    Thread*  currentThread; // 0x00
+    Process* currentProc;   // 0x08
+    uint64_t kernelCR3;     // 0x10
+    uint64_t stackTop;      // 0x18
+} __attribute__((packed));
+std::vector<GSbase*> cpuLocals;
 void                 initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     initialized = true;
-    pids        = 10;
+    cpuLocals.resize(hal::arch::x64::irq::getMaxCPUs());
+    for (size_t i = 0; i < hal::arch::x64::irq::getMaxCPUs(); ++i) {
+        cpuLocals.at(i) = (GSbase*)(mmu::pmm::allocate() + mmu::vmm::getHHDM());
+        cpuLocals.at(i)->kernelCR3 = (uint64_t)mmu::vmm::getPML4(KERNEL_PID) - mmu::vmm::getHHDM();
+    }
+    pids = 10;
     dbg::popTrace();
 }
 bool isInitialized() {
@@ -35,7 +51,9 @@ pid_t getNewPID() {
     return pids++;
 }
 static Process* findProcByPml4(mmu::vmm::PML4* pml4) {
+    currentProcLock.lock();
     if (currentProc->pml4 == pml4) {
+        currentProcLock.unlock();
         return currentProc;
     }
     Process* head = currentProc;
@@ -47,6 +65,7 @@ static Process* findProcByPml4(mmu::vmm::PML4* pml4) {
             std::abort();
         }
     }
+    currentProcLock.unlock();
     return head;
 }
 static Process* findProcByPID(pid_t pid) {
@@ -104,9 +123,13 @@ static std::vector<Elf64_Rela*> findRelasInPage(Process* proc, uint64_t virtualA
     dbg::popTrace();
     return newRelas;
 }
-void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
+std::Spinlock mapProcLock;
+void          mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
+    mapProcLock.lock();
     dbg::addTrace(__PRETTY_FUNCTION__);
-    Process*              proc    = findProcByPml4(pml4);
+    Process* proc = findProcByPml4(pml4);
+    proc->state   = ProcessState::Blocked;
+    cpuLocals.at(hal::arch::x64::irq::getAPICID())->currentThread->status = ThreadStatus::Blocked;
     ProcessMemoryMapping* mapping = findMappingInProcess(proc, virtualAddress);
     if (mapping == nullptr) {
         std::abort();
@@ -117,7 +140,7 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
     } else {
         uint8_t* bufferAddr = (uint8_t*)mmu::pmm::allocate();
         mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)bufferAddr, (uint64_t)bufferAddr,
-                          PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
+                                   PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
         size_t    remaining   = PAGE_SIZE;
         uintptr_t base        = ALIGNDOWN(virtualAddress, PAGE_SIZE);
         size_t    i           = 0;
@@ -144,9 +167,9 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
         }
         if ((permissions & PROTECTION_RW) == 0) {
             dbg::printm(MODULE,
-                        "ERROR: No read or write permissions set for virtual address 0x%llu in PID "
-                        "%llu. TOOD: sysExit\n",
-                        virtualAddress, proc->pid);
+                                 "ERROR: No read or write permissions set for virtual address 0x%llu in PID "
+                                          "%llu. TOOD: sysExit\n",
+                                 virtualAddress, proc->pid);
             std::abort();
         }
         std::vector<Elf64_Rela*> toHandleRelas = findRelasInPage(proc, base);
@@ -158,22 +181,25 @@ void mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
             } break;
             default: {
                 dbg::printm(MODULE,
-                            "TODO: Handle rela 0x%llx type: %llu sym: %llu addend: 0x%llx\n",
-                            rela->r_offset, ELF64_R_TYPE(rela->r_info), ELF64_R_SYM(rela->r_info),
-                            rela->r_addend);
+                                     "TODO: Handle rela 0x%llx type: %llu sym: %llu addend: 0x%llx\n",
+                                     rela->r_offset, ELF64_R_TYPE(rela->r_info), ELF64_R_SYM(rela->r_info),
+                                     rela->r_addend);
                 std::abort();
             } break;
             }
         }
         uint64_t phys = mmu::pmm::allocate();
         mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), phys, base,
-                          PROTECTION_KERNEL | permissions, MAP_PRESENT);
+                                   PROTECTION_KERNEL | permissions, MAP_PRESENT);
         mmu::vmm::mapPage(proc->pml4, phys, base, permissions, MAP_PRESENT);
         std::memcpy((void*)base, bufferAddr, PAGE_SIZE);
         mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), base);
         mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)bufferAddr);
         mmu::pmm::free((uint64_t)bufferAddr, PAGE_SIZE);
     }
+    cpuLocals.at(hal::arch::x64::irq::getAPICID())->currentThread->status = ThreadStatus::Ready;
+    proc->state = ProcessState::Ready;
+    mapProcLock.unlock();
     dbg::popTrace();
 }
 void attachThread(pid_t pid, uint64_t entryPoint) {
@@ -316,8 +342,6 @@ extern "C" uint64_t                       __trampoline_text_start;
 extern "C" uint64_t                       __trampoline_text_end;
 extern "C" uint64_t                       __trampoline_data_start;
 extern "C" uint64_t                       __trampoline_data_end;
-std::Spinlock                             currentProcLock;
-std::Spinlock                             currentThreadLock;
 extern "C" void                           printRegs(io::Registers* regs);
 void                                      nextProc() {
     dbg::addTrace(__PRETTY_FUNCTION__);
@@ -327,8 +351,27 @@ void                                      nextProc() {
     currentProcLock.lock();
     currentThreadLock.lock();
     Process* beginProc = currentProc;
-    while (currentProc->state == ProcessState::Blocked ||
-           currentProc->state == ProcessState::Zombie) {
+    bool     searching = true;
+    do {
+        if (currentProc->state != ProcessState::Blocked &&
+            currentProc->state != ProcessState::Zombie) {
+            Thread* beginThread = currentProc->threads;
+            Thread* candidate   = beginThread;
+            do {
+                if (candidate->status == ThreadStatus::Ready) {
+                    currentProc->threads = candidate;
+                    currentProc->state = ProcessState::Running;
+                    candidate->status  = ThreadStatus::Running;
+                    searching          = false;
+                    break;
+                }
+                candidate = candidate->next;
+            } while (candidate != beginThread);
+            if (!searching) {
+                break;
+            }
+            dbg::printm(MODULE, "No runnable threads in PID %lu, skipping\n", currentProc->pid);
+        }
         currentProc = currentProc->next;
         if (currentProc == beginProc) {
             dbg::printm(MODULE, "Ran out of processes to run\n");
@@ -341,16 +384,9 @@ void                                      nextProc() {
             dbg::popTrace();
             return;
         }
-        Thread* beginThread = currentProc->threads;
-        while (currentProc->threads->status != ThreadStatus::Ready) {
-            currentProc->threads = currentProc->threads->next;
-            if (currentProc->threads == beginThread) {
-                dbg::printm(MODULE, "Ran out of threads to run, switching to next process\n");
-                break;
-            }
-        }
-    }
-    currentThread         = currentProc->threads;
+    } while (searching);
+    currentThread = currentProc->threads;
+    dbg::printm(MODULE, "%lu %lu\n", currentProc->state, currentThread->status);
     currentProc->state    = ProcessState::Running;
     currentThread->status = ThreadStatus::Running;
     if (!currentProc->hasStarted) {
@@ -359,6 +395,10 @@ void                                      nextProc() {
         uint64_t trampoline_phys =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         while (trampoline_va < (uint64_t)&__trampoline_text_end) {
+            if (trampoline_phys == 0) {
+                dbg::printm(MODULE, "Unable to find trampoline physical address!!!\n");
+                std::abort();
+            }
             mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
                                                                    MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
@@ -369,14 +409,31 @@ void                                      nextProc() {
         trampoline_phys =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         while (trampoline_va < (uint64_t)&__trampoline_data_end) {
+            if (trampoline_phys == 0) {
+                dbg::printm(MODULE, "Unable to find trampoline physical address!!!\n");
+                std::abort();
+            }
             mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
                                                                    MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         }
-        hal::arch::x64::gdt::setRSP0(currentProc->pid);
     }
+    GSbase* gsbase = cpuLocals.at(hal::arch::x64::irq::getAPICID());
+    gsbase->currentProc   = currentProc;
+    gsbase->currentThread = currentThread;
+    if (gsbase->stackTop) {
+        mmu::pmm::free(gsbase->stackTop - mmu::vmm::getHHDM(), PAGE_SIZE);
+    }
+    gsbase->stackTop = mmu::pmm::allocate() + mmu::vmm::getHHDM();
+    if (mmu::vmm::getPhysicalAddr(currentProc->pml4, (uint64_t)gsbase, false, false) == 0) {
+        mmu::vmm::mapPage(currentProc->pml4, (uint64_t)gsbase - mmu::vmm::getHHDM(),
+                                                               (uint64_t)gsbase, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
+                                                               MAP_PRESENT);
+    }
+    io::wrmsr(0xC0000102, (uint64_t)gsbase);
+    hal::arch::x64::gdt::mapStacksToProc(currentProc->pid, currentProc->pml4);
     if ((mmu::vmm::getPhysicalAddr(currentProc->pml4, (uint64_t)switchProc & (~0xFFF), true)) ==
         0) {
         dbg::printm(MODULE, "switchProc(io::Registers*) became unmapped!!!\n");
@@ -385,11 +442,13 @@ void                                      nextProc() {
     // dbg::printm(MODULE, "Registers for PID %lu TID %lu\n", currentProc->pid, currentThread->tid);
     // printRegs(currentThread->registers);
     // dbg::printf("\n");
-    dbg::popTrace();
     io::Registers*  regs = currentThread->registers;
     mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(
         reinterpret_cast<uint64_t>(currentProc->pml4) - mmu::vmm::getHHDM());
     uint64_t fsBase = currentThread->fsBase;
+    dbg::printm(MODULE, "%lu: Choose proc %lu and tid %lu\n", hal::arch::x64::irq::getAPICID(),
+                                                     currentProc->pid, currentThread->tid);
+    dbg::popTrace();
     currentProcLock.unlock();
     currentThreadLock.unlock();
     switchProc(regs, pml4, fsBase);
@@ -413,18 +472,20 @@ void printRfl(uint64_t rflags) {
     if (rflags & 0x80000000) dbg::print("AI ");
     dbg::print("\n");
 }
-void printRegs(syscall::SyscallRegs* regs) {
-    dbg::printf("RAX=0x%016.16llx RBX=0x%016.16llx RDX=0x%016.16llx\n", regs->rax, regs->rbx,
-                regs->rdx);
+std::Spinlock printLock;
+void          printRegs(syscall::SyscallRegs* regs) {
+    printLock.lock();
+    dbg::printf("RBX=0x%016.16llx RDX=0x%016.16llx\n", regs->rbx, regs->rdx);
     dbg::printf("RSI=0x%016.16llx RDI=0x%016.16llx RBP=0x%016.16llx RSP=0x%016.16llx\n", regs->rsi,
-                regs->rdi, regs->rbp, tempValue);
-    dbg::printf("R8 =0x%016.16llx R9 =0x%016.16llx R10=0x%016.16llx\n", regs->r8, regs->r9,
-                regs->r10);
+                         regs->rdi, regs->rbp, tempValue);
+    dbg::printf("R8 =0x%016.16llx R9 =0x%016.16llx RAX=0x%016.16llx\n", regs->r8, regs->r9,
+                         regs->rax);
     dbg::printf("R12=0x%016.16llx R13=0x%016.16llx R14=0x%016.16llx R15=0x%016.16llx\n", regs->r12,
-                regs->r13, regs->r14, regs->r15);
+                         regs->r13, regs->r14, regs->r15);
     dbg::printf("RIP=0x%016.16llx RFL=", regs->rip);
     printRfl(regs->rflags);
-    dbg::printf("CR2=0x%016.16llx CR3=0x%016.16llx\n", io::rcr2(), regs->cr3);
+    dbg::printf("CR2=0x%016.16llx\n", io::rcr2());
+    printLock.unlock();
 }
 void unblockProcess(Process* proc) {
     dbg::printm(MODULE, "TODO: Unblock process %lu\n", proc->pid);
@@ -491,13 +552,11 @@ extern "C" void                     syscallHandler(syscall::SyscallRegs* regs) {
     currentThread->registers->orig_rsp = tempValue;
     currentThread->registers->r8       = regs->r8;
     currentThread->registers->r9       = regs->r9;
-    currentThread->registers->r10      = regs->r10;
     currentThread->registers->r12      = regs->r12;
     currentThread->registers->r13      = regs->r13;
     currentThread->registers->r14      = regs->r14;
     currentThread->registers->r15      = regs->r15;
     currentThread->registers->rflags   = regs->rflags;
-    currentThread->registers->cr3      = regs->cr3;
     __asm__("mfence" : : : "memory");
     // dbg::printf("\nRegs:\n");
     // printRegs(regs);
@@ -515,9 +574,11 @@ extern "C" void                     syscallHandler(syscall::SyscallRegs* regs) {
     nextProc();
 }
 Process* getCurrentProc() {
-    return currentProc;
+    GSbase* base = cpuLocals.at(hal::arch::x64::irq::getAPICID());
+    return base->currentProc;
 }
 Thread* getCurrentThread() {
-    return currentThread;
+    GSbase* base = cpuLocals.at(hal::arch::x64::irq::getAPICID());
+    return base->currentThread;
 }
 }; // namespace task

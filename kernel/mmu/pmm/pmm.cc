@@ -4,21 +4,23 @@
  * See the LICENSE file for more information.
  */
 
-#include <../limine/limine.h>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/spinlock.h>
 #include <cstdlib>
 #include <kernel/mmu/mmu.h>
+#include <limine.h>
 #define MODULE "MMU PMM"
 
 namespace mmu::pmm {
 static bool                                                        __initialized  = false;
 limine_memmap_request __attribute__((section(".limine_requests"))) memmap_request = {
     .id = LIMINE_MEMMAP_REQUEST, .revision = 0, .response = nullptr};
-static node* __head         = nullptr;
-uint64_t     total          = 0;
-uint64_t     allocatedPages = 0;
-void         initialize() {
+static node*  __head = nullptr;
+std::Spinlock headSpinlock;
+uint64_t      total          = 0;
+uint64_t      allocatedPages = 0;
+void          initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (memmap_request.response == nullptr) {
         dbg::printm(MODULE, "Bootloader failed to set memory map response\n");
@@ -49,6 +51,7 @@ bool isInitialized() {
     return __initialized;
 }
 void free(uint64_t addr, uint64_t size) {
+    headSpinlock.lock();
     size          = ALIGNUP(size, PAGE_SIZE);
     node* newNode = (node*)(addr + mmu::vmm::getHHDM());
     newNode->size = size;
@@ -65,12 +68,14 @@ void free(uint64_t addr, uint64_t size) {
         __head = newNode;
     }
     allocatedPages -= size / PAGE_SIZE;
+    headSpinlock.unlock();
 }
 uint64_t allocVirtual(uint64_t size) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
     }
+    headSpinlock.lock();
     size          = ALIGNUP(size, PAGE_SIZE);
     node* current = __head;
     node* prev    = nullptr;
@@ -94,7 +99,10 @@ uint64_t allocVirtual(uint64_t size) {
                 }
             }
             allocatedPages += size / PAGE_SIZE;
+            dbg::printStackTrace();
+            dbg::printm(MODULE, "Allocated address 0x%lx\n", addr - vmm::getHHDM());
             dbg::popTrace();
+            headSpinlock.unlock();
             return addr - vmm::getHHDM();
         }
         prev    = current;

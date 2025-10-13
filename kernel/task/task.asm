@@ -2,19 +2,27 @@ global switchProc
 global syscallEntry
 global jumpSignal
 extern kernelCR3
-extern tssRSP0
 extern tempValue
 extern syscallHandler
+section .trampoline.data
+global syscallSpinlock
+syscallSpinlock: db 0
+tempGdt:
+    .limit: dw 0
+    .base: dq 0
 section .trampoline.text
 syscallEntry:
+.loopSpinlock:
+    mov     r10b, 0x1
+    xchg BYTE [syscallSpinlock], r10b
+    test    r10b, r10b
+    jne .loopSpinlock
     mov [tempValue], rsp
-    mov rsp, [tssRSP0]
-    sub rsp, 8
+    swapgs
+    mov r10, gs:0x10
+    mov cr3, r10
+    mov rsp, gs:0x18
     push rax
-    mov rax, cr3
-    push rax
-    mov rax, [kernelCR3]
-    mov cr3, rax
 
     mov eax, 0x10
     mov ds, ax
@@ -28,7 +36,6 @@ syscallEntry:
     push r13
     push r12
     push r11
-    push r10
     push r9
     push r8
     push rdi
@@ -39,6 +46,7 @@ syscallEntry:
     push rbx
 
     lea rdi, [rsp]
+    mov BYTE [syscallSpinlock], 0
     jmp syscallHandler
     
 switchProc:
@@ -53,7 +61,7 @@ switchProc:
     or eax, 1
 	wrmsr
 
-    mov ax, 0x1B
+    mov ax, 0x23
     mov ds, ax
     mov es, ax
     mov fs, ax

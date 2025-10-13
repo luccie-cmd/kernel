@@ -1,5 +1,6 @@
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/spinlock.h>
 #include <cstdlib>
 #include <cstring>
 #include <kernel/mmu/mmu.h>
@@ -9,9 +10,11 @@
 #include <unistd.h>
 
 namespace task::syscall {
-size_t sysWrite(SyscallRegs* regs) {
+std::Spinlock writeLock;
+size_t        sysWrite(SyscallRegs* regs) {
     // TODO: Sanity checks
     dbg::addTrace(__PRETTY_FUNCTION__);
+    writeLock.lock();
     Process* currentProc   = getCurrentProc();
     Thread*  currentThread = getCurrentThread();
     size_t   fd            = regs->rdi;
@@ -30,7 +33,7 @@ size_t sysWrite(SyscallRegs* regs) {
             physicalAddr = mmu::vmm::getPhysicalAddr(currentProc->pml4, userBuffer, false, false);
         }
         mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), physicalAddr, userBuffer,
-                          PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
+                                 PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
         std::memcpy(buffer, (void*)userBuffer, (std::min(regs->rdx + 1, (uint64_t)PAGE_SIZE)));
         if ((int64_t)regs->rdx - PAGE_SIZE < 0) {
             regs->rdx = 0;
@@ -44,7 +47,9 @@ size_t sysWrite(SyscallRegs* regs) {
     } else {
         vfs::writeFile(fd, length, buffer);
     }
+    delete[] buffer;
     currentThread->status = ThreadStatus::Ready;
+    writeLock.unlock();
     dbg::popTrace();
     return length;
 }

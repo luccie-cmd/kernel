@@ -19,9 +19,7 @@ namespace std{
                 } while (tmp != 0);
             }
             void unlock() {
-                __asm__("mfence" : : : "memory");
                 this->state = 0;
-                __asm__("mfence" : : : "memory");
             }
         private:
             uint8_t state;

@@ -85,22 +85,22 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-nostdlib', '-ggdb']
-CONFIG["CFLAGS"] += ['-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto']
+CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] += ['-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-O3', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
 
 if "debug" in CONFIG.get("config"):
-    CONFIG["CFLAGS"] += ["-O1"]
+    CONFIG["CFLAGS"] += ["-O0"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
-    CONFIG["CFLAGS"] += ["-O3"]
+    CONFIG["CFLAGS"] += ["-O2"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
 if "x64" in CONFIG.get("arch"):
@@ -171,7 +171,7 @@ def buildCXX(file):
     #     compiler += "-11"
     options = CONFIG["CFLAGS"].copy()
     options += CONFIG["CXXFLAGS"].copy()
-    options.append("-std=c++23")
+    options.append("-std=c++26")
     command = compiler + " " + file
     for option in options:
         command += " " + option
@@ -218,21 +218,23 @@ def buildKernel(kernel_dir: str):
         str_paths = ""
         for incPath in CONFIG["INCPATHS"]:
             str_paths += f" {incPath}"
+        if CONFIG["compiler"] == "clang":
+            str_paths += ' -D__clang__'
         code, _ = callCmd(f"cpp {str_paths} -D_GLIBCXX_HOSTED=1 {file} -o ./tmp.txt", True)
         if code != 0:
             print(f"CPP failed to pre process {file}")
             exit(code)
         if not force_rebuild and compareFiles("./tmp.txt", os.path.abspath(f"./.build-cache/{basename}/cache/{file}")):
             continue
-        if getExtension(file) == "cc" or getExtension(file) == "c":
-            print(f"FMT   {file}")
-            callCmd(f"clang-format -i {file}")
         callCmd(f"mkdir -p {CONFIG['outDir'][0]}/{os.path.dirname(file)}")
         callCmd(f"mkdir -p ./.build-cache/{basename}/cache/{os.path.dirname(file)}")
         callCmd(f"cp ./tmp.txt ./.build-cache/{basename}/cache/{file}")
         code = 0
         CONFIG["CFLAGS"] += CONFIG["INCPATHS"]
         CONFIG["ASFLAGS"] += CONFIG["INCPATHS"]
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
         if getExtension(file) == "c":
             code = buildC(file)
         elif getExtension(file) == "asm":
@@ -254,7 +256,7 @@ def buildKernel(kernel_dir: str):
 def linkDir(kernel_dir, linker_file, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
     if "gcc" in CONFIG["compiler"]:
-        command = "g++-11"
+        command = "g++"
     else:
         command = "clang++ -fuse-ld=lld"
     options = CONFIG["LDFLAGS"]
@@ -324,7 +326,7 @@ def mountFs(device, boot, kernel, files):
     callCmd(f"sudo mkdir -p mnt/EFI/BOOT")
     callCmd(f"sudo cp {boot} mnt/EFI/BOOT")
     callCmd(f"sudo cp {kernel} mnt")
-    callCmd(f"sudo cp ../init/bin/init mnt")
+    callCmd(f"sudo cp ../init/bin/init.elf mnt/init")
     callCmd(f"sudo echo \"Hello, World\" > mnt/test.txt")
     for file in files:
         if os.path.isfile(file):
@@ -348,7 +350,7 @@ def buildImage(out_file, boot_file, kernel_file, files):
     makeFileSystem(LOOP_DEVICE)
     mountFs(LOOP_DEVICE, boot_file, kernel_file, files)
     if "limine-uefi" in CONFIG["bootloader"]:
-        callCmd(f"./limine/bin/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
+        callCmd(f"./Limine/bin/limine bios-install --no-gpt-to-mbr-isohybrid-conversion {out_file}")
 
 def buildStaticLib(directory, out_file):
     os.makedirs(CONFIG["outDir"][0]+'/'+directory, exist_ok=True)
@@ -370,9 +372,6 @@ def buildStaticLib(directory, out_file):
             exit(code)
         if not force_rebuild and compareFiles("./tmp.txt", os.path.abspath(f"./.build-cache/{basename}/cache/{file}")):
             continue
-        if getExtension(file) == "cc" or getExtension(file) == "c":
-            print(f"FMT   {file}")
-            callCmd(f"clang-format -i {file}")
         callCmd(f"mkdir -p {CONFIG['outDir'][0]}/{os.path.dirname(file)}")
         callCmd(f"mkdir -p ./.build-cache/{basename}/cache/{os.path.dirname(file)}")
         callCmd(f"cp ./tmp.txt ./.build-cache/{basename}/cache/{file}")
@@ -396,6 +395,10 @@ def buildStaticLib(directory, out_file):
         if code != 0:
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
+        
+        if getExtension(file) == "cc" or getExtension(file) == "c":
+            print(f"FMT   {file}")
+            callCmd(f"clang-format -i {file}")
 
     buildAR(f"{CONFIG["outDir"][0]}/{directory}", out_file)
 
@@ -407,24 +410,23 @@ def buildDir(directory, static_lib: bool, out_file="a.out"):
 
 def setupLimine():
     build_limine: bool = False
-    if not os.path.exists("limine"):
+    if not os.path.exists("Limine"):
         build_limine = True
-    elif not os.path.exists("limine/bin/BOOTX64.EFI"):
+    elif not os.path.exists("Limine/bin/BOOTX64.EFI"):
         build_limine = True
     if build_limine:
         print("Building limine")
         callCmd("rm -rf limine")
-        callCmd("git clone https://github.com/limine-bootloader/limine.git --depth=1", True)
-        callCmd("cp ./util/common.mk ./limine/common/common.mk")
-        os.chdir("limine")
+        callCmd("git clone https://codeberg.org/Limine/Limine --depth=1", True)
+        os.chdir("Limine")
         callCmd("./bootstrap")
         callCmd("./configure --enable-uefi-x86-64 --enable-bios")
         callCmd("make")
         os.chdir("..")
         callCmd("rm -rf ./limine/commands.txt")
     callCmd(f"cp ./util/limine.conf {CONFIG['outDir'][0]}/limine.conf")
-    callCmd(f"cp ./limine/bin/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
-    callCmd(f"cp ./limine/bin/BOOT* {CONFIG['outDir'][0]}/")
+    callCmd(f"cp ./Limine/bin/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
+    callCmd(f"cp ./Limine/bin/BOOT* {CONFIG['outDir'][0]}/")
 
 def getInfo():
     callCmd("rm -f info.txt")
@@ -493,9 +495,9 @@ def main():
         linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
         print("> Getting info")
         getInfo()
-        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
+        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test.elf"])
         # if os.path.exists("/dev/sda"):
-        #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test/hello"])
+        #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", [])
     if "run" in sys.argv:
         print("> Running QEMU")
         callCmd(f"./script/run.sh {CONFIG['outDir'][0]} {CONFIG['config'][0]}", True)

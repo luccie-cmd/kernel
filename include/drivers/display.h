@@ -1,7 +1,7 @@
 #if !defined(_KERNEL_DRIVER_DISPLAY_H_)
 #define _KERNEL_DRIVER_DISPLAY_H_
 #include <kernel/driver/driver.h>
-#include <limine/limine.h>
+#include <limine.h>
 #include <mutex>
 #include <common/spinlock.h>
 #include <utility>

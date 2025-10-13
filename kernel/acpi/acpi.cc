@@ -1,4 +1,3 @@
-#include <../limine/limine.h>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <cstdlib>
@@ -6,6 +5,7 @@
 #include <kernel/acpi/acpi.h>
 #include <kernel/acpi/tables.h>
 #include <kernel/mmu/vmm/vmm.h>
+#include <limine.h>
 #define MODULE "ACPI"
 
 namespace acpi {

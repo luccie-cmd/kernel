@@ -19,7 +19,7 @@ struct ProcessMemoryMapping {
     size_t                fileLength;
     size_t                memLength;
     size_t                fileIdx;
-    int                   permissions;
+    uint8_t                   permissions;
     ProcessMemoryMapping* next;
 };
 enum struct ThreadStatus {
@@ -68,7 +68,7 @@ struct Mapping {
     uint64_t memLength;
     uint64_t fileLength;
     uint64_t alignment;
-    int      permissions;
+    uint8_t      permissions;
 };
 void  initialize();
 bool  isInitialized();

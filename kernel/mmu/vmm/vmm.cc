@@ -4,16 +4,16 @@
  * See the LICENSE file for more information.
  */
 
-#include <../limine/limine.h>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
+#include <common/ordered_map.h>
 #include <common/spinlock.h>
 #include <cstdlib>
 #include <cstring>
 #include <kernel/mmu/mmu.h>
 #include <kernel/mmu/vmm/types.h>
 #include <kernel/task/task.h>
-#include <unordered_map>
+#include <limine.h>
 #define MODULE "MMU VMM"
 
 uint64_t __attribute__((section(".trampoline.data"))) kernelCR3;
@@ -25,10 +25,10 @@ limine_hhdm_request __attribute__((section(".limine_requests"))) hhdm_request = 
     .revision = 0,
     .response = nullptr,
 };
-static std::unordered_map<pid_t, uint64_t> __CR3LookupTable;
-static std::Spinlock                       lookupSpinlock;
-static std::Spinlock                       mapSpinlock;
-void                                       initialize() {
+static std::OrderedMap<pid_t, uint64_t> __CR3LookupTable;
+static std::Spinlock                    lookupSpinlock;
+static std::Spinlock                    mapSpinlock;
+void                                    initialize() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (hhdm_request.response == nullptr) {
         dbg::printm(MODULE, "Bootloader failed to set HHDM response\n");
@@ -48,18 +48,18 @@ PML4* getPML4(task::pid_t pid) {
     if (!isInitialized()) {
         initialize();
     }
-    if (pid == KERNEL_PID && __CR3LookupTable[pid] == 0) {
-        __CR3LookupTable[pid] = io::rcr3();
-    }
-    if (__CR3LookupTable[pid] == 0) {
-        lookupSpinlock.lock();
+    lookupSpinlock.lock();
+    bool found = __CR3LookupTable.contains(pid);
+    if (pid == KERNEL_PID && !found) {
+        __CR3LookupTable.insert_or_assign(pid, kernelCR3);
+    } else if (!found) {
         uint64_t cr3 = pmm::allocate();
         std::memset((void*)(cr3 + __HHDMoffset), 0, PAGE_SIZE);
-        __CR3LookupTable[pid] = cr3;
-        lookupSpinlock.unlock();
+        __CR3LookupTable.insert_or_assign(pid, cr3);
         dbg::printm(MODULE, "New CR3 for PID %lu: 0x%lx\n", pid, cr3);
     }
-    uint64_t cr3 = __CR3LookupTable[pid];
+    uint64_t cr3 = __CR3LookupTable.at(pid);
+    lookupSpinlock.unlock();
     cr3 &= ~(0xfff);
     cr3 += __HHDMoffset;
     dbg::popTrace();
@@ -96,6 +96,7 @@ void unmapPage(PML4* pml4, size_t virtualAddr) {
     mapSpinlock.lock();
     virtualAddr &= ~(0xFFF);
     vmm_address vma = getVMMfromVA(virtualAddr);
+    dbg::printm(MODULE, "Unmapping virtual address 0x%lx in CR3 %lp\n", virtualAddr, pml4);
     if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
         dbg::printm(MODULE, "Attempted to unmap page that has an unmapped pml4\n");
         std::abort();
@@ -115,8 +116,7 @@ void unmapPage(PML4* pml4, size_t virtualAddr) {
         dbg::printm(MODULE, "Attempted to unmap page that has an unmapped pte\n");
         std::abort();
     }
-    pte[vma.pte].papn_ppn = 0;
-    pte[vma.pte].present  = 0;
+    pte[vma.pte].present = 0;
     io::invalpg((void*)virtualAddr);
     mapSpinlock.unlock();
 }
@@ -162,11 +162,11 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
         uint64_t page = pmm::allocate();
         std::memset(reinterpret_cast<void*>(makeVirtual(page)), 0, PAGE_SIZE);
         pde[vma.pde].pte_ptr = page >> 12;
+        dbg::printf("New PTE pointer: 0x%lx\n", page);
         pde[vma.pde].present = 1;
     }
     PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
 
-    pml4[vma.pml4e].present    = presentMap;
     pml4[vma.pml4e].rw         = 1;
     pml4[vma.pml4e].user       = 1;
     pml4[vma.pml4e].no_execute = 0;
@@ -178,7 +178,6 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     pml4[vma.pml4e].ats0       = 0;
     pml4[vma.pml4e].ats1       = 0;
 
-    pdpe[vma.pdpe].present    = presentMap;
     pdpe[vma.pdpe].rw         = 1;
     pdpe[vma.pdpe].user       = 1;
     pdpe[vma.pdpe].no_execute = 0;
@@ -190,7 +189,6 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     pdpe[vma.pdpe].ats0       = 0;
     pdpe[vma.pdpe].ats1       = 0;
 
-    pde[vma.pde].present    = presentMap;
     pde[vma.pde].rw         = 1;
     pde[vma.pde].user       = 1;
     pde[vma.pde].no_execute = 0;
@@ -235,7 +233,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
     vmm_address vma = getVMMfromVA(addr);
     if (pml4[vma.pml4e].pdpe_ptr == 0 || (pml4[vma.pml4e].present == 0 && !ignorePresent)) {
         if (!silent) {
-            dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found\n", addr);
+            dbg::printm(MODULE, "No PDPE for virtual address 0x%llx found in %lp\n", addr, pml4);
         }
         dbg::popTrace();
         mapSpinlock.unlock();
@@ -244,7 +242,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
     PDPE* pdpe = reinterpret_cast<PDPE*>(makeVirtual(pml4[vma.pml4e].pdpe_ptr << 12));
     if (pdpe[vma.pdpe].pde_ptr == 0 || (pdpe[vma.pdpe].present == 0 && !ignorePresent)) {
         if (!silent) {
-            dbg::printm(MODULE, "No PDE for virtual address 0x%llx found\n", addr);
+            dbg::printm(MODULE, "No PDE for virtual address 0x%llx found in %lp\n", addr, pml4);
         }
         dbg::popTrace();
         mapSpinlock.unlock();
@@ -253,7 +251,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
     PDE* pde = reinterpret_cast<PDE*>(makeVirtual(pdpe[vma.pdpe].pde_ptr << 12));
     if (pde[vma.pde].pte_ptr == 0 || (pde[vma.pde].present == 0 && !ignorePresent)) {
         if (!silent) {
-            dbg::printm(MODULE, "No PTE for virtual address 0x%llx found\n", addr);
+            dbg::printm(MODULE, "No PTE for virtual address 0x%llx found in %lp\n", addr, pml4);
         }
         dbg::popTrace();
         mapSpinlock.unlock();
@@ -262,7 +260,7 @@ uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePres
     PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
     if (pte[vma.pte].papn_ppn == 0 || (pte[vma.pte].present == 0 && !ignorePresent)) {
         if (!silent) {
-            dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found\n", addr);
+            dbg::printm(MODULE, "No PAPN for virtual address 0x%llx found in %lp\n", addr, pml4);
         }
         dbg::popTrace();
         mapSpinlock.unlock();

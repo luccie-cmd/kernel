@@ -10,35 +10,39 @@ str0: db "Test123 %lx", 0x0a, 0
 %macro ISR_NOERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        swapgs
         push qword 0 ; dummy error code
         push qword %1 ; interrupt number
         push rax
         mov rax, cr3
         push rax
-        mov rax, [kernelCR3]
+        mov rax, gs:0x10
         mov cr3, rax
         call isrCommon
         pop rax
         mov cr3, rax
         pop rax
         add rsp, 16
+        swapgs
         iretq
 %endmacro
 
 %macro ISR_ERRORCODE 1
     global isrHandler%1:
     isrHandler%1:
+        swapgs
         push qword %1 ; interrupt number
         push rax
         mov rax, cr3
         push rax
-        mov rax, [kernelCR3]
+        mov rax, gs:0x10
         mov cr3, rax
         call isrCommon
         pop rax
         mov cr3, rax
         pop rax
         add rsp, 16
+        swapgs
         iretq
 %endmacro
 
@@ -331,7 +335,7 @@ isrCommon:
     mov ax, gs
     push rax
     
-    mov eax, 0x10
+    mov ax, 0x10
     mov ds, ax
     mov es, ax
     mov fs, ax

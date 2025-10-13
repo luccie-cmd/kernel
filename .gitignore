@@ -1,5 +1,5 @@
 bin/
-limine/
+Limine/
 .vscode/
 script/__pycache__/
 .build-cache/

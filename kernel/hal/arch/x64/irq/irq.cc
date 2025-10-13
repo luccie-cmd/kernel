@@ -40,7 +40,8 @@
 #define IOAPIC_REGISTER_REDIRECTION_BASE 0x10
 
 namespace hal::arch::x64::irq {
-uint64_t lapicAddr = 0;
+uint64_t        lapicAddr = 0;
+static uint32_t maxCPUs   = 0;
 
 struct IOApicDesc {
     uint64_t base;
@@ -132,8 +133,8 @@ static uint32_t getOverride(uint32_t IRQ) {
 }
 
 static uint32_t getIRQEntry(uint32_t IRQ) {
-    static OrderedMap<uint32_t, bool> usedIRQs;
-    uint32_t                          retIrq;
+    static std::OrderedMap<uint32_t, bool> usedIRQs;
+    uint32_t                               retIrq;
     if (IRQ == static_cast<uint32_t>(-1)) {
         retIrq = usedIRQs.size();
     } else {
@@ -146,7 +147,7 @@ static uint32_t getIRQEntry(uint32_t IRQ) {
     return retIrq;
 }
 
-static OrderedMap<uint64_t, std::function<void(io::Registers*)>> IRQFunctions;
+static std::OrderedMap<uint64_t, std::function<void(io::Registers*)>> IRQFunctions;
 
 void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
     uint32_t newIRQ = getIRQEntry(IRQ);
@@ -172,6 +173,14 @@ uint8_t requestIrq(std::function<void(io::Registers*)> func) {
 
 static void lapicSendEOI() {
     lapicWrite(LAPIC_EOI_REGISTER, 0);
+}
+
+uint32_t getMaxCPUs() {
+    return maxCPUs;
+}
+
+uint32_t getAPICID() {
+    return (uint32_t)lapicRead(LAPIC_ID_REGISTER);
 }
 
 extern "C" void printRegs(io::Registers*);
@@ -240,10 +249,13 @@ void initLAPIC() {
         switch (entry->entry_type) {
         case MADT_ENTRY_TYPE_LAPIC: {
             acpi::MADTLAPIC* lapic = reinterpret_cast<acpi::MADTLAPIC*>(entry);
+            maxCPUs                = std::max(maxCPUs, (uint32_t)lapic->acpi_processor_id + 1);
             if ((lapic->flags & 1) ^ ((lapic->flags >> 1) & 1)) {
                 setAPICBase(getAPICBase());
                 lapicWrite(LAPIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER,
                            lapicRead(LAPIC_SPURIOUS_INTERRUPT_VECTOR_REGISTER) | 0x100);
+                lapicWrite(LAPIC_LVT_TIMER_REGISTER,
+                           lapicRead(LAPIC_LVT_TIMER_REGISTER) | (1 << 16));
             }
         } break;
         case MADT_ENTRY_TYPE_PROCESSOR_LOCAL_X2APIC: {
@@ -272,5 +284,15 @@ void initLAPIC() {
     }
     dbg::printm(MODULE, "Initialized\n");
     dbg::popTrace();
+}
+void sendIPIs(uint8_t vector) {
+    (void)vector;
+    // for (size_t i = 0; i < maxCPUs - 1; ++i) {
+    //     lapicWrite(LAPIC_INTERRUPT_COMMAND_REGISTER, i << 24);
+    //     lapicWrite(LAPIC_INTERRUPT_COMMAND_REGISTER + 0x10, vector | (0 << 8));
+    //     while (lapicRead(LAPIC_INTERRUPT_COMMAND_REGISTER) & (1 << 12)) {
+    //         asm volatile("pause");
+    //     }
+    // }
 }
 }; // namespace hal::arch::x64::irq

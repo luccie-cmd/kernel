@@ -2,9 +2,7 @@ bits 64
 section .text
 global loadGDT
 loadGDT:
-    mov [rel GDT.limit], rsi
-    mov [rel GDT.base], rdi
-    lgdt [rel GDT]
+    lgdt [rdi]
     ; Reload segments to kernel cs and ds.
 .reloadSegments:
     push 0x08
@@ -21,9 +19,3 @@ loadGDT:
     mov ax, 0x28
     ltr ax
     ret
-
-section .trampoline.data
-global GDT
-GDT:
-    .limit: dw 0
-    .base: dq 0

@@ -41,8 +41,11 @@ static void puts(const char* str) {
     //     messagesCount = 0;
     // }
 }
-void print(const char* str) {
+std::Spinlock printLock;
+void          print(const char* str) {
+    printLock.lock();
     puts(str);
+    printLock.unlock();
 }
 char          str[8192];
 std::Spinlock strLock;
@@ -69,20 +72,22 @@ char          outStr[8192];
 std::Spinlock outStrlock;
 void          printm(const char* module, const char* fmt, ...) {
     outStrlock.lock();
+    strLock.lock();
     const char* fmtString = "%s: %s";
     std::memset(str, 0, sizeof(str));
     std::memset(outStr, 0, sizeof(outStr));
-    snprintf(str, sizeof(str), fmtString, module, fmt);
+    std::snprintf(str, sizeof(str), fmtString, module, fmt);
     va_list args;
     va_start(args, fmt);
-    vsnprintf(outStr, sizeof(outStr), str, args);
+    std::vsnprintf(outStr, sizeof(outStr), str, args);
     print(outStr);
     va_end(args);
+    strLock.unlock();
     outStrlock.unlock();
 }
-// static const char* stackTraces[8192];
-// static uint16_t    nstackTraces = 0;
-void addTrace(const char* func) {
+static const char* stackTraces[8192];
+static uint16_t    nstackTraces = 0;
+void               addTrace(const char* func) {
     (void)func;
     // if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
     //     std::memset(stackTraces, 0, sizeof(stackTraces));
@@ -100,14 +105,14 @@ void popTrace() {
     // --nstackTraces;
 }
 void printStackTrace() {
-    // for (uint16_t i = 0; i < nstackTraces; ++i) {
-    //     const char* trace = stackTraces[i];
-    //     if (trace == nullptr) {
-    //         break;
-    //     }
-    //     print(trace);
-    //     putchar('\n');
-    // }
+    for (uint16_t i = 0; i < nstackTraces; ++i) {
+        const char* trace = stackTraces[i];
+        if (trace == nullptr) {
+            break;
+        }
+        print(trace);
+        putchar('\n');
+    }
 }
 std::vector<const char*> getMessages() {
     return {};

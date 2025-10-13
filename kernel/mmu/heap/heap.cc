@@ -31,8 +31,8 @@ void            initialize(uint64_t pmm_size, uint64_t vmm_max) {
     __vmmMax      = vmm_max;
     uint64_t base = pmm::allocVirtual(__pmmSize) + vmm::getHHDM();
     __head        = (node*)base;
-    memset(__head->prePadding, PADDING_PATTERN & 0xFF, sizeof(__head->prePadding));
-    memset(__head->postPadding, PADDING_PATTERN & 0xFF, sizeof(__head->postPadding));
+    std::memset(__head->prePadding, PADDING_PATTERN & 0xFF, sizeof(__head->prePadding));
+    std::memset(__head->postPadding, PADDING_PATTERN & 0xFF, sizeof(__head->postPadding));
     __head->free      = true;
     __head->freedSize = 0;
     __head->allocSize = pmm_size - sizeof(node);

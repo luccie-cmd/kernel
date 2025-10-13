@@ -6,7 +6,7 @@
 #define MODULE "PS2 Keyboard driver"
 
 // TODO: Keypad specific stuff. For now we just map them to their numbers and things
-static OrderedMap<uint8_t, drivers::input::kbd::TranslatedKey> normalScancodes = {
+static std::OrderedMap<uint8_t, drivers::input::kbd::TranslatedKey> normalScancodes = {
     // {0x0D, '\t'},
     // {0x0E, '`'},
     // {0x15, 'q'},
@@ -76,7 +76,7 @@ static OrderedMap<uint8_t, drivers::input::kbd::TranslatedKey> normalScancodes =
     // {0x7D, '9'},
     // End keypad
 };
-static OrderedMap<uint8_t, drivers::input::kbd::TranslatedKey> shiftScancodes = {
+static std::OrderedMap<uint8_t, drivers::input::kbd::TranslatedKey> shiftScancodes = {
     // {0x0D, '\t'},
     // {0x0E, '~'},
     // {0x15, 'Q'},

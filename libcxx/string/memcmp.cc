@@ -14,4 +14,6 @@ extern "C" int memcmp(const void* s1, const void* s2, size_t size) {
     return 0;
 }
 
-int bcmp(const void* s1, const void* s2, size_t n) __attribute__((alias("memcmp")));
+#ifdef __clang__
+extern "C" int bcmp(const void* s1, const void* s2, size_t n) __attribute__((alias("memcmp")));
+#endif
