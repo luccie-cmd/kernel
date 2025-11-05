@@ -1,9 +1,11 @@
 #include <cassert>
 #include <cmath>
 #include <common/dbg/dbg.h>
+#include <common/io/io.h>
 #include <cstdlib>
 #include <cstring>
 #include <drivers/block/nvme.h>
+#include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/mmu.h>
 #include <kernel/task/task.h>
 #include <memory>
@@ -18,6 +20,8 @@ constexpr int64_t intpow(int64_t base, int64_t exp) {
     }
     return result;
 }
+
+uint64_t cmdId = 10;
 
 namespace drivers::block {
 NVMeDriver::NVMeDriver() : MSCDriver(StorageType::NVMe) {
@@ -39,12 +43,13 @@ void NVMeDriver::init(pci::device* device) {
     pci::enableBusmaster(device);
     uint32_t BAR0   = pci::readConfig(device, 0x10);
     uint32_t BAR1   = pci::readConfig(device, 0x14);
+    this->nsid      = this->__identifier_index;
     this->base_addr = (uint64_t)(((uint64_t)BAR1 << 32) | (BAR0 & 0xFFFFFFF0));
     mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), this->base_addr, this->base_addr,
                       PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
                       MAP_GLOBAL | MAP_PRESENT | MAP_UC);
-    uint64_t cap                    = this->readReg64(0x00);
-    *(uint64_t*)&this->capabilities = cap;
+    uint64_t cap = this->readReg64(0x00);
+    std::memcpy(&this->capabilities, &cap, sizeof(cap));
     if (intpow(2, 12 + this->capabilities.MinPagesize) != PAGE_SIZE) {
         dbg::printm(MODULE, "Page sizes of 0x%llx not supported, minimum size: 0x%llx\n", PAGE_SIZE,
                     intpow(2, 12 + this->capabilities.MinPagesize));
@@ -54,8 +59,16 @@ void NVMeDriver::init(pci::device* device) {
         dbg::printm(MODULE, "Default command set not supported\n");
         std::abort();
     }
-    if (this->capabilities.CSS_AdminOnly == 0) {
+    if (this->capabilities.CSS_AdminOnly == 1) {
         dbg::printm(MODULE, "Admin only commands are not supported\n");
+        std::abort();
+    }
+    if (this->capabilities.CSS_MultipleIo == 0) {
+        dbg::printm(MODULE, "I/O commands are not supported\n");
+        std::abort();
+    }
+    if (this->capabilities.DoorbellStride != 0) {
+        dbg::printm(MODULE, "TODO: Support DoorbellStride\n");
         std::abort();
     }
     uint32_t cc = this->readReg(0x14);
@@ -69,20 +82,38 @@ void NVMeDriver::init(pci::device* device) {
         dbg::printm(MODULE, "Failed to disable controller\n");
         std::abort();
     }
-    this->admSq = new NVMeQueue;
-    this->admCq = new NVMeQueue;
-    this->admSq->addr =
-        mmu::pmm::allocVirtual((this->capabilities.MaxQueueEntries + 1) * sizeof(NVMeCommand));
-    this->admCq->addr =
-        mmu::pmm::allocVirtual((this->capabilities.MaxQueueEntries + 1) * sizeof(NVMeCompletion));
-    this->admSq->size = this->capabilities.MaxQueueEntries;
-    this->admCq->size = this->capabilities.MaxQueueEntries;
-    this->admCq_head  = 0;
-    this->admSq_tail  = 0;
-    this->writeReg64(0x28, this->admSq->addr, true);
-    this->writeReg64(0x30, this->admCq->addr, true);
-    this->writeReg(0x24, (this->admCq->size << 16) | this->admSq->size, true);
-    cc = this->readReg(0x14);
+    size_t submissionQueueSize = this->capabilities.MaxQueueEntries * sizeof(NVMeCommand);
+    size_t completionQueueSize = this->capabilities.MaxQueueEntries * sizeof(NVMeCompletion);
+    this->admSq                = new NVMeQueue;
+    this->admCq                = new NVMeQueue;
+    this->admSq->addr          = mmu::pmm::allocVirtual(submissionQueueSize);
+    this->admCq->addr          = mmu::pmm::allocVirtual(completionQueueSize);
+    this->admSq->size          = this->capabilities.MaxQueueEntries;
+    this->admCq->size          = this->capabilities.MaxQueueEntries;
+    for (size_t i = 0; i < completionQueueSize; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(
+            mmu::vmm::getPML4(KERNEL_PID), this->admCq->addr + i, this->admCq->addr + i,
+            PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_UC | MAP_PRESENT);
+    }
+    for (size_t i = 0; i < submissionQueueSize; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(
+            mmu::vmm::getPML4(KERNEL_PID), this->admSq->addr + i, this->admSq->addr + i,
+            PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_UC | MAP_PRESENT);
+    }
+    std::memset((void*)this->admSq->addr, 0, submissionQueueSize);
+    std::memset((void*)this->admCq->addr, 0, completionQueueSize);
+    this->admCq->qid  = 0;
+    this->admSq->qid  = 0;
+    this->admCq->head = 0;
+    this->admSq->tail = 0;
+    this->writeReg64(0x28, this->admSq->addr, false);
+    this->writeReg64(0x30, this->admCq->addr, false);
+    this->writeReg(0x24, ((this->admCq->size - 1) << 16) | (this->admSq->size - 1), true);
+    cc                  = this->readReg(0x14);
+    uint32_t iosqes_val = 6;
+    uint32_t iocqes_val = 4;
+    cc |= (iosqes_val & 0x1F) << 16;
+    cc |= (iocqes_val & 0x0F) << 20;
     cc |= 1;
     this->writeReg(0x14, cc, false);
     while ((this->readReg(0x1C) & 0x1) == 0) {
@@ -93,74 +124,211 @@ void NVMeDriver::init(pci::device* device) {
         dbg::printm(MODULE, "Controller status error bits are set: 0b%032b\n", csts);
         std::abort();
     }
-    this->ioCq = new NVMeQueue;
-    this->ioSq = new NVMeQueue;
-    this->ioSq->addr =
-        mmu::pmm::allocVirtual((this->capabilities.MaxQueueEntries + 1) * sizeof(NVMeCommand));
-    this->ioCq->addr =
-        mmu::pmm::allocVirtual((this->capabilities.MaxQueueEntries + 1) * sizeof(NVMeCompletion));
+    this->ioCq       = new NVMeQueue;
+    this->ioSq       = new NVMeQueue;
+    this->ioSq->addr = mmu::pmm::allocVirtual(submissionQueueSize);
+    this->ioCq->addr = mmu::pmm::allocVirtual(completionQueueSize);
+    for (size_t i = 0; i < completionQueueSize; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), this->ioCq->addr + i, this->ioCq->addr + i,
+                          PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
+                          MAP_UC | MAP_PRESENT);
+    }
+    for (size_t i = 0; i < submissionQueueSize; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), this->ioSq->addr + i, this->ioSq->addr + i,
+                          PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
+                          MAP_UC | MAP_PRESENT);
+    }
+    std::memset((void*)this->ioSq->addr, 0, submissionQueueSize);
+    std::memset((void*)this->ioCq->addr, 0, completionQueueSize);
     this->ioSq->size = this->capabilities.MaxQueueEntries;
     this->ioCq->size = this->capabilities.MaxQueueEntries;
-    std::memset((void*)this->ioSq->addr, 0, (this->ioSq->size + 1) * sizeof(NVMeCommand));
-    std::memset((void*)this->ioCq->addr, 0, (this->ioCq->size + 1) * sizeof(NVMeCompletion));
-    this->sendCmdADM(1, (void*)this->ioSq->addr, this->ioSq->size | (1 << 16), (1 << 0), 0);
-    this->sendCmdADM(5, (void*)this->ioCq->addr, this->ioCq->size | (1 << 16), (1 << 0), 0);
+    this->ioCq->head = 0;
+    this->ioSq->tail = 0;
+    this->ioCq->qid  = 1;
+    this->ioSq->qid  = 1;
+    this->setupIOQueues();
     uint8_t* addr = (uint8_t*)mmu::pmm::allocate();
+    mmu::vmm::mapPage((uint64_t)addr);
     std::memset(addr, 0, PAGE_SIZE);
-    this->sendCmdADM(6, (void*)addr, 1, 0, 0);
-    for (size_t i = 0; i < PAGE_SIZE; ++i) {
-        dbg::printf("%02x ", addr[i]);
-        if ((i + 1) % 32 == 0) {
-            dbg::print("\n");
+    NVMeCommand* identifyCommand = new NVMeCommand;
+    std::memset(identifyCommand, 0, sizeof(NVMeCommand));
+    identifyCommand->prp1       = (uint64_t)addr;
+    identifyCommand->command_id = cmdId++;
+    identifyCommand->opcode     = 0x06;
+    identifyCommand->cwd10      = 0x02;
+    this->sendCmd(this->admSq, this->admCq, identifyCommand);
+    this->nsid = 0;
+    for (size_t i = 0; i < PAGE_SIZE; i += 4) {
+        uint32_t curNsid = *(uint32_t*)(addr + i);
+        if (curNsid == 0) {
+            break;
         }
+        if (this->nsid != 0) {
+            dbg::printf("TODO: Support multiple NSIDs\n");
+            std::abort();
+        }
+        this->nsid = curNsid;
     }
+    std::memset(identifyCommand, 0, sizeof(NVMeCommand));
+    identifyCommand->prp1       = (uint64_t)addr;
+    identifyCommand->command_id = cmdId++;
+    identifyCommand->opcode     = 0x06;
+    identifyCommand->cwd10      = 0x00;
+    identifyCommand->nsid       = this->nsid;
+    this->sendCmd(this->admSq, this->admCq, identifyCommand);
+    NVMeIdentifyNamespace identifyNamespace;
+    std::memcpy(&identifyNamespace, addr, sizeof(NVMeIdentifyNamespace));
+    if (identifyNamespace.lbafs[identifyNamespace.FLBAS].lbads != 9) {
+        dbg::printm(MODULE, "TODO: Support non 512 blocks\n");
+        std::abort();
+    }
+    this->diskSize = identifyNamespace.namespaceSize;
     dbg::popTrace();
 }
+void NVMeDriver::setupIOQueues() {
+    NVMeCommand* createIOQueue = new NVMeCommand;
+    std::memset(createIOQueue, 0, sizeof(NVMeCommand));
+    createIOQueue->prp1       = this->ioCq->addr;
+    createIOQueue->cwd10      = ((uint32_t)this->ioCq->qid) | ((uint32_t)this->ioCq->size << 16);
+    createIOQueue->cwd11      = 1;
+    createIOQueue->opcode     = 5;
+    createIOQueue->command_id = cmdId++;
+    this->sendCmd(this->admSq, this->admCq, createIOQueue);
+
+    std::memset(createIOQueue, 0, sizeof(NVMeCommand));
+    createIOQueue->prp1       = this->ioSq->addr;
+    createIOQueue->cwd10      = ((uint32_t)this->ioSq->qid) | ((uint32_t)this->ioSq->size << 16);
+    createIOQueue->cwd11      = ((uint32_t)this->ioCq->qid << 16) | 1;
+    createIOQueue->opcode     = 1;
+    createIOQueue->command_id = cmdId++;
+    this->sendCmd(this->admSq, this->admCq, createIOQueue);
+    delete createIOQueue;
+}
+bool NVMeDriver::sendCmd(NVMeQueue* sq, NVMeQueue* cq, NVMeCommand* cmd) {
+    uint8_t* entry = (uint8_t*)sq->addr + (sq->tail * sizeof(NVMeCommand));
+    std::memcpy((void*)entry, cmd, sizeof(NVMeCommand));
+    __asm__ volatile("mfence" ::: "memory");
+    sq->tail = (sq->tail + 1) % sq->size;
+    this->writeReg(0x1000 + 8 * sq->qid, sq->tail, false);
+    uint8_t  attempts = 255;
+    uint16_t status   = 0;
+    while (attempts) {
+        volatile NVMeCompletion* cqe =
+            (volatile NVMeCompletion*)(cq->addr + cq->head * sizeof(NVMeCompletion));
+        uint32_t timeout = 500000;
+        while (timeout) {
+            __asm__("nop");
+            timeout--;
+        }
+        __asm__ volatile("lfence" ::: "memory");
+        status = cqe->status;
+#ifdef DEBUG
+        dbg::printm(
+            MODULE, "CQE->status = %015.15b CQE->cmd_id = %x CQE->sq_id = %x condition = %s\n",
+            cqe->status, cqe->cmd_id, cqe->sq_id,
+            (cqe->status != 0x7FFF and cqe->cmd_id == cmd->command_id and cqe->sq_id == sq->qid)
+                ? "true"
+                : "false");
+#endif
+        if (cqe->status != 0x7FFF && cqe->cmd_id == cmd->command_id && cqe->sq_id == sq->qid) {
+            break;
+        }
+        attempts--;
+    }
+    if (attempts == 0) {
+        dbg::printm(MODULE, "Exhausted attempts\n");
+        std::abort();
+    }
+    cq->head = (cq->head + 1) % cq->size;
+    this->writeReg(0x1000 + 8 * cq->qid + 4, cq->head, false);
+    return status == 0;
+}
 bool NVMeDriver::read(uint8_t drive, uint64_t lba, uint32_t sectors, volatile uint8_t* buffer) {
-    if (drive != this->nsid) {
+    if (drive != this->nsid - 1) {
         dbg::printm(MODULE, "Warning drive doesn't correspond to NSID\n");
     }
     dbg::addTrace(__PRETTY_FUNCTION__);
-    bool result = this->sendCmdIO(0x02, (void*)buffer, lba, sectors);
+    NVMeCommand* cmd = new NVMeCommand;
+    std::memset(cmd, 0, sizeof(NVMeCommand));
+    uint64_t pageAlignBuffer = mmu::pmm::allocVirtual(sectors * 512);
+    for (size_t i = 0; i < sectors * 512; i += PAGE_SIZE) {
+        mmu::vmm::mapPage(pageAlignBuffer + i);
+    }
+    cmd->command_id = cmdId++;
+    cmd->opcode     = 0x02;
+    cmd->nsid       = this->nsid;
+    cmd->prp1       = pageAlignBuffer;
+    cmd->cwd10      = (uint32_t)lba;
+    cmd->cwd11      = (uint32_t)((uint64_t)lba >> 32);
+    cmd->cwd12      = (uint16_t)(sectors - 1);
+    cmd->cwd13      = 2;
+    bool result     = this->sendCmd(this->ioSq, this->ioCq, cmd);
+    std::memcpy((void*)buffer, (void*)pageAlignBuffer, sectors * 512);
+    for (size_t i = 0; i < sectors * 512; i += PAGE_SIZE) {
+        mmu::vmm::unmapPage(mmu::vmm::getPML4(KERNEL_PID), pageAlignBuffer + i);
+    }
+    mmu::pmm::free(pageAlignBuffer, sectors * 512);
     dbg::popTrace();
     return result;
 }
 bool NVMeDriver::write(uint8_t drive, uint64_t lba, uint32_t sectors, void* buffer) {
+    (void)lba;
+    (void)sectors;
+    (void)buffer;
     if (drive != this->nsid) {
         dbg::printm(MODULE, "Warning drive doesn't correspond to NSID\n");
     }
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    bool result = this->sendCmdIO(0x01, buffer, lba, sectors);
-    dbg::popTrace();
-    return result;
+    __builtin_unreachable();
+    // dbg::addTrace(__PRETTY_FUNCTION__);
+    // bool result = this->sendCmdIO(0x01, buffer, lba, sectors);
+    // dbg::popTrace();
+    // return result;
 }
 uint32_t NVMeDriver::readReg(uint32_t offset) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     volatile uint32_t* reg = (volatile uint32_t*)(this->base_addr + offset);
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)reg, true, false) == 0) {
+        mmu::vmm::mapPage((uint64_t)reg);
+    }
     __asm__ volatile("mfence" ::: "memory");
-    uint32_t ret = *reg;
+    volatile uint32_t ret = *reg;
+    forceReadVolatile(ret);
+#ifdef DEBUG
     dbg::printm(MODULE, "r base addr: 0x%llx offset: 0x%llx reg: 0x%llx ret: 0x%llx\n",
                 this->base_addr, offset, reg, ret);
+#endif
     dbg::popTrace();
     return ret;
 }
 uint64_t NVMeDriver::readReg64(uint32_t offset) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     volatile uint64_t* reg = (volatile uint64_t*)(this->base_addr + offset);
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)reg, true, false) == 0) {
+        mmu::vmm::mapPage((uint64_t)reg);
+    }
     __asm__ volatile("mfence" ::: "memory");
-    uint64_t ret = *reg;
+    volatile uint64_t ret = *reg;
+    forceReadVolatile(ret);
+#ifdef DEBUG
     dbg::printm(MODULE, "r64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx ret: 0x%llx\n",
                 this->base_addr, offset, reg, ret);
+#endif
     dbg::popTrace();
     return ret;
 }
 void NVMeDriver::writeReg(uint32_t offset, uint32_t value, bool check) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     volatile uint32_t* reg = (volatile uint32_t*)(this->base_addr + offset);
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)reg, true, false) == 0) {
+        mmu::vmm::mapPage((uint64_t)reg);
+    }
+#ifdef DEBUG
     dbg::printm(MODULE, "w base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n",
                 this->base_addr, offset, reg, value);
-    __asm__ volatile("sfence" ::: "memory");
+#endif
+    __asm__ volatile("mfence" ::: "memory");
     *reg = value;
+    __asm__ volatile("sfence" ::: "memory");
     if (this->readReg(offset) != value && check) {
         dbg::printm(MODULE, "Failed to update value at 0x%llx (32 bit)\n", (uint64_t)reg);
         std::abort();
@@ -170,10 +338,16 @@ void NVMeDriver::writeReg(uint32_t offset, uint32_t value, bool check) {
 void NVMeDriver::writeReg64(uint32_t offset, uint64_t value, bool check) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     volatile uint64_t* reg = (volatile uint64_t*)(this->base_addr + offset);
+    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)reg, true, false) == 0) {
+        mmu::vmm::mapPage((uint64_t)reg);
+    }
+#ifdef DEBUG
     dbg::printm(MODULE, "w64 base addr: 0x%llx offset: 0x%llx reg: 0x%llx value: 0x%llx\n",
                 this->base_addr, offset, reg, value);
-    __asm__ volatile("sfence" ::: "memory");
+#endif
+    __asm__ volatile("mfence" ::: "memory");
     *reg = value;
+    __asm__ volatile("mfence" ::: "memory");
     if (this->readReg64(offset) != value && check) {
         dbg::printm(MODULE, "Failed to update value at 0x%llx (64 bit)\n", (uint64_t)reg);
         std::abort();
@@ -186,121 +360,6 @@ uint8_t NVMeDriver::getConnectedDrives() {
 uint64_t NVMeDriver::getDiskSize(uint8_t disk) {
     (void)disk;
     return this->diskSize;
-}
-bool NVMeDriver::sendCmdIO(uint8_t opcode, void* data, uint64_t lba, uint16_t num_blocks) {
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    void* pageAllignedBuffer = (void*)mmu::pmm::allocVirtual(num_blocks * SECTOR_SIZE);
-    if (num_blocks * SECTOR_SIZE > PAGE_SIZE) {
-        dbg::printm(MODULE, "TODO: Support multiple 4096 byte blocks reading\n");
-        std::abort();
-    }
-    std::memset(pageAllignedBuffer, 0, num_blocks * SECTOR_SIZE);
-    uint64_t     sq_entry_addr = this->ioSq->addr + (this->ioSq_tail * sizeof(NVMeCommand));
-    uint64_t     cq_entry_addr = this->ioCq->addr + (this->ioCq_head * sizeof(NVMeCompletion));
-    NVMeCommand* cmd           = new NVMeCommand;
-    if (cmd == nullptr) {
-        dbg::printm(MODULE, "Failed to allocate NVMe command\n");
-        std::abort();
-    }
-    cmd->command_id = 0x1337;
-    cmd->opcode     = opcode;
-    cmd->nsid       = this->nsid;
-    cmd->prp1       = mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID),
-                                                (uint64_t)pageAllignedBuffer, false);
-    cmd->prp2       = 0;
-    cmd->cwd10      = (uint32_t)lba;
-    cmd->cwd11      = (uint32_t)((uint64_t)lba >> 32);
-    cmd->cwd12      = (uint16_t)(num_blocks - 1);
-    std::memcpy((void*)sq_entry_addr, cmd, sizeof(NVMeCommand));
-    this->ioSq_tail++;
-    this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->ioSq_tail, true);
-    if (this->ioSq_tail == this->ioSq->size) this->ioSq_tail = 0;
-    NVMeCompletion* completion = (NVMeCompletion*)(cq_entry_addr);
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), cq_entry_addr, true) !=
-        cq_entry_addr) {
-        mmu::vmm::mapPage(cq_entry_addr);
-    }
-    while (true) {
-        if (completion->cmd_id == cmd->command_id) {
-            if (completion->cmd_id == 0) {
-                continue;
-            }
-            break;
-        }
-    }
-    this->ioCq_head++;
-    this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->ioCq_head, true);
-    if (this->ioCq_head == this->ioCq->size) this->ioCq_head = 0;
-    uint16_t status = completion->status;
-    status &= 0x7FFF;
-    delete cmd;
-    if (status != 0) {
-        dbg::printm(MODULE, "I/O command opcode 0x%x failed: status=0x%x\n", opcode, status);
-    }
-    std::memcpy(data, pageAllignedBuffer, num_blocks * SECTOR_SIZE);
-    dbg::popTrace();
-    return status == 0;
-}
-bool NVMeDriver::sendCmdADM(uint8_t opcode, void* addr, uint32_t cwd10, uint32_t cwd11,
-                            uint32_t cwd1) {
-    dbg::addTrace(__PRETTY_FUNCTION__);
-    void* pageAllignedBuffer = (void*)mmu::pmm::allocate();
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)pageAllignedBuffer,
-                                  true) == 0) {
-        mmu::vmm::mapPage((size_t)pageAllignedBuffer);
-    }
-    std::memset(pageAllignedBuffer, 0, PAGE_SIZE);
-    uint64_t     sq_entry_addr = this->admSq->addr + (this->admSq_tail * sizeof(NVMeCommand));
-    uint64_t     cq_entry_addr = this->admCq->addr + (this->admCq_head * sizeof(NVMeCompletion));
-    NVMeCommand* cmd           = new NVMeCommand;
-    if (cmd == nullptr) {
-        dbg::printm(MODULE, "Failed to allocate NVMe command\n");
-        std::abort();
-    }
-    cmd->command_id = 0x1337;
-    cmd->opcode     = opcode;
-    cmd->nsid       = cwd1;
-    cmd->prp1       = (uint64_t)pageAllignedBuffer;
-    cmd->prp2       = 0;
-    cmd->cwd10      = cwd10;
-    cmd->cwd11      = cwd11;
-    std::memcpy((void*)sq_entry_addr, cmd, sizeof(NVMeCommand));
-    this->admSq_tail++;
-    this->writeReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride), this->admSq_tail, true);
-    uint32_t admSqTail = this->readReg(0x1000 + 2 * (4 << this->capabilities.DoorbellStride));
-    if (this->admSq_tail != admSqTail) {
-        uint32_t status = this->readReg(0x1C);
-        dbg::printm(MODULE, "Submission queue tail not acknowledged\nStatus: 0b%032lb\n", status);
-        std::abort();
-    }
-    if (this->admSq_tail == this->admSq->size) this->admSq_tail = 0;
-    NVMeCompletion* completion = (NVMeCompletion*)(cq_entry_addr);
-    if (mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), cq_entry_addr, true) !=
-        cq_entry_addr) {
-        mmu::vmm::mapPage(cq_entry_addr);
-    }
-    uint64_t timeout = this->capabilities.TimeoutMax;
-    while (timeout > 0) {
-        if (completion->cmd_id == cmd->command_id || timeout == 0) {
-            break;
-        }
-        timeout--;
-    }
-    if (timeout == 0) {
-        dbg::printm(MODULE, "Timeout waiting for completion\n");
-        std::abort();
-    }
-    this->admCq_head++;
-    this->writeReg(0x1000 + (3 * (4 << this->capabilities.DoorbellStride)), this->admCq_head, true);
-    if (this->admCq_head == this->admCq->size) this->admCq_head = 0;
-    uint16_t status = completion->status;
-    if (status != 0) {
-        dbg::printm(MODULE, "Admin command opcode 0x%x failed: status=0x%x\n", opcode, status);
-    }
-    std::memcpy(addr, pageAllignedBuffer, PAGE_SIZE);
-    delete cmd;
-    dbg::popTrace();
-    return status == 0;
 }
 NVMeDriver* loadNVMeDriver(pci::device* device) {
     dbg::addTrace(__PRETTY_FUNCTION__);

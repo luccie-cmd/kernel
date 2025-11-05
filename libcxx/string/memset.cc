@@ -13,5 +13,5 @@ extern "C" void* memset(void* dest, int ch, std::size_t count) {
     for (size_t i = 0; i < count; ++i) {
         cdest[i] = cch;
     }
-    return cdest;
+    return dest;
 }

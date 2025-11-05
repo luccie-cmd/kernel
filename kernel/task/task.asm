@@ -14,7 +14,7 @@ section .trampoline.text
 syscallEntry:
 .loopSpinlock:
     mov     r10b, 0x1
-    xchg BYTE [syscallSpinlock], r10b
+    lock xchg BYTE [syscallSpinlock], r10b
     test    r10b, r10b
     jne .loopSpinlock
     mov [tempValue], rsp

@@ -28,7 +28,7 @@ extern "C" void abort() {
     dbg::printStackTrace();
     abortLock.unlock();
     while (1) {
-        io::cli();
+        // io::cli();
         __asm__("hlt");
     }
 }

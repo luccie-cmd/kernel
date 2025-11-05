@@ -100,7 +100,9 @@ uint64_t allocVirtual(uint64_t size) {
             }
             allocatedPages += size / PAGE_SIZE;
             dbg::printStackTrace();
+#ifdef DEBUG
             dbg::printm(MODULE, "Allocated address 0x%lx\n", addr - vmm::getHHDM());
+#endif
             dbg::popTrace();
             headSpinlock.unlock();
             return addr - vmm::getHHDM();

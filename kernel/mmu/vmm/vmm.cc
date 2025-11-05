@@ -96,7 +96,9 @@ void unmapPage(PML4* pml4, size_t virtualAddr) {
     mapSpinlock.lock();
     virtualAddr &= ~(0xFFF);
     vmm_address vma = getVMMfromVA(virtualAddr);
+#ifdef DEBUG
     dbg::printm(MODULE, "Unmapping virtual address 0x%lx in CR3 %lp\n", virtualAddr, pml4);
+#endif
     if (pml4[vma.pml4e].pdpe_ptr == 0 || pml4[vma.pml4e].present == 0) {
         dbg::printm(MODULE, "Attempted to unmap page that has an unmapped pml4\n");
         std::abort();
@@ -127,8 +129,10 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
     }
     virtualAddr &= ~(0xFFF);
     physicalAddr &= ~(0xFFF);
+#ifdef DEBUG
     dbg::printm(MODULE, "Mapping virtual address 0x%lx to physical address 0x%lx in CR3 %lp\n",
                 virtualAddr, physicalAddr, pml4);
+#endif
     if (getPhysicalAddr(pml4, virtualAddr, true, false) == physicalAddr && physicalAddr != 0) {
         dbg::printm(MODULE,
                     "Attempted to double map address 0x%llx to 0x%llx (current address = 0x%llx)\n",
@@ -162,7 +166,6 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
         uint64_t page = pmm::allocate();
         std::memset(reinterpret_cast<void*>(makeVirtual(page)), 0, PAGE_SIZE);
         pde[vma.pde].pte_ptr = page >> 12;
-        dbg::printf("New PTE pointer: 0x%lx\n", page);
         pde[vma.pde].present = 1;
     }
     PTE* pte = reinterpret_cast<PTE*>(makeVirtual(pde[vma.pde].pte_ptr << 12));
@@ -221,8 +224,7 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
 void mapPage(size_t virtualAddr) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     mapPage(getPML4(KERNEL_PID), virtualAddr, virtualAddr,
-            PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
-            MAP_GLOBAL | MAP_PRESENT | MAP_UC);
+            PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT | MAP_UC | MAP_WT);
     dbg::popTrace();
 }
 uint64_t getPhysicalAddr(PML4* pml4, uint64_t addr, bool silent, bool ignorePresent) {

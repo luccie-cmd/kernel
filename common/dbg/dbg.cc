@@ -14,9 +14,9 @@ const char* messages[8192];
 uint16_t    messagesCount = 0;
 static void putchar(const char c) {
     io::outb(DBG_PORT, c);
-    // if (displayDriver != nullptr) {
-    //     displayDriver->drawChar(0, c);
-    // }
+    if (displayDriver != nullptr) {
+        displayDriver->drawChar(0, c);
+    }
 }
 static void puts(const char* str) {
     while (*str) {

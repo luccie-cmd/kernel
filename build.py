@@ -85,8 +85,8 @@ force_rebuild = False
 if OLD_CONFIG != CONFIG:
     force_rebuild = True
     print("Configuration changed, rebuilding...")
-CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-nostdlib', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
-CONFIG["CFLAGS"] += ['-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto', '-finline-functions']
+CONFIG["CFLAGS"] = ['-c', '-nostdlib', '-DCOMPILE', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-fomit-frame-pointer', '-fno-builtin', '-ggdb', '-D_LIBCPP_HAS_NO_THREADS']
+CONFIG["CFLAGS"] += ['-fno-strict-aliasing', '-fno-stack-protector', '-fno-lto']
 CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow', '-Wno-unused-function']
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
@@ -100,6 +100,7 @@ if "debug" in CONFIG.get("config"):
     CONFIG["CFLAGS"] += ["-O0"]
     CONFIG["CFLAGS"] += ["-DDEBUG"]
 else:
+    # CONFIG["CFLAGS"] += ["-DDEBUG"]
     CONFIG["CFLAGS"] += ["-O2"]
     CONFIG["CFLAGS"] += ["-DNDEBUG"]
 
@@ -114,7 +115,7 @@ if "yes" in CONFIG.get("usan"):
 if "gcc" in CONFIG.get("compiler"):
     if "yes" in CONFIG.get("analyzer"):
         CONFIG["CFLAGS"].append("-fanalyzer")
-    CONFIG["CFLAGS"] += ['-finline-functions-called-once', '-finline-limit=10000', '-fpeel-loops', '-funswitch-loops', '-fprefetch-loop-arrays', '-fmax-errors=1']
+    CONFIG["CFLAGS"] += ['-fprefetch-loop-arrays', '-fmax-errors=1']
     CONFIG["CFLAGS"] += ['-Wno-aggressive-loop-optimizations']
 if "clang" in CONFIG.get("compiler"):
     CONFIG["CFLAGS"] += ['-Wno-ignored-attributes']

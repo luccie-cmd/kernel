@@ -98,12 +98,12 @@ extern "C" void KernelMain() {
     task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->baseAddr, initObj->mappings,
                          initObj->relaVirtual, initObj->relaSize);
 
-    for (size_t i = 0; i < smp_request.response->cpu_count; ++i) {
-        if (smp_request.response->bsp_lapic_id != smp_request.response->cpus[i]->lapic_id) {
-            smp_request.response->cpus[i]->goto_address =
-                (void (*)(limine_smp_info*))hal::arch::x64::irq::procLocalInit;
-        }
-    }
+    // for (size_t i = 0; i < smp_request.response->cpu_count; ++i) {
+    //     if (smp_request.response->bsp_lapic_id != smp_request.response->cpus[i]->lapic_id) {
+    //         smp_request.response->cpus[i]->goto_address =
+    //             (void (*)(limine_smp_info*))hal::arch::x64::irq::procLocalInit;
+    //     }
+    // }
 
     while (true) {
         task::nextProc();

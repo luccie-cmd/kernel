@@ -166,9 +166,9 @@ void overrideIrq(uint32_t IRQ, std::function<void(io::Registers*)> func) {
 }
 
 uint8_t requestIrq(std::function<void(io::Registers*)> func) {
-    (void)func;
-    dbg::printm(MODULE, "TODO: Request IRQ\n");
-    std::abort();
+    uint8_t vector = findFreeISR();
+    IRQFunctions.insert_or_assign(static_cast<uint64_t>(vector), func);
+    return vector;
 }
 
 static void lapicSendEOI() {

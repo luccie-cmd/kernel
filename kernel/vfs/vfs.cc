@@ -103,7 +103,7 @@ void readGPT(uint8_t disk) {
         std::abort();
     }
     uint8_t* buffer = new uint8_t[15872];
-    if (!blockDriver->read(newDisk, 2, 31, (volatile uint8_t*)buffer)) {
+    if (!blockDriver->read(newDisk, PTH->firstPartitionEntry, 31, (volatile uint8_t*)buffer)) {
         dbg::printm(MODULE, "Failed to read partition entries\n");
         std::abort();
     }
@@ -124,8 +124,10 @@ void readGPT(uint8_t disk) {
         PartitionEntry* acEntry = new PartitionEntry;
         std::memcpy(acEntry, entry, sizeof(PartitionEntry));
         entries.push_back(acEntry);
+#ifdef DEBUG
         dbg::printm(MODULE, "Loaded new partition: %llu-%llu\n", acEntry->startLBA,
                     acEntry->endLBA);
+#endif
     }
     delete[] buffer;
     delete PTH;
@@ -148,7 +150,6 @@ std::pair<MountPoint*, size_t> findMountpoint() {
             return {mp, i};
         }
     }
-    dbg::printm(MODULE, "Ran out of possible mount points, adding new one\n");
     MountPoint* mp = new MountPoint;
     mp->mounted    = false;
     mountPoints.push_back(mp);
