@@ -52,8 +52,19 @@ bool isInitialized() {
 }
 void free(uint64_t addr, uint64_t size) {
     headSpinlock.lock();
+    if (!iscanonical(addr)) {
+        dbg::printm(MODULE, "Free address of 0x%lx not canonical\n", addr);
+        std::abort();
+    }
+#ifdef DEBUG
+    dbg::printm(MODULE, "Freeing address 0x%lx\n", addr);
+#endif
     size          = ALIGNUP(size, PAGE_SIZE);
     node* newNode = (node*)(addr + mmu::vmm::getHHDM());
+    if ((uint64_t)newNode < mmu::vmm::getHHDM()) {
+        dbg::printf("0x%lx, 0x%lx, %lp\n", addr, mmu::vmm::getHHDM(), newNode);
+        std::abort();
+    }
     newNode->size = size;
     node* current = __head;
     node* prev    = nullptr;

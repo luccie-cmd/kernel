@@ -56,7 +56,9 @@ PML4* getPML4(task::pid_t pid) {
         uint64_t cr3 = pmm::allocate();
         std::memset((void*)(cr3 + __HHDMoffset), 0, PAGE_SIZE);
         __CR3LookupTable.insert_or_assign(pid, cr3);
+#ifdef DEBUG
         dbg::printm(MODULE, "New CR3 for PID %lu: 0x%lx\n", pid, cr3);
+#endif
     }
     uint64_t cr3 = __CR3LookupTable.at(pid);
     lookupSpinlock.unlock();
@@ -78,6 +80,10 @@ uint64_t getHHDM() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
+    }
+    if (__HHDMoffset == 0) {
+        dbg::printm(MODULE, "HHDM offset 0\n");
+        std::abort();
     }
     dbg::popTrace();
     return __HHDMoffset;

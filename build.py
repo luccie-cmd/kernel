@@ -91,7 +91,7 @@ CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,--no-undefined', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -254,7 +254,7 @@ def buildKernel(kernel_dir: str):
             callCmd(f"rm -f ./.build-cache/{basename}/cache/{file}")
             exit(code)
 
-def linkDir(kernel_dir, linker_file, static_lib_files=[]):
+def linkDir(kernel_dir, linker_file, outName, static_lib_files=[]):
     files = glob.glob(kernel_dir+'/**', recursive=True)
     if "gcc" in CONFIG["compiler"]:
         command = "g++"
@@ -269,19 +269,20 @@ def linkDir(kernel_dir, linker_file, static_lib_files=[]):
         if not checkExtension(file, ["o", "bc"]):
             continue
         command += " " + file
-    command += f" -Wl,-T {linker_file}"
-    command +=  " -Wl,--no-whole-archive"
-    command +=  " -Wl,--whole-archive"
+    if linker_file != None:
+        command += f" -Wl,-T {linker_file}"
+        command +=  " -Wl,--no-whole-archive"
+        command +=  " -Wl,--whole-archive"
     for static_lib in static_lib_files:
         command += f" {static_lib}"
-    command += f" -Wl,-Map={CONFIG['outDir'][0]}/kernel.map"
-    command += f" -o {CONFIG['outDir'][0]}/kernel.elf"
-    file = f"{CONFIG['outDir'][0]}/kernel.elf"
+    command += f" -Wl,-Map={CONFIG['outDir'][0]}/{outName}.map"
+    command += f" -o {CONFIG['outDir'][0]}/{outName}.elf"
+    file = f"{CONFIG['outDir'][0]}/{outName}.elf"
     print(f"LD   {file}")
     if callCmd(command, True)[0] != 0:
         print(f"LD   {file} Failed")
         exit(1)
-    callCmd(f"objdump -C -D -x -Mintel -g -r -t -L {CONFIG['outDir'][0]}/kernel.elf > {CONFIG['outDir'][0]}/kernel.asm")
+    callCmd(f"objdump -C -D -x -Mintel -g -r -t -L {CONFIG['outDir'][0]}/{outName}.elf > {CONFIG['outDir'][0]}/{outName}.asm")
 
 def makeImageFile(out_file):
     size = parseSize(CONFIG["imageSize"][0])
@@ -327,7 +328,7 @@ def mountFs(device, boot, kernel, files):
     callCmd(f"sudo mkdir -p mnt/EFI/BOOT")
     callCmd(f"sudo cp {boot} mnt/EFI/BOOT")
     callCmd(f"sudo cp {kernel} mnt")
-    callCmd(f"sudo cp ../init/bin/init.elf mnt/init")
+    callCmd(f"sudo cp ./bin/init.elf mnt/init")
     callCmd(f"sudo echo \"Hello, World\" > mnt/test.txt")
     for file in files:
         if os.path.isfile(file):
@@ -490,10 +491,17 @@ def main():
         buildDir("common", True, f"{CONFIG['outDir'][0]}/common.a")
         print("> Building kernel")
         buildDir("kernel", False)
+        print("> Building init")
+        CONFIG["CFLAGS"] += ['-Iinit/include', '-nostdinc']
+        buildDir("init/src", False)
+        CONFIG.pop('-Iinit/include')
+        CONFIG.pop('-nostdinc')
         print("> Removing unused objects")
         cleanFiles(["libcxx", "drivers", "common", "kernel", "test"])
         print("> Linking kernel")
-        linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
+        linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", "kernel", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
+        print("> Linking init")
+        linkDir(f"{CONFIG['outDir'][0]}/init", None, "init")
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test.elf"])

@@ -53,8 +53,6 @@ extern "C" void KernelMain() {
     hal::arch::earlyInit();
     dbg::addTrace(__PRETTY_FUNCTION__);
     uint64_t base = mmu::pmm::allocVirtual((STACK_SIZE + 2) * PAGE_SIZE);
-    dbg::printf("Stack guard low: 0x%lx", base);
-    dbg::printf("Stack guard high: 0x%lx", base + (STACK_SIZE + 1) * PAGE_SIZE);
     mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), base, base,
                       PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW, 0);
     mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), base + (STACK_SIZE + 1) * PAGE_SIZE,
@@ -80,6 +78,7 @@ extern "C" void KernelMain() {
         dbg::printf("ERROR WHILE LOADING INIT (Unable to mount boot partition)\n");
         std::abort();
     }
+
     if (!vfs::mount(0, 1, "/")) {
         dbg::printf("ERROR WHILE LOADING INIT (Unable to mount root partition)\n");
         std::abort();
@@ -94,9 +93,8 @@ extern "C" void KernelMain() {
         dbg::printf("ERROR WHILE LOADING INIT (Corrupted ELF binary)\n");
         std::abort();
     }
-    task::pid_t pid = task::getNewPID();
-    task::makeNewProcess(pid, initObj->entryPoint, handle, initObj->baseAddr, initObj->mappings,
-                         initObj->relaVirtual, initObj->relaSize);
+    task::makeNewProcess(INIT_PID, initObj->entryPoint, handle, initObj->baseAddr,
+                         initObj->mappings, initObj->relaVirtual, initObj->relaSize);
 
     // for (size_t i = 0; i < smp_request.response->cpu_count; ++i) {
     //     if (smp_request.response->bsp_lapic_id != smp_request.response->cpus[i]->lapic_id) {

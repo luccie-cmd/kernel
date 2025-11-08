@@ -20,7 +20,7 @@ Process*             globalParent  = nullptr;
 Process*             currentProc   = nullptr;
 Thread*              currentThread = nullptr;
 std::queue<Process*> zombieProcs;
-pid_t                pids = 1;
+pid_t                pids = 2;
 std::Spinlock        currentProcLock;
 std::Spinlock        currentThreadLock;
 struct GSbase {
@@ -36,9 +36,9 @@ void                 initialize() {
     cpuLocals.resize(hal::arch::x64::irq::getMaxCPUs());
     for (size_t i = 0; i < hal::arch::x64::irq::getMaxCPUs(); ++i) {
         cpuLocals.at(i) = (GSbase*)(mmu::pmm::allocate() + mmu::vmm::getHHDM());
+        std::memset(cpuLocals.at(i), 0, sizeof(cpuLocals.at(i)[0]));
         cpuLocals.at(i)->kernelCR3 = (uint64_t)mmu::vmm::getPML4(KERNEL_PID) - mmu::vmm::getHHDM();
     }
-    pids = 10;
     dbg::popTrace();
 }
 bool isInitialized() {
@@ -300,9 +300,11 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr b
                 std::abort();
             }
         }
+#ifdef DEBUG
         dbg::printm(MODULE,
                     "Added new mapping to process %llu (VADDR = 0x%llx Mapped Length = 0x%llx)\n",
                     proc->pid, memMapping->virtualStart, memMapping->memLength);
+#endif
         memMapping->next    = proc->memoryMapping;
         proc->memoryMapping = memMapping;
     }
@@ -386,12 +388,14 @@ void                                      nextProc() {
         }
     } while (searching);
     currentThread = currentProc->threads;
+#ifdef DEBUG
     dbg::printm(MODULE, "%lu %lu\n", currentProc->state, currentThread->status);
+#endif
     currentProc->state    = ProcessState::Running;
     currentThread->status = ThreadStatus::Running;
     if (!currentProc->hasStarted) {
         currentProc->hasStarted = true;
-        uint64_t trampoline_va = (uint64_t)&__trampoline_text_start;
+        uint64_t trampoline_va  = (uint64_t)&__trampoline_text_start;
         uint64_t trampoline_phys =
             mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         while (trampoline_va < (uint64_t)&__trampoline_text_end) {
@@ -400,7 +404,7 @@ void                                      nextProc() {
                 std::abort();
             }
             mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
-                                                                   MAP_PRESENT);
+                              MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
@@ -414,13 +418,13 @@ void                                      nextProc() {
                 std::abort();
             }
             mmu::vmm::mapPage(currentProc->pml4, trampoline_phys, trampoline_va, PROTECTION_RW,
-                                                                   MAP_PRESENT);
+                              MAP_PRESENT);
             trampoline_va += PAGE_SIZE;
             trampoline_phys =
                 mmu::vmm::getPhysicalAddr(mmu::vmm::getPML4(KERNEL_PID), trampoline_va, false);
         }
     }
-    GSbase* gsbase = cpuLocals.at(hal::arch::x64::irq::getAPICID());
+    GSbase* gsbase        = cpuLocals.at(hal::arch::x64::irq::getAPICID());
     gsbase->currentProc   = currentProc;
     gsbase->currentThread = currentThread;
     if (gsbase->stackTop) {
@@ -429,8 +433,8 @@ void                                      nextProc() {
     gsbase->stackTop = mmu::pmm::allocate() + mmu::vmm::getHHDM();
     if (mmu::vmm::getPhysicalAddr(currentProc->pml4, (uint64_t)gsbase, false, false) == 0) {
         mmu::vmm::mapPage(currentProc->pml4, (uint64_t)gsbase - mmu::vmm::getHHDM(),
-                                                               (uint64_t)gsbase, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
-                                                               MAP_PRESENT);
+                          (uint64_t)gsbase, PROTECTION_KERNEL | PROTECTION_NOEXEC | PROTECTION_RW,
+                          MAP_PRESENT);
     }
     io::wrmsr(0xC0000102, (uint64_t)gsbase);
     hal::arch::x64::gdt::mapStacksToProc(currentProc->pid, currentProc->pml4);
@@ -446,8 +450,6 @@ void                                      nextProc() {
     mmu::vmm::PML4* pml4 = reinterpret_cast<mmu::vmm::PML4*>(
         reinterpret_cast<uint64_t>(currentProc->pml4) - mmu::vmm::getHHDM());
     uint64_t fsBase = currentThread->fsBase;
-    dbg::printm(MODULE, "%lu: Choose proc %lu and tid %lu\n", hal::arch::x64::irq::getAPICID(),
-                                                     currentProc->pid, currentThread->tid);
     dbg::popTrace();
     currentProcLock.unlock();
     currentThreadLock.unlock();
@@ -505,20 +507,35 @@ void sendSignal(Process* proc, size_t signal) {
     proc->signals.at(signal)(signal);
 }
 void cleanProc(pid_t pid, uint8_t exitCode) {
-    dbg::printf("TODO: Free process resources\n");
     Process* exitProc = findProcByPID(pid);
     dbg::printf("Process %u has exited (code %u)\n", exitProc->pid, exitCode);
-    if (exitProc->parent) {
-        if (exitProc->parent->waitingFor == exitProc->pid) {
-            exitProc->parent->waitingFor = 0;
-            exitProc->parent->waitStatus = exitCode;
-            unblockProcess(exitProc->parent);
+    if (pid == INIT_PID) {
+        dbg::printm(MODULE, "Init tried exiting\n");
+        std::abort();
+    } else {
+        if (exitProc->parent) {
+            if (exitProc->parent->waitingFor == exitProc->pid) {
+                exitProc->parent->waitingFor = 0;
+                exitProc->parent->waitStatus = exitCode;
+                unblockProcess(exitProc->parent);
+            }
+            exitProc->state    = ProcessState::Zombie;
+            exitProc->exitCode = exitCode;
+            sendSignal(exitProc->parent, SIGCHILD);
+            zombieProcs.push(exitProc);
+        } else {
+            exitProc->next->prev = exitProc->prev;
+            exitProc->prev->next = exitProc->next;
+            for (Process* proc : exitProc->children) {
+                proc->parent = globalParent;
+                globalParent->children.push_back(proc);
+                if (proc->state == ProcessState::Zombie) {
+                    cleanProc(proc->pid, proc->exitCode);
+                }
+            }
+            dbg::printf("TODO: Free process resources\n");
         }
-        sendSignal(exitProc->parent, SIGCHILD);
     }
-    exitProc->state    = ProcessState::Zombie;
-    exitProc->exitCode = exitCode;
-    zombieProcs.push(exitProc);
 }
 void cleanThread(pid_t pid, pid_t tid, uint8_t exitCode) {
     dbg::printf("TODO: Free thread resources\n");

@@ -228,7 +228,6 @@ void initIOAPIC() {
         }
         current_entry += entry->entry_length;
     }
-    dbg::printm(MODULE, "Initialized\n");
     dbg::popTrace();
 }
 void initLAPIC() {
@@ -282,7 +281,6 @@ void initLAPIC() {
         }
         current_entry += entry->entry_length;
     }
-    dbg::printm(MODULE, "Initialized\n");
     dbg::popTrace();
 }
 void sendIPIs(uint8_t vector) {

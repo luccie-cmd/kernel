@@ -33,7 +33,6 @@ void            midInit() {
     x64::irq::initIOAPIC();
     x64::irq::initLAPIC();
     io::sti();
-    dbg::printf("Setting LSTAR\n");
     uint64_t star_msr = ((uint64_t)(0x1B) << 48) | ((uint64_t)0x08 << 32);
     io::wrmsr(MSR_STAR, star_msr);
     io::wrmsr(MSR_SYSCALL_MASK, 0x202);
@@ -47,7 +46,6 @@ void x64::irq::procLocalInit(void* ign) {
     x64::gdt::init();
     x64::irq::initLAPIC();
     io::sti();
-    dbg::printf("Setting LSTAR\n");
     uint64_t star_msr = ((uint64_t)(0x1B) << 48) | ((uint64_t)0x08 << 32);
     io::wrmsr(MSR_STAR, star_msr);
     io::wrmsr(MSR_SYSCALL_MASK, 0x202);

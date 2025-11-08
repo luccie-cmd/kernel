@@ -64,11 +64,13 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     for (Elf64_Half i = 0; i < phnum; i++) {
         Elf64_Phdr* phdr = new Elf64_Phdr;
         vfs::readFile(handle, phentsize, phdr);
+#ifdef DEBUG
         dbg::printm(MODULE,
                     "PHDR[%u]: Type: 0x%x, VAddr: 0x%lx, PAddr: 0x%lx, FileSz: 0x%lx, MemSz: "
                     "0x%lx, Flags: 0x%x, Align: 0x%lx, Offset: 0x%lx\n",
                     i, phdr->p_type, phdr->p_vaddr, phdr->p_paddr, phdr->p_filesz, phdr->p_memsz,
                     phdr->p_flags, phdr->p_align, phdr->p_offset);
+#endif
         if (phdr->p_type != PT_LOAD && phdr->p_type != PT_DYNAMIC) {
             delete phdr;
             continue;

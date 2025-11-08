@@ -46,6 +46,7 @@ syscallEntry:
     push rbx
 
     lea rdi, [rsp]
+    sub rsp, 8
     mov BYTE [syscallSpinlock], 0
     jmp syscallHandler
     

@@ -102,40 +102,29 @@ void mapStacksToProc(task::pid_t pid, mmu::vmm::PML4* pml4) {
     __asm__ volatile("str %0" : "=a"(tr));
     GDTEntry* tssEntryLow  = (GDTEntry*)((uint64_t*)(gdtr.base + tr));
     GDTEntry* tssEntryHigh = (GDTEntry*)((uint64_t*)(gdtr.base + tr + 8));
-    GDTEntry* userCS       = (GDTEntry*)(gdtr.base + 0x18);
-    GDTEntry* userDS       = (GDTEntry*)(gdtr.base + 0x20);
-    GDTEntry* kernelCS     = (GDTEntry*)(gdtr.base + 0x08);
-    GDTEntry* kernelDS     = (GDTEntry*)(gdtr.base + 0x10);
-    dbg::printf("Kernel CS access, flags = %hx %hx\n", kernelCS->access, kernelCS->flags);
-    dbg::printf("Kernel DS access, flags = %hx %hx\n", kernelDS->access, kernelDS->flags);
-    dbg::printf("User CS access, flags = %hx %hx\n", userCS->access, userCS->flags);
-    dbg::printf("User DS access, flags = %hx %hx\n", userDS->access, userDS->flags);
-    dbg::printf("Mapping proc %llu (Checking: %s)\n", pid, pid != KERNEL_PID ? "true" : "false");
-    uint64_t tssValue =
+    uint64_t  tssValue =
         ((uint64_t)tssEntryHigh->base_low << 48) | ((uint64_t)tssEntryHigh->limit_low << 32) |
         ((uint64_t)tssEntryLow->base_high << 24) | ((uint64_t)tssEntryLow->base_middle << 16) |
         ((uint64_t)tssEntryLow->base_low);
     TSS* tempTss = (TSS*)(tssValue);
     if (pid != KERNEL_PID) {
-        if (mmu::vmm::getPhysicalAddr(pml4, (uint64_t)tempTss, false, false) == 0) {
+        if (mmu::vmm::getPhysicalAddr(pml4, (uint64_t)tempTss, true, false) == 0) {
             mmu::vmm::mapPage(pml4, ((uint64_t)tempTss) - mmu::vmm::getHHDM(), (uint64_t)tempTss,
-                              PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
+                              PROTECTION_RW, MAP_PRESENT);
         }
-        dbg::printf("Mapped GDTR.BASE: 0x%llx Actual GDTR.BASE: 0x%llx\n",
-                    mmu::vmm::getPhysicalAddr(pml4, gdtr.base, false, false), gdtr.base);
-        if (mmu::vmm::getPhysicalAddr(pml4, gdtr.base, false, false) == 0) {
-            mmu::vmm::mapPage(pml4, gdtr.base - mmu::vmm::getHHDM(), gdtr.base,
-                              PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
+        if (mmu::vmm::getPhysicalAddr(pml4, gdtr.base, true, false) == 0) {
+            mmu::vmm::mapPage(pml4, gdtr.base - mmu::vmm::getHHDM(), gdtr.base, PROTECTION_RW,
+                              MAP_PRESENT);
         }
-        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->rsp0 - PAGE_SIZE + 16, false, false) == 0) {
+        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->rsp0 - PAGE_SIZE + 16, true, false) == 0) {
             mmu::vmm::mapPage(pml4, tempTss->rsp0 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                              tempTss->rsp0 - PAGE_SIZE + 16,
-                              PROTECTION_RW | PROTECTION_KERNEL | PROTECTION_NOEXEC, MAP_PRESENT);
+                              tempTss->rsp0 - PAGE_SIZE + 16, PROTECTION_RW | PROTECTION_NOEXEC,
+                              MAP_PRESENT);
         }
-        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->ist1 - PAGE_SIZE + 16, false, false) == 0) {
+        if (mmu::vmm::getPhysicalAddr(pml4, tempTss->ist1 - PAGE_SIZE + 16, true, false) == 0) {
             mmu::vmm::mapPage(pml4, tempTss->ist1 - mmu::vmm::getHHDM() - PAGE_SIZE + 16,
-                              tempTss->ist1 - PAGE_SIZE + 16,
-                              PROTECTION_RW | PROTECTION_KERNEL | PROTECTION_NOEXEC, MAP_PRESENT);
+                              tempTss->ist1 - PAGE_SIZE + 16, PROTECTION_RW | PROTECTION_NOEXEC,
+                              MAP_PRESENT);
         }
     }
     dbg::popTrace();

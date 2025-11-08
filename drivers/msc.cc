@@ -26,7 +26,7 @@ MSCDriver* loadMSCdriver(pci::device* device) {
         mscDriver = block::loadIDEController(device);
     } break;
     case 0x6: {
-        dbg::printm(MODULE, "TODO: Support SATA\n");
+        dbg::printm(MODULE, "TODO: Support SATA (When: Never)\n");
     } break;
     case 0x8: {
         mscDriver = block::loadNVMeDriver(device);

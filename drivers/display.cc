@@ -131,8 +131,9 @@ void DisplayDriver::drawChar(uint8_t displayIdx, char c) {
             }
         }
     } break;
-    default:
+    default: {
         this->drawCharacter(displayIdx, c);
+    } break;
     }
     if (this->screenX + CHAR_WIDTH + MARGIN > display->width) {
         this->screenX = MARGIN;

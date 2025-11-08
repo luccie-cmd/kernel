@@ -30,16 +30,9 @@ static std::vector<Driver*> loadDriver(pci::device* device) {
     case 0x3: {
         loadDrivers = {drivers::loadDisplayDriver(device)};
     } break;
-    case 0x4: {
-        dbg::printm(MODULE, "TODO: Setup multimedia controller (Subclass 0x%02x)\n",
-                    device->subclassCode);
-    } break;
     case 0xc: {
-        dbg::printm(MODULE, "TODO: Load Serial Bus controllers (subclass 0x%02x progIF 0x%02x)\n",
-                    device->subclassCode, (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
-    } break;
-    case 0x6: {
-        dbg::printm(MODULE, "TODO: Load bridge drivers (subclass 0x%02x progIF 0x%02x)\n",
+        dbg::printm(MODULE,
+                    "TODO: Load Serial Bus controller userspace (subclass 0x%02x progIF 0x%02x)\n",
                     device->subclassCode, (uint8_t)(pci::readConfigWord(device, 0x08) >> 8));
     } break;
     default: {

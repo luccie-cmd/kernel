@@ -11,24 +11,8 @@ InputDriver::InputDriver(InputType type) : driver::Driver(driver::driverType::IN
 InputDriver::~InputDriver() {}
 std::vector<InputDriver*> loadInputDrivers() {
     dbg::addTrace(__PRETTY_FUNCTION__);
-    std::vector<pci::device*> pciDevices   = pci::getAllDevices();
-    bool                      kbdFound     = false;
     std::vector<InputDriver*> inputDrivers = {};
-    for (pci::device* device : pciDevices) {
-        if (device->classCode != 0x0c) {
-            continue;
-        }
-        if (device->subclassCode != 0x03) {
-            dbg::printm(MODULE, "TODO: Support non USB SBC devices\n");
-            // std::abort();
-        }
-        dbg::printm(MODULE, "TODO: Support USB SBC devices\n");
-        // std::abort();
-    }
-    if (!kbdFound) {
-        dbg::printm(MODULE, "No ordinary keyboard found, falling back to PS/2\n");
-        // inputDrivers.push_back(kbd::loadPS2Driver());
-    }
+    // inputDrivers.push_back(kbd::loadPS2Driver());
     dbg::popTrace();
     return inputDrivers;
 }
