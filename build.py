@@ -92,7 +92,7 @@ CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmode
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
 CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,--no-undefined', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
-CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./']
+CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./', '-ILimine']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
 
@@ -418,14 +418,15 @@ def setupLimine():
         build_limine = True
     if build_limine:
         print("Building limine")
-        callCmd("rm -rf limine")
+        callCmd("rm -rf Limine")
         callCmd("git clone https://codeberg.org/Limine/Limine --depth=1", True)
         os.chdir("Limine")
         callCmd("./bootstrap")
         callCmd("./configure --enable-uefi-x86-64 --enable-bios")
         callCmd("make")
         os.chdir("..")
-        callCmd("rm -rf ./limine/commands.txt")
+        callCmd("cp ./Limine/limine-protocol/include/limine.h ./Limine/limine.h")
+        callCmd("rm -rf ./Limine/commands.txt")
     callCmd(f"cp ./util/limine.conf {CONFIG['outDir'][0]}/limine.conf")
     callCmd(f"cp ./Limine/bin/limine-bios.sys {CONFIG['outDir'][0]}/limine-bios.sys")
     callCmd(f"cp ./Limine/bin/BOOT* {CONFIG['outDir'][0]}/")
@@ -464,7 +465,7 @@ def main():
         callCmd(f"rm -rf ./.build-cache/{basename}")
         callCmd(f"rm -rf {CONFIG['outDir'][0]}")
     if "clean-all" in sys.argv:
-        callCmd(f"rm -rf limine")
+        callCmd(f"rm -rf Limine")
         callCmd(f"rm -rf ./.build-cache/{basename}")
         callCmd(f"rm -rf {CONFIG['outDir'][0]}")
     if force_rebuild:
@@ -472,7 +473,7 @@ def main():
         callCmd(f"rm -rf ./.build-cache/{basename}")
         callCmd(f"rm -rf {CONFIG['outDir'][0]}")
     if "build-bootloader" in sys.argv:
-        callCmd(f"rm -rf limine")
+        callCmd(f"rm -rf Limine")
         setupLimine()
     print("> Creating necesarry dirs")
     callCmd(f"mkdir -p {CONFIG['outDir'][0]}")
@@ -492,16 +493,32 @@ def main():
         print("> Building kernel")
         buildDir("kernel", False)
         print("> Building init")
-        CONFIG["CFLAGS"] += ['-Iinit/include', '-nostdinc']
+        CONFIG["CFLAGS"] += ['-nostdinc']
+        CONFIG["INCPATHS"] = ['-Iinit/include', '-Iinit/include/libc']
+        CONFIG["CFLAGS"].remove('-fno-pie')
+        CONFIG["CFLAGS"].remove('-fno-PIE')
+        CONFIG["CFLAGS"].remove('-fno-pic')
+        CONFIG["CFLAGS"].remove('-fno-PIC')
+        CONFIG["CFLAGS"].remove('-mcmodel=kernel')
+        CONFIG["CXXFLAGS"].remove('-fno-exceptions')
+        CONFIG["CXXFLAGS"].remove('-fno-rtti') 
+        CONFIG["CFLAGS"].remove('-mno-tls-direct-seg-refs')
+        CONFIG["CFLAGS"].remove('-mno-red-zone')
+        CONFIG["CFLAGS"].remove('-fno-stack-protector')
         buildDir("init/src", False)
-        CONFIG.pop('-Iinit/include')
-        CONFIG.pop('-nostdinc')
+        print("> Building init's libc")
+        buildDir("init/libc", True, f"{CONFIG['outDir'][0]}/libc_init.a")
         print("> Removing unused objects")
         cleanFiles(["libcxx", "drivers", "common", "kernel", "test"])
         print("> Linking kernel")
         linkDir(f"{CONFIG['outDir'][0]}/kernel", "util/linker.ld", "kernel", [f"{CONFIG['outDir'][0]}/libcxx.a", f"{CONFIG['outDir'][0]}/drivers.a", f"{CONFIG['outDir'][0]}/common.a"])
         print("> Linking init")
-        linkDir(f"{CONFIG['outDir'][0]}/init", None, "init")
+        CONFIG["LDFLAGS"].remove('-fno-pie')
+        CONFIG["LDFLAGS"].remove('-fno-PIE')
+        CONFIG["LDFLAGS"].remove('-fno-pic')
+        CONFIG["LDFLAGS"].remove('-fno-PIC')
+        CONFIG["LDFLAGS"].remove('-Wl,-no-pie')
+        linkDir(f"{CONFIG['outDir'][0]}/init", None, "init", [f"{CONFIG['outDir'][0]}/libc_init.a"])
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test.elf"])
