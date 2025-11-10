@@ -166,10 +166,10 @@ void enableBPProtection() {
     exceptionHandlers[0x3] = handleBP;
 }
 void disableGPProtection() {
-    exceptionHandlers[0xe] = nullptr;
+    exceptionHandlers[0xd] = nullptr;
 }
 void enableGPProtection() {
-    exceptionHandlers[0xe] = handleGP;
+    exceptionHandlers[0xd] = handleGP;
 }
 static mmu::vmm::vmm_address getVMMfromVA(uint64_t vaddr) {
     mmu::vmm::vmm_address result;
