@@ -15,7 +15,7 @@
 namespace mmu::pmm {
 static bool                                                        __initialized  = false;
 limine_memmap_request __attribute__((section(".limine_requests"))) memmap_request = {
-    .id = LIMINE_MEMMAP_REQUEST, .revision = 0, .response = nullptr};
+    .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 0, .response = nullptr};
 static node*  __head = nullptr;
 std::Spinlock headSpinlock;
 uint64_t      total          = 0;

@@ -12,7 +12,7 @@ extern drivers::DisplayDriver* displayDriver;
 namespace drivers {
 static limine_framebuffer_request
     __attribute__((used, retain, section(".limine_requests"))) fbRequest = {
-        .id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0, .response = nullptr};
+        .id = LIMINE_FRAMEBUFFER_REQUEST_ID, .revision = 0, .response = nullptr};
 DisplayDriver::DisplayDriver() : Driver(driver::driverType::DISPLAY) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (fbRequest.response == nullptr) {

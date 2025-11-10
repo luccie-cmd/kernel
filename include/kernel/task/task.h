@@ -9,7 +9,8 @@
 #include <kernel/mmu/vmm/types.h>
 #include <vector>
 #define SIGABORT 1
-#define SIGCHILD 2
+#define SIGKILL  2
+#define SIGCHILD 3
 
 namespace task {
 struct ProcessMemoryMapping {
@@ -19,7 +20,7 @@ struct ProcessMemoryMapping {
     size_t                fileLength;
     size_t                memLength;
     size_t                fileIdx;
-    uint8_t                   permissions;
+    uint8_t               permissions;
     ProcessMemoryMapping* next;
 };
 enum struct ThreadStatus {
@@ -68,8 +69,14 @@ struct Mapping {
     uint64_t memLength;
     uint64_t fileLength;
     uint64_t alignment;
-    uint8_t      permissions;
+    uint8_t  permissions;
 };
+struct GSbase {
+    Thread*  currentThread; // 0x00
+    Process* currentProc;   // 0x08
+    uint64_t kernelCR3;     // 0x10
+    uint64_t stackTop;      // 0x18
+} __attribute__((packed));
 void  initialize();
 bool  isInitialized();
 pid_t getNewPID();

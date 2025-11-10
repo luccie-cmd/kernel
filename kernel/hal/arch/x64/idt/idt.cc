@@ -59,6 +59,7 @@ extern "C" void                                              loadIDT(uint64_t ba
 void                                                         handlePF(io::Registers*);
 void                                                         handleUD(io::Registers*);
 void                                                         handleBP(io::Registers*);
+void                                                         handleGP(io::Registers*);
 void                                                         init() {
     loadIDT((uint64_t)entries, sizeof(entries) - 1);
     initGates();
@@ -67,7 +68,8 @@ void                                                         init() {
     }
     enablePageFaultProtection();
     enableUDProtection();
-    exceptionHandlers[3] = handleBP;
+    enableBPProtection();
+    enableGPProtection();
 }
 void registerHandler(uint8_t gate, void* function, uint8_t type) {
     entries[gate] = IDT_ENTRY((uint64_t)function, 0x8, type, 3, 1);
@@ -157,6 +159,18 @@ void disableUDProtection() {
 void enableUDProtection() {
     exceptionHandlers[0x6] = handleUD;
 }
+void disableBPProtection() {
+    exceptionHandlers[0x3] = nullptr;
+}
+void enableBPProtection() {
+    exceptionHandlers[0x3] = handleBP;
+}
+void disableGPProtection() {
+    exceptionHandlers[0xe] = nullptr;
+}
+void enableGPProtection() {
+    exceptionHandlers[0xe] = handleGP;
+}
 static mmu::vmm::vmm_address getVMMfromVA(uint64_t vaddr) {
     mmu::vmm::vmm_address result;
     result.padding = (vaddr >> 48) & 0xFFFF;
@@ -229,5 +243,15 @@ void handleBP(io::Registers* regs) {
     dbg::printf("BP exception:\n");
     printRegs(regs);
     return;
+}
+void handleGP(io::Registers* regs) {
+    disableGPProtection();
+    if (regs->cs == 0x2b) {
+        enableGPProtection();
+        task::sendSignal(task::getCurrentProc(), SIGKILL);
+    }
+    dbg::printf("Kernel general protection exception\n");
+    printRegs(regs);
+    std::abort();
 }
 }; // namespace hal::arch::x64::idt

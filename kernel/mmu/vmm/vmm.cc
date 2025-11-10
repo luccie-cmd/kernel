@@ -21,7 +21,7 @@ namespace mmu::vmm {
 static uint64_t                                                  __HHDMoffset;
 static bool                                                      __initialized;
 limine_hhdm_request __attribute__((section(".limine_requests"))) hhdm_request = {
-    .id       = LIMINE_HHDM_REQUEST,
+    .id       = LIMINE_HHDM_REQUEST_ID,
     .revision = 0,
     .response = nullptr,
 };

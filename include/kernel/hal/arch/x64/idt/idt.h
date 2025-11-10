@@ -45,6 +45,10 @@ namespace hal::arch::x64::idt{
     void enablePageFaultProtection();
     void disableUDProtection();
     void enableUDProtection();
+    void disableBPProtection();
+    void enableBPProtection();
+    void disableGPProtection();
+    void enableGPProtection();
     void registerHandler(uint8_t gate, void* function, uint8_t type);
 };
 

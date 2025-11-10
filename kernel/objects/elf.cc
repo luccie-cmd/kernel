@@ -120,8 +120,10 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     for (size_t j = 0; j < entryCount; ++j) {
         Elf64_Dyn* dyn = new Elf64_Dyn;
         vfs::readFile(handle, sizeof(Elf64_Dyn), dyn);
+#ifdef DEBUG
         dbg::printm(MODULE, "DYN[%lu] Tag: %lu Val: (0x%lx %lu)\n", j, dyn->d_tag, dyn->d_un.d_ptr,
                     dyn->d_un.d_val);
+#endif
         if (dyn->d_tag == DT_NULL) {
             delete dyn;
             break;
@@ -184,10 +186,10 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
         }
         delete dyn;
     }
-    if (hashVirtual == 0) {
-        dbg::printm(MODULE, "No hash virtual address specified!!!\n");
-        std::abort();
-    }
+    // if (hashVirtual == 0) {
+    //     dbg::printm(MODULE, "No hash virtual address specified!!!\n");
+    //     std::abort();
+    // }
     if (strtabSize == 0) {
         dbg::printm(MODULE, "No strtab size found!!!\n");
         std::abort();

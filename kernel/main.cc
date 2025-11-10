@@ -41,8 +41,8 @@ extern "C" std::vector<std::pair<void*, const char*>> funcAddrTable;
 //     uint64_t size = vfs::getLen(mapHandle);
 // }
 
-limine_smp_request __attribute__((section(".limine_requests"))) smp_request = {
-    .id = LIMINE_SMP_REQUEST, .revision = 0, .response = nullptr, .flags = 0};
+limine_mp_request __attribute__((section(".limine_requests"))) smp_request = {
+    .id = LIMINE_MP_REQUEST_ID, .revision = 0, .response = nullptr, .flags = 0};
 
 extern "C" void initX64();
 

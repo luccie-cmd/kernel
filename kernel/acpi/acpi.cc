@@ -10,7 +10,7 @@
 
 namespace acpi {
 limine_rsdp_request __attribute__((section(".limine_requests"))) rsdpRequest = {
-    .id       = LIMINE_RSDP_REQUEST,
+    .id       = LIMINE_RSDP_REQUEST_ID,
     .revision = 0,
     .response = nullptr,
 };

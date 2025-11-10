@@ -4,7 +4,7 @@
 #include <cstdint>
 #define SYSCALL_EXIT 0
 #define SYSCALL_WRITE 1
-#define SYSCALL_WRITESCREEN 3
+#define SYSCALL_WRITESCREEN 2
 
 namespace task::syscall {
 struct SyscallRegs {
