@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <drivers/block/ide.h>
 #include <drivers/block/nvme.h>
+#include <drivers/block/ram.h>
 #include <drivers/msc.h>
 #define MODULE "MSC Driver manager"
 
@@ -38,5 +39,11 @@ MSCDriver* loadMSCdriver(pci::device* device) {
     }
     dbg::popTrace();
     return mscDriver;
+}
+MSCDriver* loadRAMMSC(void* addr, size_t len) {
+    block::RAMDriver* drv = new block::RAMDriver();
+    drv->init((pci::device*)addr);
+    drv->setSize(len);
+    return drv;
 }
 }; // namespace drivers

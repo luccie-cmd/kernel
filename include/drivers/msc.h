@@ -7,6 +7,7 @@ namespace drivers{
     enum struct StorageType : int {
         IDE,
         NVMe,
+        RAM,
     };
     class MSCDriver : public driver::Driver {
         public:
@@ -27,6 +28,7 @@ namespace drivers{
     };
     uint64_t getNewIdentIndex();
     MSCDriver* loadMSCdriver(pci::device* device);
+    MSCDriver* loadRAMMSC(void* addr, size_t len);
 };
 
 #endif // _KERNEL_DRIVER_MSC_H_

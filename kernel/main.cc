@@ -44,6 +44,14 @@ extern "C" std::vector<std::pair<void*, const char*>> funcAddrTable;
 limine_mp_request __attribute__((section(".limine_requests"))) smp_request = {
     .id = LIMINE_MP_REQUEST_ID, .revision = 0, .response = nullptr, .flags = 0};
 
+limine_module_request __attribute__((section(".limine_requests"))) module_request{
+    .id                    = LIMINE_MODULE_REQUEST_ID,
+    .revision              = 0,
+    .response              = nullptr,
+    .internal_module_count = 0,
+    .internal_modules      = nullptr,
+};
+
 extern "C" void initX64();
 
 extern "C" void KernelMain() {
@@ -73,23 +81,25 @@ extern "C" void KernelMain() {
     temp->setScreenX(displayDriver->getScreenX());
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
-    displayDriver = temp;
-    // TODO: Only use this function in QEMU, otherwise use the mountUUID function
-    if (!vfs::mount(0, 0, "/tmpboot")) {
-        dbg::printf("ERROR WHILE LOADING INIT (Unable to mount boot partition)\n");
+    displayDriver       = temp;
+    void*  initFileAddr = module_request.response->modules[0]->address;
+    size_t initFileSize = module_request.response->modules[0]->size;
+    if (!vfs::mountBytes(initFileAddr, initFileSize, "/tmpboot")) {
+        dbg::printf("ERROR WHILE LOADING INIT (Unable to mount init file)\n");
         std::abort();
     }
-    // TODO: Only use this function in QEMU, otherwise use the mountUUID function
-    // TODO: Move this function to init.elf
-    if (!vfs::mount(0, 1, "/")) {
-        dbg::printf("ERROR WHILE LOADING INIT (Unable to mount root partition)\n");
-        std::abort();
-    }
+    // uint8_t UUID[] = {0xB9, 0x86, 0xEE, 0x05, 0x74, 0xDF, 0x4F, 0x70,
+    //                   0xA2, 0x57, 0x70, 0x7F, 0x07, 0x0B, 0xFA, 0x36};
+    // if (!vfs::mountByUUID((const char*)UUID, "/")) {
+    //     dbg::printf("ERROR WHILE LOADING INIT (Unable to mount root partition)\n");
+    //     std::abort();
+    // }
     uint64_t handle = vfs::openFile("/tmpboot/init", 0);
     if (handle == (uint64_t)-1) {
         dbg::printf("ERROR WHILE LOADING INIT (No init binary found)\n");
         std::abort();
     }
+    objects::elf::setPrefix("/tmpboot/lib/");
     objects::elf::ElfObject* initObj = objects::elf::loadElfObject(handle, 0);
     if (initObj == nullptr) {
         dbg::printf("ERROR WHILE LOADING INIT (Corrupted ELF binary)\n");

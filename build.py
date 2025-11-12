@@ -342,9 +342,6 @@ def mountFs(device, boot, kernel, files):
     callCmd(f"sudo mkdir -p mnt/EFI/BOOT")
     callCmd(f"sudo cp {boot} mnt/EFI/BOOT")
     callCmd(f"sudo cp {kernel} mnt")
-    callCmd(f"sudo cp ./bin/init.elf mnt/init")
-    callCmd(f"sudo mkdir -p mnt/lib")
-    callCmd(f"sudo cp ./bin/libc_init.so mnt/lib/libc_init.so")
     callCmd(f"sudo echo \"Hello, World\" > mnt/test.txt")
     for file in files:
         if os.path.isfile(file):
@@ -358,6 +355,30 @@ def mountFs(device, boot, kernel, files):
     callCmd(f"sudo losetup -d {device}")
     callCmd(f"rm -rf mnt")
 
+def buildInitImg():
+    out_file = f"{CONFIG['outDir'][0]}/init.img"
+    command = f"dd if=/dev/zero of={out_file} bs=1M count={10}"
+    callCmd(command)
+    print("> Making GPT partition")
+    command = f"parted {out_file} --script mklabel gpt"
+    callCmd(command)
+    print("> Making DATA partition")
+    command = f"parted {out_file} --script mkpart DATA FAT32 2048s 100%"
+    callCmd(command)
+    command = f"parted {out_file} --script set 1 boot on"
+    callCmd(command)
+    LOOP_DEVICE=setupLoopDevice(out_file)
+    print("> Formatting file systems")
+    callCmd(f"sudo mkfs.fat -F32 {LOOP_DEVICE}p1")
+    callCmd(f"mkdir -p mnt")
+    print("> Copying boot files")
+    callCmd(f"sudo mount {LOOP_DEVICE}p1 mnt")
+    callCmd(f"sudo mkdir -p mnt/lib")
+    callCmd(f"sudo cp ./bin/init.elf mnt/init")
+    callCmd(f"sudo cp ./bin/libc_init.so mnt/lib/libc_init.so")
+    callCmd(f"sudo umount -l mnt")
+    callCmd(f"sudo losetup -d {LOOP_DEVICE}")
+    callCmd(f"rm -rf mnt")
 
 def buildImage(out_file, boot_file, kernel_file, files):
     if not out_file.startswith("/dev"):
@@ -450,8 +471,8 @@ def setupLimine():
 def getInfo():
     callCmd("rm -f info.txt")
     callCmd("touch info.txt")
-    callCmd(f"cloc . --exclude-dir=limine,bin,.build-cache,script,.vscode >> info.txt")
-    callCmd(f"tree -I 'bin' -I 'limine' -I 'script' -I '.vscode' -I 'tmp.txt' -I 'commands.txt' -I 'info.txt' >> info.txt")
+    callCmd(f"cloc . --exclude-dir=Limine,bin,.build-cache,script,.vscode >> info.txt")
+    callCmd(f"tree -I 'bin' -I 'Limine' -I 'script' -I '.vscode' -I 'tmp.txt' -I 'commands.txt' -I 'info.txt' >> info.txt")
 
 def cleanFiles(dirs: list[str]):
     for dir_ in dirs:
@@ -548,7 +569,8 @@ def main():
         linkDir(f"{CONFIG['outDir'][0]}/init/src", None, "init")
         print("> Getting info")
         getInfo()
-        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test.elf"])
+        buildInitImg()
+        buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", [f"{CONFIG['outDir'][0]}/init.img"])
         # if os.path.exists("/dev/sda"):
         #     buildImage("/dev/sda", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", [])
     if "run" in sys.argv:

@@ -31,6 +31,7 @@ struct ElfObject {
         }
     }
 };
+void       setPrefix(const char* path);
 ElfObject* loadElfObject(uint64_t handle, size_t PHDRAddend);
 }; // namespace objects::elf
 

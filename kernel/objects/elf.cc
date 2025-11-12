@@ -35,6 +35,10 @@ static const char* makeStringFromStrTab(uint8_t* strtab, uint64_t size, uint64_t
     std::memcpy(retBuffer, buffer.data(), buffer.size());
     return retBuffer;
 }
+std::string prefix = "/tmpboot/lib/";
+void        setPrefix(const char* path) {
+    prefix = std::string(path);
+}
 ElfObject* loadElfObject(uint64_t handle, size_t PHDRAddend) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     char bitNess;
@@ -252,8 +256,7 @@ ElfObject* loadElfObject(uint64_t handle, size_t PHDRAddend) {
         const char* file = makeStringFromStrTab(strtab, strtabSize, index);
         assert(file != nullptr);
         assert(strlen(file) > 0);
-        std::string prefix = "/tmpboot/lib/";
-        std::string path   = prefix + file;
+        std::string path = prefix + file;
         assert(path.size() > 0);
         uint64_t libHandle = vfs::openFile(path.c_str(), 0);
         if (libHandle == (uint64_t)-1) {

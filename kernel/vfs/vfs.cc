@@ -79,7 +79,7 @@ static std::pair<drivers::MSCDriver*, uint8_t> translateVirtualDiskToPhysicalDis
         if (encounteredDisks > disk) {
             std::pair<drivers::MSCDriver*, uint8_t> ret;
             ret.first  = blockDriver;
-            ret.second = 0;
+            ret.second = encounteredDisks - disk;
             dbg::popTrace();
             return ret;
         }
@@ -141,6 +141,40 @@ void readGPT(uint8_t disk) {
     partitionEntries.at(disk) = entries;
     dbg::popTrace();
 }
+static std::vector<PartitionEntry*> readPartEntries(uint8_t* buffer) {
+    PartitionTableHeader* PTH = new PartitionTableHeader;
+    std::memcpy(PTH, buffer + 512, 512);
+    if (std::memcmp(PTH->signature, "EFI PART", 8) != 0) {
+        dbg::printm(MODULE, "Partition header corrupted got a signature of `%8s`\n",
+                    PTH->signature);
+        std::abort();
+    }
+    uint8_t* partBuffer = new uint8_t[15872];
+    std::memcpy(partBuffer, buffer + 512 * PTH->firstPartitionEntry, 512 * 31);
+    std::vector<PartitionEntry*> entries;
+    for (uint32_t i = 0; i < PTH->partitionCount; i++) {
+        PartitionEntry* entry = (PartitionEntry*)(partBuffer + (i * sizeof(PartitionEntry)));
+        if (entry->startLBA == 0 && entry->endLBA == 0) {
+            break;
+        }
+        uint8_t* newGUID = parseGUID(entry->GUID);
+        std::memcpy(entry->GUID, newGUID, sizeof(entry->GUID));
+        PartitionEntry* acEntry = new PartitionEntry;
+        std::memcpy(acEntry, entry, sizeof(PartitionEntry));
+        entries.push_back(acEntry);
+#ifdef DEBUG
+        dbg::printm(MODULE, "Loaded new partition: %llu-%llu\n", acEntry->startLBA,
+                    acEntry->endLBA);
+#endif
+    }
+    if (entries.size() == 0) {
+        dbg::printm(MODULE, "Unable to find any partitions on buffer\n");
+        std::abort();
+    }
+    delete[] partBuffer;
+    delete PTH;
+    return entries;
+}
 std::pair<MountPoint*, size_t> findMountpoint() {
     dbg::addTrace(__PRETTY_FUNCTION__);
     for (size_t i = 0; i < mountPoints.size(); ++i) {
@@ -201,6 +235,67 @@ bool mount(uint8_t disk, uint8_t partition, const char* mountLocation) {
     mountPoints.at(mp.second) = mp.first;
     dbg::printm(MODULE, "Successfully mounted %hhu:%hhu to %s\n", disk, partition, mountLocation);
     dbg::popTrace();
+    return true;
+}
+bool mountByUUID(const char* UUID, const char* mountLoc) {
+    size_t disk = 0;
+    for (std::vector<PartitionEntry*> entries : partitionEntries) {
+        size_t partition = 0;
+        for (PartitionEntry* entry : entries) {
+            if (std::memcmp(entry->UGUID, UUID, 16) == 0) {
+                auto               drvDisk = translateVirtualDiskToPhysicalDisk(disk);
+                drivers::FSDriver* fileSystemdriver =
+                    drivers::loadFSDriver(partitionEntries.at(disk).at(partition), drvDisk);
+                if (!fileSystemdriver) {
+                    dbg::printm(MODULE, "Failed to load file system driver!!!\n");
+                    dbg::popTrace();
+                    return false;
+                }
+                std::pair<MountPoint*, size_t> mp = findMountpoint();
+                mp.first->fileSystemDriver        = fileSystemdriver;
+                mp.first->mountPath               = mountLoc;
+                if (mp.first->mountPath[std::strlen(mp.first->mountPath) - 1] != '/') {
+                    char* newMountPath = new char[strlen(mountLoc) + 2];
+                    std::memcpy(newMountPath, mountLoc, std::strlen(mountLoc));
+                    newMountPath[std::strlen(mountLoc)] = '/';
+                    newMountPath[strlen(mountLoc) + 1]  = '\0';
+                    mp.first->mountPath                 = newMountPath;
+                }
+                mp.first->mounted         = true;
+                mountPoints.at(mp.second) = mp.first;
+                dbg::printm(MODULE, "Successfully mounted %hhu:%hhu to %s\n", disk, partition,
+                            mountLoc);
+                return true;
+            }
+            partition++;
+        }
+        disk++;
+    }
+    return false;
+}
+bool mountBytes(void* addr, size_t len, const char* mountLoc) {
+    std::vector<PartitionEntry*>            entries = readPartEntries((uint8_t*)addr);
+    drivers::MSCDriver*                     disk    = drivers::loadRAMMSC(addr, len);
+    std::pair<drivers::MSCDriver*, uint8_t> drvDisk = {disk, 0};
+    drivers::FSDriver* fileSystemdriver             = drivers::loadFSDriver(entries[0], drvDisk);
+    if (!fileSystemdriver) {
+        dbg::printm(MODULE, "Failed to load file system driver!!!\n");
+        dbg::popTrace();
+        return false;
+    }
+    std::pair<MountPoint*, size_t> mp = findMountpoint();
+    mp.first->fileSystemDriver        = fileSystemdriver;
+    mp.first->mountPath               = mountLoc;
+    if (mp.first->mountPath[std::strlen(mp.first->mountPath) - 1] != '/') {
+        char* newMountPath = new char[strlen(mountLoc) + 2];
+        std::memcpy(newMountPath, mountLoc, std::strlen(mountLoc));
+        newMountPath[std::strlen(mountLoc)] = '/';
+        newMountPath[strlen(mountLoc) + 1]  = '\0';
+        mp.first->mountPath                 = newMountPath;
+    }
+    mp.first->mounted         = true;
+    mountPoints.at(mp.second) = mp.first;
+    dbg::printm(MODULE, "Successfully mounted %s\n", mountLoc);
     return true;
 }
 bool umount(const char* path) {

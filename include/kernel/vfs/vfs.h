@@ -24,6 +24,8 @@ namespace vfs{
     void readGPT(uint8_t disk);
     bool mount(uint8_t disk, uint8_t partition, const char* mountLoc);
     bool mount(const char* file, const char* mountLoc);
+    bool mountBytes(void* addr, size_t len, const char* mountLoc);
+    bool mountByUUID(const char* UUID, const char* mountLoc);
     bool umount(const char* mountLocation);
     uint64_t openFile(const char* path, uint64_t flags);
     uint64_t getOffset(uint64_t handle);
