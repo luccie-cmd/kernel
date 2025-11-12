@@ -9,8 +9,12 @@
 #include <kernel/mmu/vmm/types.h>
 #include <vector>
 #define SIGABORT 1
-#define SIGKILL  2
+#define SIGKILL 2
 #define SIGCHILD 3
+
+namespace objects::elf {
+struct ElfObject;
+};
 
 namespace task {
 struct ProcessMemoryMapping {
@@ -59,9 +63,10 @@ struct Process {
     Process*                                  parent;
     ProcessMemoryMapping*                     memoryMapping;
     Thread*                                   threads;
-    std::vector<Elf64_Rela*>                  relas;
     Elf64_Addr                                baseAddr;
     std::unordered_map<size_t, signalHandler> signals;
+    objects::elf::ElfObject*                  elfObj;
+    std::vector<Elf64_Rela*>                  relas;
 };
 struct Mapping {
     uint64_t virtualStart;
@@ -69,6 +74,7 @@ struct Mapping {
     uint64_t memLength;
     uint64_t fileLength;
     uint64_t alignment;
+    uint64_t handle;
     uint8_t  permissions;
 };
 struct GSbase {
@@ -77,16 +83,10 @@ struct GSbase {
     uint64_t kernelCR3;     // 0x10
     uint64_t stackTop;      // 0x18
 } __attribute__((packed));
-void  initialize();
-bool  isInitialized();
-pid_t getNewPID();
-//                                                                                          {{virtual
-//                                                                                          start,
-//                                                                                          file
-//                                                                                          offset},
-//                                                                                          length}
-void     makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr baseAddr,
-                        std::vector<Mapping*> mappings, Elf64_Addr relaVirtual, Elf64_Xword relaSize);
+void     initialize();
+bool     isInitialized();
+pid_t    getNewPID();
+void     makeNewProcess(pid_t pid, objects::elf::ElfObject* obj);
 void     attachThread(pid_t pid, uint64_t entryPoint);
 void     mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress);
 void     nextProc();

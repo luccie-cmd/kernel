@@ -91,6 +91,10 @@ switchProc:
     mov r15, [rdi + 32]
     mov rdi, [rdi + 96]
 
+    ; Something about SysV mandates we do this (8 byte alignment)
+    sub rsp, 8
+    sub rbp, 8
+
     ; int3
     ; jmp $
     

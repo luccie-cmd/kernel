@@ -133,7 +133,9 @@ extern "C" void printRegs(io::Registers* regs) {
 }
 extern "C" void handleInt(io::Registers* regs) {
     if (regs->interrupt_number < 0x20) {
+#ifdef DEBUG
         dbg::printf("Interrupt type: %s\n", exceptions[regs->interrupt_number]);
+#endif
         if (exceptionHandlers[regs->interrupt_number]) {
             exceptionHandlers[regs->interrupt_number](regs);
         } else {

@@ -17,6 +17,10 @@ static bool verifyHeader(Elf64_Ehdr* hdr) {
         hdr->e_ident[EI_MAG2] != ELFMAG2 || hdr->e_ident[EI_MAG3] != ELFMAG3) {
         return false;
     }
+    if (hdr->e_type != ET_DYN) {
+        dbg::printm(MODULE, "No support for ET_DYN files\n");
+        return false;
+    }
     return true;
 }
 static const char* makeStringFromStrTab(uint8_t* strtab, uint64_t size, uint64_t index) {
@@ -31,7 +35,7 @@ static const char* makeStringFromStrTab(uint8_t* strtab, uint64_t size, uint64_t
     std::memcpy(retBuffer, buffer.data(), buffer.size());
     return retBuffer;
 }
-ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
+ElfObject* loadElfObject(uint64_t handle, size_t PHDRAddend) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     char bitNess;
     vfs::seek(handle, 4);
@@ -50,7 +54,7 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     if (header->e_type == ET_DYN && PHDRAddend == 0) {
         delete header;
         dbg::popTrace();
-        return loadElfObject(handle, 0x400000);
+        return loadElfObject(handle, 0x1000);
     }
     ElfObject* obj     = new ElfObject;
     obj->type          = header->e_type;
@@ -89,6 +93,7 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
             }
             mapping->virtualStart = phdr->p_vaddr + PHDRAddend;
             mapping->alignment    = phdr->p_align;
+            mapping->handle       = handle;
             obj->mappings.push_back(mapping);
             delete phdr;
         } else if (phdr->p_type == PT_DYNAMIC) {
@@ -116,6 +121,9 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
     Elf64_Addr              symtabVirtual = 0;
     Elf64_Addr              relaVirtual   = 0;
     Elf64_Xword             relaSize      = 0;
+    Elf64_Addr              pltGotVirtual = 0;
+    Elf64_Addr              jmpVirtual    = 0;
+    uint64_t                jmpSize       = 0;
     Elf64_Addr              hashVirtual   = 0;
     for (size_t j = 0; j < entryCount; ++j) {
         Elf64_Dyn* dyn = new Elf64_Dyn;
@@ -146,13 +154,13 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
                         dyn->d_tag, dyn->d_un.d_ptr);
         } break;
         case DT_STRTAB: {
-            strtabVirtual = dyn->d_un.d_ptr;
+            strtabVirtual = dyn->d_un.d_ptr + PHDRAddend;
         } break;
         case DT_STRSZ: {
             strtabSize = dyn->d_un.d_val;
         } break;
         case DT_SYMTAB: {
-            symtabVirtual = dyn->d_un.d_ptr;
+            symtabVirtual = dyn->d_un.d_ptr + PHDRAddend;
         } break;
         case DT_SYMENT: {
             if (dyn->d_un.d_val != 0x18) {
@@ -161,7 +169,7 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
             }
         } break;
         case DT_RELA: {
-            relaVirtual = dyn->d_un.d_ptr;
+            relaVirtual = dyn->d_un.d_ptr + PHDRAddend;
         } break;
         case DT_RELASZ: {
             relaSize = dyn->d_un.d_val;
@@ -173,7 +181,22 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
             }
         } break;
         case DT_HASH: {
-            hashVirtual = dyn->d_un.d_ptr;
+            hashVirtual = dyn->d_un.d_ptr + PHDRAddend;
+        } break;
+        case DT_PLTRELSZ: {
+            jmpSize = dyn->d_un.d_val;
+        } break;
+        case DT_PLTGOT: {
+            pltGotVirtual = dyn->d_un.d_ptr + PHDRAddend;
+        } break;
+        case DT_JMPREL: {
+            jmpVirtual = dyn->d_un.d_ptr + PHDRAddend;
+        } break;
+        case DT_PLTREL: {
+            if (dyn->d_un.d_val != DT_RELA) {
+                dbg::printm(MODULE, "ERROR: DT_PLTREL referincing REL instead of RELA\n");
+                std::abort();
+            }
         } break;
         // Optionals:
         case DT_DEBUG: {
@@ -186,10 +209,18 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
         }
         delete dyn;
     }
-    // if (hashVirtual == 0) {
-    //     dbg::printm(MODULE, "No hash virtual address specified!!!\n");
-    //     std::abort();
-    // }
+    if (hashVirtual == 0) {
+        dbg::printm(MODULE, "No hash virtual address specified!!!\n");
+        std::abort();
+    }
+    if (symtabVirtual == 0) {
+        dbg::printm(MODULE, "No symtab virtual address specified!!!\n");
+        std::abort();
+    }
+    if (strtabVirtual == 0) {
+        dbg::printm(MODULE, "No strtab virtual address specified!!!\n");
+        std::abort();
+    }
     if (strtabSize == 0) {
         dbg::printm(MODULE, "No strtab size found!!!\n");
         std::abort();
@@ -202,6 +233,10 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
             strtabFileOffset       = phdr->fileOffset + offsetInSegment;
             break;
         }
+    }
+    if (strtabFileOffset == 0) {
+        dbg::printm(MODULE, "Failed to aquire strtabFileOffset\n");
+        std::abort();
     }
     uint8_t* strtab = new uint8_t[strtabSize];
     vfs::seek(handle, strtabFileOffset);
@@ -217,29 +252,32 @@ ElfObject* loadElfObject(int handle, size_t PHDRAddend) {
         const char* file = makeStringFromStrTab(strtab, strtabSize, index);
         assert(file != nullptr);
         assert(strlen(file) > 0);
-        std::string prefix = "/libs/";
+        std::string prefix = "/tmpboot/lib/";
         std::string path   = prefix + file;
         assert(path.size() > 0);
-        int libHandle = vfs::openFile(path.c_str(), 0);
-        if (libHandle == -1) {
+        uint64_t libHandle = vfs::openFile(path.c_str(), 0);
+        if (libHandle == (uint64_t)-1) {
             dbg::printm(MODULE, "Unable to find needed dependency `%s`\n", path.c_str());
             delete obj;
             return nullptr;
         }
-        dbg::printm(MODULE, "TODO: Read file `%llu`\n", libHandle);
-        std::abort();
+        uint64_t addressOffset = obj->mappings.at(obj->mappings.size() - 1)->virtualStart +
+                                 obj->mappings.at(obj->mappings.size() - 1)->memLength;
+        ElfObject* libObj = loadElfObject(libHandle, addressOffset);
+        obj->dependencies.push_back(libObj);
     }
     if (relaVirtual == 0 || relaSize == 0) {
         dbg::printm(MODULE, "WARNING No rela found!\n");
-    } else {
-        // obj->symtabVirtual = PHDRAddend + symtabVirtual;
-        // obj->hashVirtual = PHDRAddend + hashVirtual;
-        obj->relaVirtual = PHDRAddend + relaVirtual;
-        obj->relaSize    = relaSize;
-        dbg::printm(MODULE, "TODO: Add symbol table address 0x%llx to ElfObject\n", symtabVirtual);
-        dbg::printm(MODULE, "TODO: Add hash table address 0x%llx to ElfObject\n", hashVirtual);
     }
-    delete[] strtab;
+    obj->symtabVirtual = symtabVirtual;
+    obj->hashVirtual   = hashVirtual;
+    obj->pltGotVirtual = pltGotVirtual;
+    obj->jmpVirtual    = jmpVirtual;
+    obj->jmpSize       = jmpSize;
+    obj->relaVirtual   = relaVirtual;
+    obj->relaSize      = relaSize;
+    obj->strtab        = strtab;
+    obj->strsize       = strtabSize;
     delete dynPhdr;
     delete header;
     dbg::popTrace();

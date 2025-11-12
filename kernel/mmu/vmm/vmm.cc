@@ -146,6 +146,12 @@ void mapPage(PML4* pml4, size_t physicalAddr, size_t virtualAddr, int prot, int 
         std::abort();
     }
     mapSpinlock.lock();
+    // if (pml4 != getPML4(KERNEL_PID) and virtualAddr <= USER_STACK_TOP - (5 * PAGE_SIZE) and
+    //     physicalAddr != 0xDEADC000) {
+    //     dbg::printf(
+    //         "TODO: User addresses should only be mapped in the HHDM when mapped from kernel\n");
+    //     std::abort();
+    // }
     vmm_address vma         = getVMMfromVA(virtualAddr);
     bool        kernelPage  = (prot & PROTECTION_KERNEL) != 0;
     bool        readWrite   = (prot & PROTECTION_RW) != 0;

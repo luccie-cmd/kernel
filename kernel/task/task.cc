@@ -76,10 +76,11 @@ static inline bool isInRange(uint64_t start, uint64_t end, uint64_t address) {
     return (address >= start && address < end);
 }
 void attachThread(pid_t pid, uint64_t entryPoint) {
+    dbg::addTrace(__PRETTY_FUNCTION__);
     Process*     proc      = findProcByPID(pid);
     const size_t stackSize = 4 * PAGE_SIZE;
     uint64_t     stackPhys = mmu::pmm::allocVirtual(stackSize);
-    uint64_t     stackVirt = stackPhys;
+    uint64_t     stackVirt = USER_STACK_TOP - stackSize;
     for (size_t i = 0; i < stackSize; i += PAGE_SIZE) {
         mmu::vmm::mapPage(mmu::vmm::getPML4(pid), stackPhys + i, stackVirt + i,
                           PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
@@ -87,19 +88,17 @@ void attachThread(pid_t pid, uint64_t entryPoint) {
     Thread* thread = new Thread;
     thread->tid    = 0;
     std::memset(thread->fpuState, 0, sizeof(thread->fpuState));
-    thread->registers = (io::Registers*)mmu::pmm::allocVirtual(sizeof(io::Registers));
-    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)thread->registers,
+    thread->registers =
+        (io::Registers*)(mmu::pmm::allocVirtual(sizeof(io::Registers)) + mmu::vmm::getHHDM());
+    mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)thread->registers - mmu::vmm::getHHDM(),
                       (uint64_t)thread->registers, PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
-    mmu::vmm::mapPage(mmu::vmm::getPML4(KERNEL_PID), (uint64_t)thread->registers,
-                      (uint64_t)thread->registers,
-                      PROTECTION_NOEXEC | PROTECTION_RW | PROTECTION_KERNEL, MAP_PRESENT);
     std::memset(thread->registers, 0, sizeof(io::Registers));
     thread->registers->orig_rsp = stackVirt + stackSize - 16;
     thread->registers->rbp      = thread->registers->orig_rsp;
     thread->registers->rip      = entryPoint;
     thread->registers->rflags   = 0x202;
     thread->status              = ThreadStatus::Ready;
-    thread->fsBase              = mmu::pmm::allocate();
+    thread->fsBase              = mmu::pmm::allocate() + mmu::vmm::getHHDM();
     mmu::vmm::mapPage(mmu::vmm::getPML4(pid), (uint64_t)thread->fsBase, (uint64_t)thread->fsBase,
                       PROTECTION_NOEXEC | PROTECTION_RW, MAP_PRESENT);
     if (proc->threads == nullptr) {
@@ -113,6 +112,7 @@ void attachThread(pid_t pid, uint64_t entryPoint) {
         thread->next  = proc->threads;
         current->next = thread;
     }
+    dbg::popTrace();
 }
 extern "C" __attribute__((noreturn)) void switchProc(io::Registers* regs, mmu::vmm::PML4* pml4,
                                                      uint64_t fsBase);

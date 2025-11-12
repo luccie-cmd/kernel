@@ -8,14 +8,20 @@ struct ElfObject {
     uint8_t                     type;
     uint64_t                    startAddr;
     uint64_t                    entryPoint;
-    uint64_t                    relaAddr;
     std::vector<task::Mapping*> mappings;
     std::vector<ElfObject*>     dependencies;
-    // Elf64_Addr                  symtabVirtual;
-    // Elf64_Addr                  hashVirtual;
-    Elf64_Addr  relaVirtual;
-    Elf64_Xword relaSize;
-    Elf64_Addr  baseAddr;
+    Elf64_Addr                  pltGotVirtual;
+    uint64_t                    jmpSize;
+    uint64_t                    jmpVirtual;
+    Elf64_Addr                  symtabVirtual;
+    Elf64_Addr                  hashVirtual;
+    Elf64_Addr                  relaVirtual;
+    Elf64_Xword                 relaSize;
+    uint64_t                    strsize;
+    Elf64_Addr                  baseAddr;
+    uint32_t                    nSymbols;
+    uint8_t*                    strtab;
+    std::vector<Elf64_Rela*>    relaEntries;
     ~ElfObject() {
         for (task::Mapping* mapping : this->mappings) {
             delete mapping;
@@ -25,7 +31,7 @@ struct ElfObject {
         }
     }
 };
-ElfObject* loadElfObject(int handle, size_t PHDRAddend);
+ElfObject* loadElfObject(uint64_t handle, size_t PHDRAddend);
 }; // namespace objects::elf
 
 #endif // _KERNEL_OBJECTS_ELF_H_

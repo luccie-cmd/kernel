@@ -232,9 +232,10 @@ uint64_t openFile(const char* path, uint64_t flags) {
         if (std::memcmp(path, mp->mountPath, std::strlen(mp->mountPath)) == 0) {
             const char* copyPath = path;
             copyPath += std::strlen(mp->mountPath);
-            pathWithoutMountPoint = copyPath;
-            handle                = mp->fileSystemDriver->open(KERNEL_PID, copyPath, flags);
-            mpIdx                 = i;
+            pathWithoutMountPoint = new char[strlen(copyPath)];
+            std::memcpy((void*)pathWithoutMountPoint, copyPath, strlen(copyPath));
+            handle = mp->fileSystemDriver->open(KERNEL_PID, copyPath, flags);
+            mpIdx  = i;
             break;
         }
     }

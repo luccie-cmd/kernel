@@ -74,17 +74,19 @@ extern "C" void KernelMain() {
     temp->setScreenY(displayDriver->getScreenY());
     delete displayDriver;
     displayDriver = temp;
+    // TODO: Only use this function in QEMU, otherwise use the mountUUID function
     if (!vfs::mount(0, 0, "/tmpboot")) {
         dbg::printf("ERROR WHILE LOADING INIT (Unable to mount boot partition)\n");
         std::abort();
     }
-
+    // TODO: Only use this function in QEMU, otherwise use the mountUUID function
+    // TODO: Move this function to init.elf
     if (!vfs::mount(0, 1, "/")) {
         dbg::printf("ERROR WHILE LOADING INIT (Unable to mount root partition)\n");
         std::abort();
     }
-    int handle = vfs::openFile("/tmpboot/init", 0);
-    if (handle == -1) {
+    uint64_t handle = vfs::openFile("/tmpboot/init", 0);
+    if (handle == (uint64_t)-1) {
         dbg::printf("ERROR WHILE LOADING INIT (No init binary found)\n");
         std::abort();
     }
@@ -93,8 +95,7 @@ extern "C" void KernelMain() {
         dbg::printf("ERROR WHILE LOADING INIT (Corrupted ELF binary)\n");
         std::abort();
     }
-    task::makeNewProcess(INIT_PID, initObj->entryPoint, handle, initObj->baseAddr,
-                         initObj->mappings, initObj->relaVirtual, initObj->relaSize);
+    task::makeNewProcess(INIT_PID, initObj);
 
     // for (size_t i = 0; i < smp_request.response->cpu_count; ++i) {
     //     if (smp_request.response->bsp_lapic_id != smp_request.response->cpus[i]->lapic_id) {

@@ -91,7 +91,7 @@ CONFIG["CFLAGS"] += ['-Werror', '-Wall', '-Wextra', '-Wpointer-arith', '-Wshadow
 CONFIG["CFLAGS"] += ['-mno-red-zone', '-march=native', '-mtune=native', '-mcmodel=kernel', '-mno-tls-direct-seg-refs']
 CONFIG["CXXFLAGS"] = ['-fno-exceptions', '-fno-rtti']
 CONFIG["ASFLAGS"] = ['-felf64']
-CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,--no-undefined', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
+CONFIG["LDFLAGS"] = ['-Wl,--build-id=none', '-Wl,--hash-style=sysv', '-Wl,--no-undefined', '-Wl,-no-pie', '-Wl,--no-dynamic-linker' , '-nostdlib', '-ffunction-sections', '-fdata-sections', '-fno-pie', '-fno-PIE', '-fno-pic', '-fno-PIC', '-Oz', '-mcmodel=kernel', '-fno-lto']
 CONFIG["INCPATHS"] = ['-Iinclude', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/x86_64-pc-linux-gnu', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include/c++/backward', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include', '-I /usr/local/include', '-I /usr/lib/gcc/x86_64-pc-linux-gnu/11.4.0/include-fixed', '-I /usr/include', '-I./', '-ILimine']
 if "imageSize" not in CONFIG:
     CONFIG["imageSize"] = '128m'
@@ -202,6 +202,20 @@ def buildAR(dir: str, out_file: str):
     obj_files_str = " ".join(obj_files)
     cmd = f"ar rcs {out_file} {obj_files_str}"
     print(f"AR    {out_file}")
+    callCmd(cmd)
+
+def buildSO(dir: str, out_file: str):
+    files = glob.glob(f"{dir}/**", recursive=True)
+    obj_files = []
+    for file in files:
+        if not os.path.isfile(file):
+            continue
+        if not checkExtension(file, ["o", "bc"]):
+            continue
+        obj_files.append(file)
+    obj_files_str = " ".join(obj_files)
+    cmd = f"gcc -shared -o {out_file} {obj_files_str} -nostdlib -fPIC -Wl,--hash-style=sysv"
+    print(f"SO    {out_file}")
     callCmd(cmd)
 
 def buildKernel(kernel_dir: str):
@@ -329,6 +343,8 @@ def mountFs(device, boot, kernel, files):
     callCmd(f"sudo cp {boot} mnt/EFI/BOOT")
     callCmd(f"sudo cp {kernel} mnt")
     callCmd(f"sudo cp ./bin/init.elf mnt/init")
+    callCmd(f"sudo mkdir -p mnt/lib")
+    callCmd(f"sudo cp ./bin/libc_init.so mnt/lib/libc_init.so")
     callCmd(f"sudo echo \"Hello, World\" > mnt/test.txt")
     for file in files:
         if os.path.isfile(file):
@@ -484,6 +500,7 @@ def main():
         print("TODO: Other bootloaders")
         exit(1)
     if "compile" in sys.argv:
+        callCmd(f"rm -rf {CONFIG["outDir"][0]}/init/libc/init/start.S.o")
         print("> Building Libcxx")
         buildDir("libcxx", True, f"{CONFIG['outDir'][0]}/libcxx.a")
         print("> Building drivers")
@@ -499,6 +516,10 @@ def main():
         CONFIG["CFLAGS"].remove('-fno-PIE')
         CONFIG["CFLAGS"].remove('-fno-pic')
         CONFIG["CFLAGS"].remove('-fno-PIC')
+        CONFIG["CFLAGS"].append('-fpie')
+        CONFIG["CFLAGS"].append('-fPIE')
+        CONFIG["CFLAGS"].append('-fpic')
+        CONFIG["CFLAGS"].append('-fPIC')
         CONFIG["CFLAGS"].remove('-mcmodel=kernel')
         CONFIG["CXXFLAGS"].remove('-fno-exceptions')
         CONFIG["CXXFLAGS"].remove('-fno-rtti') 
@@ -508,6 +529,9 @@ def main():
         buildDir("init/src", False)
         print("> Building init's libc")
         buildDir("init/libc", True, f"{CONFIG['outDir'][0]}/libc_init.a")
+        buildSO(f"{CONFIG['outDir'][0]}/init/libc", f"{CONFIG['outDir'][0]}/libc_init.so")
+        print("> Building start.asm")
+        callCmd(f"as -o {CONFIG['outDir'][0]}/init/libc/init/start.S.o ./init/libc/init/start.S")
         print("> Removing unused objects")
         cleanFiles(["libcxx", "drivers", "common", "kernel", "test"])
         print("> Linking kernel")
@@ -518,7 +542,10 @@ def main():
         CONFIG["LDFLAGS"].remove('-fno-pic')
         CONFIG["LDFLAGS"].remove('-fno-PIC')
         CONFIG["LDFLAGS"].remove('-Wl,-no-pie')
-        linkDir(f"{CONFIG['outDir'][0]}/init", None, "init", [f"{CONFIG['outDir'][0]}/libc_init.a"])
+        CONFIG["LDFLAGS"].append('-Lbin')
+        CONFIG["LDFLAGS"].append('-l:libc_init.so')
+        CONFIG["LDFLAGS"].append(f"{CONFIG["outDir"][0]}/init/libc/init/start.S.o")
+        linkDir(f"{CONFIG['outDir'][0]}/init/src", None, "init")
         print("> Getting info")
         getInfo()
         buildImage(f"{CONFIG['outDir'][0]}/image.img", f"{CONFIG['outDir'][0]}/BOOT*", f"{CONFIG['outDir'][0]}/kernel.elf", ["test.elf"])

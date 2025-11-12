@@ -88,21 +88,21 @@ void          printm(const char* module, const char* fmt, ...) {
 static const char* stackTraces[8192];
 static uint16_t    nstackTraces = 0;
 void               addTrace(const char* func) {
-    (void)func;
-    // if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
-    //     std::memset(stackTraces, 0, sizeof(stackTraces));
-    //     nstackTraces = 0;
-    //     dbg::printf("ERROR: Too many stack traces\n");
-    //     std::abort();
-    // }
-    // stackTraces[nstackTraces++] = func;
+    // (void)func;
+    if (nstackTraces >= sizeof(stackTraces) / sizeof(stackTraces[0])) {
+        std::memset(stackTraces, 0, sizeof(stackTraces));
+        nstackTraces = 0;
+        dbg::printf("ERROR: Too many stack traces\n");
+        std::abort();
+    }
+    stackTraces[nstackTraces++] = func;
 }
 void popTrace() {
-    // if (nstackTraces == 0) {
-    //     dbg::printf("WARNING: Attempted to pop from empty stack trace\n");
-    //     return;
-    // }
-    // --nstackTraces;
+    if (nstackTraces == 0) {
+        dbg::printf("WARNING: Attempted to pop from empty stack trace\n");
+        return;
+    }
+    --nstackTraces;
 }
 void printStackTrace() {
     for (uint16_t i = 0; i < nstackTraces; ++i) {

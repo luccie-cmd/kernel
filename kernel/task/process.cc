@@ -1,10 +1,13 @@
+#include <algorithm>
 #include <common/dbg/dbg.h>
 #include <common/io/io.h>
 #include <common/spinlock.h>
 #include <cstdlib>
 #include <cstring>
+#include <elf.h>
 #include <kernel/hal/arch/x64/irq/irq.h>
 #include <kernel/mmu/mmu.h>
+#include <kernel/objects/elf.h>
 #include <kernel/task/task.h>
 #include <kernel/vfs/vfs.h>
 #define MODULE "Program loader"
@@ -73,10 +76,103 @@ void __attribute__((section(".trampoline.text"))) defaultSignalHandler(size_t si
     }
     }
 }
+static uint32_t getSymbolCount(Process* proc, uint64_t symtabVirtual) {
+    ProcessMemoryMapping* mapping = findMappingInProcess(proc, symtabVirtual);
+    if (!mapping) return 0;
+    uint64_t symtabSizeInMapping = mapping->memLength - (symtabVirtual - mapping->virtualStart);
+    return symtabSizeInMapping / sizeof(Elf64_Sym);
+}
+static Elf64_Sym* loadSymByName(Process* proc, const char* name, uint64_t* outBaseAddr) {
+    Elf64_Sym* sym = new Elf64_Sym;
+    for (size_t j = 0; j < proc->elfObj->dependencies.size() + 1; ++j) {
+        objects::elf::ElfObject* loadObj       = j == proc->elfObj->dependencies.size()
+                                                     ? proc->elfObj
+                                                     : proc->elfObj->dependencies.at(j);
+        uint64_t                 neededVirtual = loadObj->symtabVirtual;
+        size_t                   numSyms       = getSymbolCount(proc, loadObj->symtabVirtual);
+        *outBaseAddr                           = loadObj->baseAddr;
+        ProcessMemoryMapping* mapping          = findMappingInProcess(proc, loadObj->symtabVirtual);
+        for (size_t i = 0; i < numSyms; ++i) {
+            vfs::seek(mapping->fileIdx,
+                      (neededVirtual - *outBaseAddr) + mapping->fileOffset + i * sizeof(Elf64_Sym));
+            vfs::readFile(mapping->fileIdx, sizeof(Elf64_Sym), sym);
+            if (sym->st_value == 0) {
+                continue;
+            }
+            const char* symName = (const char*)loadObj->strtab + sym->st_name;
+            if (std::strcmp(name, symName) == 0) {
+                return sym;
+            }
+        }
+    }
+    dbg::printm(MODULE, "ERROR: No symbol named %s found\n", name);
+    std::abort();
+}
+static uint64_t resolveAddr(Process* proc, uint32_t symIdx, Elf64_Rela* rela) {
+    uint64_t   baseAddr = 0;
+    Elf64_Sym* sym      = nullptr;
+    for (size_t j = 0; j < proc->elfObj->dependencies.size() + 1; ++j) {
+        objects::elf::ElfObject* loadObj = j == proc->elfObj->dependencies.size()
+                                               ? proc->elfObj
+                                               : proc->elfObj->dependencies.at(j);
+        if (std::find(loadObj->relaEntries.begin(), loadObj->relaEntries.end(), rela) !=
+            loadObj->relaEntries.end()) {
+            uint64_t neededVirtual        = loadObj->symtabVirtual;
+            baseAddr                      = loadObj->baseAddr;
+            ProcessMemoryMapping* mapping = findMappingInProcess(proc, neededVirtual);
+            if (!mapping) {
+                dbg::printm(MODULE, "Failed to find the symbol table entry\n");
+                std::abort();
+            }
+            sym = new Elf64_Sym;
+            vfs::seek(mapping->fileIdx, (neededVirtual - baseAddr) + mapping->fileOffset +
+                                            symIdx * sizeof(Elf64_Sym));
+            vfs::readFile(mapping->fileIdx, sizeof(Elf64_Sym), sym);
+            Elf64_Sym nullEntry = (Elf64_Sym){0, 0, 0, 0, 0, 0};
+            if (std::memcmp(&nullEntry, sym, sizeof(Elf64_Sym)) == 0) {
+                delete sym;
+                sym = nullptr;
+                continue;
+            }
+            if (sym->st_value == 0) {
+                sym = loadSymByName(proc, (const char*)loadObj->strtab + sym->st_name, &baseAddr);
+            }
+#ifdef DEBUG
+            dbg::printm(MODULE, "Found symbolidx %lu (name %s)\n", symIdx,
+                        loadObj->strtab + sym->st_name);
+#endif
+            break;
+        }
+    }
+    if (sym == nullptr) {
+        dbg::printm(MODULE, "Couldn't find needed RELA entry\n");
+        std::abort();
+    }
+    Elf64_Sym nullEntry = (Elf64_Sym){0, 0, 0, 0, 0, 0};
+    if (std::memcmp(&nullEntry, sym, sizeof(Elf64_Sym)) == 0) {
+        dbg::printm(MODULE, "Unable to find the needed symbol\n");
+        std::abort();
+    }
+#ifdef DEBUG
+    dbg::printm(MODULE, "sym->st_value = %lx, baseaddr = %lx\n", sym->st_value, baseAddr);
+#endif
+    uint64_t ret = sym->st_value + baseAddr;
+    delete sym;
+    return ret;
+}
 static void applyRela(Process* proc, Elf64_Rela* rela, uint64_t bufferAddr) {
+#ifdef DEBUG
+    dbg::printm(MODULE, "Applying at %lx symidx %u type %u addend %lx\n", rela->r_offset,
+                ELF64_R_SYM(rela->r_info), ELF64_R_TYPE(rela->r_info), rela->r_addend);
+#endif
     switch (ELF64_R_TYPE(rela->r_info)) {
     case R_X86_64_RELATIVE: {
         *(uint64_t*)(bufferAddr + (rela->r_offset & 0xFFF)) = proc->baseAddr + rela->r_addend;
+    } break;
+    case R_X86_64_GLOB_DAT:
+    case R_X86_64_JUMP_SLOT: {
+        uint64_t resolvedAddr = resolveAddr(proc, ELF64_R_SYM(rela->r_info), rela);
+        *(uint64_t*)(bufferAddr + (rela->r_offset & 0xFFF)) = resolvedAddr;
     } break;
     default: {
         dbg::printm(MODULE, "TODO: Handle rela 0x%llx type: %llu sym: %llu addend: 0x%llx\n",
@@ -153,8 +249,7 @@ void          mapProcess(mmu::vmm::PML4* pml4, uint64_t virtualAddress) {
     mapProcLock.unlock();
     dbg::popTrace();
 }
-void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr baseAddr,
-                    std::vector<Mapping*> mappings, Elf64_Addr relaVirtual, Elf64_Xword relaSize) {
+void makeNewProcess(pid_t pid, objects::elf::ElfObject* obj) {
     dbg::addTrace(__PRETTY_FUNCTION__);
     if (!isInitialized()) {
         initialize();
@@ -164,61 +259,111 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr b
     proc->state   = ProcessState::Ready;
     proc->pml4    = mmu::vmm::getPML4(pid);
     proc->signals.insert({SIGKILL, (signalHandler)defaultSignalHandler});
-    if (!relaVirtual) {
+    if (!obj->relaVirtual) {
         dbg::printm(MODULE, "WARNING: No RELA address was passed in\n");
     }
-    proc->baseAddr = baseAddr;
+    proc->baseAddr = obj->startAddr;
     proc->threads  = nullptr;
-    for (Mapping* mapping : mappings) {
-        ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
-        memMapping->fileIdx              = fileIdx;
-        memMapping->fileOffset           = mapping->fileOffset;
-        memMapping->memLength            = mapping->memLength;
-        memMapping->fileLength           = mapping->fileLength;
-        memMapping->permissions          = mapping->permissions;
-        memMapping->virtualStart         = mapping->virtualStart;
-        memMapping->alignment            = mapping->alignment;
-        size_t    offset                 = memMapping->virtualStart % PAGE_SIZE;
-        size_t    totalLen               = ALIGNUP(memMapping->memLength + offset, PAGE_SIZE);
-        uintptr_t mapBase                = ALIGNDOWN(memMapping->virtualStart, PAGE_SIZE);
-        if (memMapping->virtualStart % PAGE_SIZE == 0) {
-            for (size_t i = 0; i < totalLen; i += PAGE_SIZE) {
-                mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, mapBase + i,
-                                  memMapping->permissions, 0);
-            }
-        } else {
-            ProcessMemoryMapping* procMapping =
-                findMappingInProcess(proc, ALIGNDOWN(mapping->virtualStart, mapping->alignment));
-            if (procMapping == nullptr) {
+    for (size_t j = 0; j < obj->dependencies.size() + 1; ++j) {
+        objects::elf::ElfObject* loadObj =
+            j == obj->dependencies.size() ? obj : obj->dependencies.at(j);
+        for (Mapping* mapping : loadObj->mappings) {
+            ProcessMemoryMapping* memMapping = new ProcessMemoryMapping;
+            memMapping->fileIdx              = mapping->handle;
+            memMapping->fileOffset           = mapping->fileOffset;
+            memMapping->memLength            = mapping->memLength;
+            memMapping->fileLength           = mapping->fileLength;
+            memMapping->permissions          = mapping->permissions;
+            memMapping->virtualStart         = mapping->virtualStart;
+            memMapping->alignment            = mapping->alignment;
+            size_t    offset                 = memMapping->virtualStart % PAGE_SIZE;
+            size_t    totalLen               = ALIGNUP(memMapping->memLength + offset, PAGE_SIZE);
+            uintptr_t mapBase                = ALIGNDOWN(memMapping->virtualStart, PAGE_SIZE);
+            if (memMapping->virtualStart % PAGE_SIZE == 0) {
                 for (size_t i = 0; i < totalLen; i += PAGE_SIZE) {
                     mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, mapBase + i,
                                       memMapping->permissions, 0);
                 }
             } else {
-                dbg::printm(MODULE, "TODO: Further memory permisssion sharing\n");
+                ProcessMemoryMapping* procMapping = findMappingInProcess(
+                    proc, ALIGNDOWN(mapping->virtualStart, mapping->alignment));
+                if (procMapping == nullptr) {
+                    for (size_t i = 0; i < totalLen; i += PAGE_SIZE) {
+                        mmu::vmm::mapPage(mmu::vmm::getPML4(pid), ONDEMAND_MAP_ADDRESS, mapBase + i,
+                                          memMapping->permissions, 0);
+                    }
+                } else {
+                    dbg::printm(MODULE, "TODO: Further memory permisssion sharing\n");
+                    std::abort();
+                }
+            }
+#ifdef DEBUG
+            dbg::printm(
+                MODULE,
+                "Added new mapping to process %llu (VADDR = 0x%llx Mapped Length = 0x%llx)\n",
+                proc->pid, memMapping->virtualStart, memMapping->memLength);
+#endif
+            memMapping->next    = proc->memoryMapping;
+            proc->memoryMapping = memMapping;
+        }
+        if (loadObj->relaVirtual) {
+            ProcessMemoryMapping* mapping = findMappingInProcess(proc, loadObj->relaVirtual);
+            if (mapping == nullptr) {
+                dbg::printm(MODULE, "Failed to find process memory mapping for rela virtual\n");
+#ifdef DEBUG
+                dbg::printf("Tried loading loadObj->relaVirtual = %lx\n", loadObj->relaVirtual);
+#endif
                 std::abort();
             }
-        }
+            for (size_t i = 0; i < loadObj->relaSize; i += sizeof(Elf64_Rela)) {
+                Elf64_Rela* rela = new Elf64_Rela;
+                vfs::seek(mapping->fileIdx,
+                          (loadObj->relaVirtual - loadObj->baseAddr) + mapping->fileOffset + i);
+                vfs::readFile(mapping->fileIdx, sizeof(Elf64_Rela), rela);
+                rela->r_offset += loadObj->baseAddr;
+                if (rela->r_info == 0) break;
 #ifdef DEBUG
-        dbg::printm(MODULE,
-                    "Added new mapping to process %llu (VADDR = 0x%llx Mapped Length = 0x%llx)\n",
-                    proc->pid, memMapping->virtualStart, memMapping->memLength);
+                dbg::printm(MODULE,
+                            "Loaded rela entry (from rela) at %lx symidx %u type %u addend %lx\n",
+                            rela->r_offset, ELF64_R_SYM(rela->r_info), ELF64_R_TYPE(rela->r_info),
+                            rela->r_addend);
 #endif
-        memMapping->next    = proc->memoryMapping;
-        proc->memoryMapping = memMapping;
-    }
-    if (relaVirtual) {
-        ProcessMemoryMapping* mapping = findMappingInProcess(proc, relaVirtual);
-        for (size_t i = 0; i < relaSize; i += sizeof(Elf64_Rela)) {
-            Elf64_Rela* rela = new Elf64_Rela;
-            vfs::seek(mapping->fileIdx, (relaVirtual - proc->baseAddr) + mapping->fileOffset +
-                                            i * sizeof(Elf64_Rela));
-            vfs::readFile(mapping->fileIdx, sizeof(Elf64_Rela), rela);
-            rela->r_offset += proc->baseAddr;
-            proc->relas.push_back(rela);
+                loadObj->relaEntries.push_back(rela);
+                proc->relas.push_back(rela);
+            }
         }
-        dbg::printm(MODULE, "Added %llu rela entries\n", proc->relas.size());
+        if (loadObj->jmpVirtual) {
+            ProcessMemoryMapping* mapping = findMappingInProcess(proc, loadObj->jmpVirtual);
+            if (mapping == nullptr) {
+                dbg::printm(MODULE, "Failed to find process memory mapping for rela virtual\n");
+#ifdef DEBUG
+                dbg::printf("Tried loading loadObj->jmpVirtual = %lx\n", loadObj->jmpVirtual);
+#endif
+                std::abort();
+            }
+            for (size_t i = 0; i < loadObj->jmpSize; i += sizeof(Elf64_Rela)) {
+                Elf64_Rela* rela = new Elf64_Rela;
+                vfs::seek(mapping->fileIdx,
+                          (loadObj->jmpVirtual - loadObj->baseAddr) + mapping->fileOffset + i);
+                vfs::readFile(mapping->fileIdx, sizeof(Elf64_Rela), rela);
+                rela->r_offset += loadObj->baseAddr;
+                if (rela->r_info == 0) break;
+#ifdef DEBUG
+                dbg::printm(MODULE,
+                            "Loaded rela entry (from jmp) at %lx symidx %u type %u addend %lx\n",
+                            rela->r_offset, ELF64_R_SYM(rela->r_info), ELF64_R_TYPE(rela->r_info),
+                            rela->r_addend);
+#endif
+                loadObj->relaEntries.push_back(rela);
+                proc->relas.push_back(rela);
+            }
+        }
     }
+#ifdef DEBUG
+    dbg::printm(MODULE, "Added %llu rela entries\n", proc->relas.size());
+#endif
+    proc->elfObj = obj;
+    // std::abort();
     if (globalParent == nullptr) {
         globalParent = proc;
     }
@@ -234,7 +379,7 @@ void makeNewProcess(pid_t pid, uint64_t entryPoint, size_t fileIdx, Elf64_Addr b
         currentProc->prev->next = proc;
         currentProc->prev       = proc;
     }
-    attachThread(pid, entryPoint);
+    attachThread(pid, obj->entryPoint);
     dbg::popTrace();
 }
 }; // namespace task

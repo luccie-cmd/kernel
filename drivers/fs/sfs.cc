@@ -126,6 +126,7 @@ int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
     if (path[0] == '/') {
         path++;
     }
+    uint64_t        readLBA = 0;
     std::string     strPath(path);
     DirectoryBlock* lastDirBlock = this->rootDir;
     while (true) {
@@ -136,11 +137,10 @@ int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
         strPath             = strPath.substr(slashPos + 1);
         lastDirBlock        = this->openDir(lastDirBlock, dirName.c_str());
         if (!lastDirBlock) {
-            dbg::printm(MODULE, "Directory not found: %s\n", dirName.c_str());
-            std::abort();
+            goto exitBlock;
         }
     }
-    uint64_t readLBA = lastDirBlock->header.currentLBA;
+    readLBA = lastDirBlock->header.currentLBA;
     while (readLBA) {
         if (!this->getDiskDevice().first->read(this->getDiskDevice().second, readLBA, 1,
                                                (volatile uint8_t*)lastDirBlock)) {
@@ -176,6 +176,7 @@ int SFSDriver::open(task::pid_t PID, const char* path, int flags) {
         }
         readLBA = lastDirBlock->nextDirBlock;
     }
+exitBlock:
     dbg::printm(MODULE, "No file exists with the name %s\n", strPath.c_str());
     dbg::popTrace();
     return -1;
